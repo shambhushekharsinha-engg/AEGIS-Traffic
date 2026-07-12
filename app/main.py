@@ -4,9 +4,14 @@ from transformers import pipeline
 import time
 import threading
 
+# Importing the modular Simulation Engine components cleanly from the core subdirectory
+from app.core.vision_module import VisionEngine
+from app.core.audio_module import AudioEngine
+
 app = FastAPI(
     title="Aegis-MHR: Enterprise Deep Learning Fusion Engine",
-    version="2.0.0"
+    version="2.1.0",
+    description="Centralized Fusion Core orchestrating modular sensory engines and local transformer inference chains."
 )
 
 # Global memory state to track background dispatch notifications for the UI
@@ -27,46 +32,30 @@ class SimulationRequest(BaseModel):
 class ChatbotRequest(BaseModel):
     user_message: str
     incident_context: str
-
+    
+# =====================================================================
+# 🕹️ SIMULATION PIPELINE: Asynchronous Threat Dispatch Worker
+# =====================================================================
 def execute_async_broadcast(scenario_type: str, timestamp: str):
     """Asynchronous background worker simulating encrypted emergency notifications."""
     global DISPATCH_REGISTRY
     DISPATCH_REGISTRY["status"] = "BROADCASTING"
-    time.sleep(1.5)  # Simulating secure network handshake
+    time.sleep(1.5)  # Simulating secure network handshake routing delay
     DISPATCH_REGISTRY["status"] = "SUCCESS"
     DISPATCH_REGISTRY["last_broadcast"] = f"SMS/Email emergency packets deployed at {timestamp} for {scenario_type.upper()}"
 
-class VisionEngine:
-    def process(self, scenario: str, threshold: float):
-        # Feature 3: Security Tamper / Blindness Detection Layer
-        if scenario == "tamper":
-            return [{"label": "CAMERA_BLOCKED_TAMPER", "confidence": 0.99}]
-            
-        if scenario == "accident":
-            raw_detections = [{"label": "car", "confidence": 0.92}, {"label": "person", "confidence": 0.88}]
-        elif scenario == "fire":
-            raw_detections = [{"label": "fire", "confidence": 0.95}, {"label": "smoke", "confidence": 0.78}]
-        else:
-            raw_detections = [{"label": "person", "confidence": 0.98}]
-            
-        # Feature 1: Apply dynamic confidence filter from the frontend slider
-        return [d for d in raw_detections if d["confidence"] >= threshold]
-
-class AudioEngine:
-    def process(self, scenario: str):
-        if scenario == "accident":
-            return {"status": "Anomaly Detected", "db_level": 88.4, "type": "High-Decibel Crash/Impact"}
-        elif scenario == "fire":
-            return {"status": "Anomaly Detected", "db_level": 92.1, "type": "Industrial Fire Alarm"}
-        elif scenario == "tamper":
-            return {"status": "Line Static", "db_level": 12.0, "type": "Microphone Calibrating"}
-        return {"status": "Normal", "db_level": 42.8, "type": "Ambient Traffic Hum"}
-
+# =====================================================================
+# 🔥 THE FUSION CORE: Multimodal Threat Ingestion Endpoint
+# =====================================================================
 @app.post("/api/v1/analyze")
 def analyze_environment(payload: SimulationRequest):
     global DISPATCH_REGISTRY
     scenario = payload.scenario.lower()
     
+    if scenario not in ["normal", "accident", "fire", "tamper"]:
+        raise HTTPException(status_code=400, detail="Invalid target stream profile configuration selected.")
+    
+    # Instantiate the modular engine subcomponents
     vision = VisionEngine()
     audio = AudioEngine()
     
