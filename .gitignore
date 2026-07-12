@@ -14,3 +14,9 @@ venv/
 # Prevent large local data files from clogging up the repo commit history
 data/*
 !data/.gitkeep
+__pycache__/
+.pytest_cache/
+.env
+data/*
+!data/.gitkeep
+.streamlit/
