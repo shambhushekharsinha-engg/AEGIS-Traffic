@@ -1,0 +1,16 @@
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# Local Environment and HuggingFace Cache
+.env
+.cache/
+.virtualenv/
+venv/
+
+# Streamlit local configurations
+.streamlit/
+
+# Prevent large local data files from clogging up the repo commit history
+data/*
+!data/.gitkeep
