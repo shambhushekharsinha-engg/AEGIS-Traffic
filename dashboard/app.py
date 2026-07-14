@@ -4,95 +4,186 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 
-st.set_page_config(page_title="Aegis-MHR Control Panel", page_icon="🛡️", layout="wide")
+# Page configuration for a true widescreen operations dashboard
+st.set_page_config(page_title="AEGIS-MHR // Operational Command Deck", page_icon="🛡️", layout="wide")
 
+# Enhanced visual theme injection: Cyberpunk Dark Mode Matrix
 st.markdown("""
     <style>
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { background-color: #06090e !important; color: #d1d7de !important; }
-    h1 { color: #00f0ff !important; font-family: 'Courier New', monospace; font-weight: 800; text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); }
-    h3, h5 { color: #ffb703 !important; font-family: 'Courier New', monospace; }
-    .stButton>button { width: 100%; background: #111827 !important; border: 1px solid #00f0ff !important; color: #00f0ff !important; font-weight: bold !important; }
-    .stButton>button:hover { background: #00f0ff !important; color: #06090e !important; box-shadow: 0 0 15px #00f0ff !important; }
-    div[data-testid="stElementContainer"] div.stDataFrame { border: 1px solid #00f0ff; background-color: #0d1117; }
-    div[data-testid="stMetricValue"] { font-family: monospace; font-size: 32px; color: #00f0ff !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
+    
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        background: radial-gradient(circle at top right, #0a1128, #020617) !important;
+        color: #e2e8f0 !important;
+    }
+    
+    /* Neon HUD Title Styling */
+    .hud-title {
+        font-family: 'Orbitron', sans-serif;
+        color: #00f0ff;
+        font-weight: 700;
+        text-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+        letter-spacing: 2px;
+        margin-bottom: 5px;
+    }
+    
+    .hud-subtitle {
+        font-family: 'Share Tech Mono', monospace;
+        color: #64748b;
+        letter-spacing: 1px;
+    }
+    
+    /* Premium Grid Cards */
+    .metric-card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(0, 240, 255, 0.15);
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        margin-bottom: 15px;
+    }
+    
+    .metric-label {
+        font-family: 'Share Tech Mono', monospace;
+        color: #94a3b8;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+    
+    .metric-value {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.8rem;
+        color: #ffffff;
+        margin-top: 5px;
+    }
+    
+    /* Interactive Button glow effects */
+    .stButton>button {
+        width: 100%;
+        background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+        border: 1px solid #00f0ff !important;
+        color: #00f0ff !important;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: bold !important;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        padding: 10px 0;
+        border-radius: 6px;
+    }
+    .stButton>button:hover {
+        background: #00f0ff !important;
+        color: #020617 !important;
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.6) !important;
+        transform: translateY(-2px);
+    }
+    
+    /* Custom Scannable Dataframes */
+    div[data-testid="stElementContainer"] div.stDataFrame {
+        border: 1px solid rgba(0, 240, 255, 0.2);
+        background-color: #0b1329;
+        border-radius: 6px;
+    }
     </style>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
 """, unsafe_allow_html=True)
 
-st.title("🛡️ AEGIS-MHR // ENTERPRISE SECURITY CONSOLE")
-st.caption("⚡ Live Production Multimodal Layer Engine • Distributed Thread Dispatch Grid")
-st.markdown("---")
+# HUD Top Header Construction
+st.markdown('<h1 class="hud-title">🛡️ AEGIS-MHR // NEXT-GEN HUD SECURITY OPERATOR</h1>', unsafe_allow_html=True)
+st.markdown('<p class="hud-subtitle">🤖 Enterprise Threat Network Framework • Active Local Transformer Architecture</p>', unsafe_allow_html=True)
+st.markdown("<hr style='border: 0.5px solid rgba(0, 240, 255, 0.15);'>", unsafe_allow_html=True)
 
 if "chat_history" not in st.session_state: st.session_state.chat_history = []
 
-st.sidebar.markdown("<h2 style='color:#00f0ff; font-family:monospace;'>🕹️ ENGINE CONTROLS</h2>", unsafe_allow_html=True)
-scenario = st.sidebar.selectbox("Select Target Stream Vector Profile:", ["Normal", "Accident", "Fire", "Tamper"])
-model_tier = st.sidebar.selectbox("Active Inference Weights:", ["YOLOv8-Nano (Speed Edge Optimized)", "YOLOv8-XLarge (Precision High-Load)"])
-vision_threshold = st.sidebar.slider("Dynamic Visual Cutoff Filter", 0.0, 1.0, 0.50)
+# Sidebar Operations Deck Configuration
+st.sidebar.markdown("<h2 style='color:#00f0ff; font-family:Orbitron; font-size:1.2rem; letter-spacing:1px;'>🕹️ HUD CONTROL PANELS</h2>", unsafe_allow_html=True)
+scenario = st.sidebar.selectbox("🎯 Target Stream Profile Matrix:", ["Normal", "Accident", "Fire", "Tamper"])
+model_tier = st.sidebar.selectbox("🧠 Engine Weights Matrix:", ["YOLOv8-Nano (Speed Edge Optimized)", "YOLOv8-XLarge (Precision High-Load)"])
+vision_threshold = st.sidebar.slider("🎛️ Visual Core Sensor Cutoff Filter", 0.0, 1.0, 0.50)
 
-st.sidebar.markdown("---")
-deploy_btn = st.sidebar.button("ENGAGE LIVE DIAGNOSTIC STREAM", type="primary")
+st.sidebar.markdown("<br><hr style='border: 0.5px solid rgba(0, 240, 255, 0.15);'>", unsafe_allow_html=True)
+deploy_btn = st.sidebar.button("⚡ ENGAGE PRODUCTION SIGNAL INGEST", type="primary")
 
 BACKEND_URL = "http://127.0.0.1:8000/api/v1/analyze"
 HISTORY_URL = "http://127.0.0.1:8000/api/v1/history"
 CHAT_URL = "http://127.0.0.1:8000/api/v1/chat"
 
 if deploy_btn:
-    try:
-        res = requests.post(BACKEND_URL, json={"scenario": scenario.lower(), "vision_threshold": vision_threshold, "model_tier": model_tier})
-        if res.status_code == 200: st.session_state.active_data = res.json()
-    except requests.exceptions.ConnectionError:
-        st.error("❌ Link Severed: Backend on port 8000 offline.")
+    with st.spinner("Locking sensory pipelines..."):
+        try:
+            res = requests.post(BACKEND_URL, json={"scenario": scenario.lower(), "vision_threshold": vision_threshold, "model_tier": model_tier})
+            if res.status_code == 200: st.session_state.active_data = res.json()
+        except requests.exceptions.ConnectionError:
+            st.error("❌ Transmission Failure: FastAPI network core offline.")
 
 if "active_data" in st.session_state:
     data = st.session_state.active_data
     alert_status = data["fusion_layer"]["alert_status"]
     dispatch_info = data["dispatch_network"]
     
+    # 🚨 Beautiful Corporate Layout Status Banners
     if "CRITICAL" in alert_status:
-        st.markdown(f'<div style="background: linear-gradient(90deg, #7a0010 0%, #1a0004 100%); padding: 15px; border-left: 5px solid #ff003c; border-radius: 4px; margin-bottom: 20px;"><h4 style="margin:0; color:#ff3355; font-family:monospace;">🚨 INCIDENT DETECTED // {alert_status}</h4></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="background: linear-gradient(90deg, rgba(239, 68, 68, 0.25) 0%, rgba(127, 29, 29, 0.4) 100%); padding: 18px; border: 1px solid #ef4444; border-left: 6px solid #ef4444; border-radius: 6px; margin-bottom: 25px;"><h4 style="margin:0; color:#fca5a5; font-family:\'Orbitron\', sans-serif; font-size:1.1rem; letter-spacing:1px;">⚠️ DANGER: HIGH LEVEL INCIDENT COMPROMISE ACTIVE // {alert_status}</h4></div>', unsafe_allow_html=True)
     elif "TAMPER" in alert_status:
-        st.markdown(f'<div style="background: linear-gradient(90deg, #d4a373 0%, #4a2c0f 100%); padding: 15px; border-left: 5px solid #ffb703; border-radius: 4px; margin-bottom: 20px;"><h4 style="margin:0; color:#ffb703; font-family:monospace;">⚠️ HARDWARE FAILURE ALERT // {alert_status}</h4></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="background: linear-gradient(90deg, rgba(245, 158, 11, 0.25) 0%, rgba(146, 64, 14, 0.4) 100%); padding: 18px; border: 1px solid #f59e0b; border-left: 6px solid #f59e0b; border-radius: 6px; margin-bottom: 25px;"><h4 style="margin:0; color:#fde68a; font-family:\'Orbitron\', sans-serif; font-size:1.1rem; letter-spacing:1px;">🛡️ SYSTEM ALERT: CAMERA BLINDNESS OR HARDWARE DISCONNECTION // {alert_status}</h4></div>', unsafe_allow_html=True)
     else:
-        st.markdown(f'<div style="background: linear-gradient(90deg, #004b23 0%, #001508 100%); padding: 15px; border-left: 5px solid #38b000; border-radius: 4px; margin-bottom: 20px;"><h4 style="margin:0; color:#70e000; font-family:monospace;">✅ TELEMETRY MATRIX NOMINAL // PIPELINES SECURE</h4></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="background: linear-gradient(90deg, rgba(16, 185, 129, 0.25) 0%, rgba(6, 78, 59, 0.4) 100%); padding: 18px; border: 1px solid #10b981; border-left: 6px solid #10b981; border-radius: 6px; margin-bottom: 25px;"><h4 style="margin:0; color:#a7f3d0; font-family:\'Orbitron\', sans-serif; font-size:1.1rem; letter-spacing:1px;">✅ MONITORING SYSTEM ONLINE: RUNNING baseline SCANS</h4></div>', unsafe_allow_html=True)
         
     if dispatch_info["status"] != "STABLE":
-        st.info(f"📡 Webhook Signal Dispatched: Real-world operational response teams notified via secure payload link!")
+        st.markdown(f'<div style="background: rgba(30, 41, 59, 0.8); border: 1px dashed #00f0ff; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-family:\'Share Tech Mono\', monospace; color: #00f0ff;">📡 [COMMUNICATION ARRAY]: {dispatch_info["last_broadcast"] if dispatch_info["status"] == "SUCCESS" else "Deploying emergency network packets across communication links..."}</div>', unsafe_allow_html=True)
 
-    m_col1, m_col2 = st.columns([1.8, 1.2])
+    # 📈 Custom Professional Core KPI Row
+    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+    with kpi1:
+        st.markdown(f'<div class="metric-card"><div class="metric-label">⏱️ Core Engine Latency</div><div class="metric-value" style="color:#00f0ff;">{data["latency_ms"]}<span style="font-size:1rem; color:#64748b;"> ms</span></div></div>', unsafe_allow_html=True)
+    with kpi2:
+        color_map = "#ef4444" if data["risk_score"] > 70 else ("#f59e0b" if data["risk_score"] > 30 else "#10b981")
+        st.markdown(f'<div class="metric-card"><div class="metric-label">⚡ Threat Risk Rating</div><div class="metric-value" style="color:{color_map};">{data["risk_score"]}<span style="font-size:1rem; color:#64748b;"> %</span></div></div>', unsafe_allow_html=True)
+    with kpi3:
+        st.markdown(f'<div class="metric-card"><div class="metric-label">🔊 Acoustic Pressure</div><div class="metric-value" style="color:#ffb703;">{data["telemetry"]["acoustic_profile"]["db_level"]}<span style="font-size:1rem; color:#64748b;"> dB</span></div></div>', unsafe_allow_html=True)
+    with kpi4:
+        st.markdown(f'<div class="metric-card"><div class="metric-label">🧠 Decision Engine</div><div class="metric-value" style="color:#a855f7; font-size:1.1rem; padding-top:12px; font-family:\'Share Tech Mono\';">DistilBERT Fused Core</div></div>', unsafe_allow_html=True)
+
+    # Split Main Operations HUD View Layout Grid
+    m_col1, m_col2 = st.columns([1.7, 1.3])
+    
     with m_col1:
-        st.subheader("📊 Ingested Multi-Modal Stream Modules")
+        st.markdown("<h3 style='font-size:1.2rem; margin-bottom:10px;'>📊 Multi-Sensory Pipeline Feeds</h3>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown("<p style='color:#ffb703; font-weight:bold;'>👁️ Vision Analytics Feeds</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color:#00f0ff; font-family:\"Share Tech Mono\"; font-weight:bold; margin-bottom:5px;'>👁️ Object Recognition Matrix</p>", unsafe_allow_html=True)
             df = pd.DataFrame(data["telemetry"]["visual_detections"])
             st.dataframe(df if not df.empty else pd.DataFrame(columns=["label", "confidence"]), use_container_width=True, hide_index=True)
         with c2:
-            st.markdown("<p style='color:#ffb703; font-weight:bold;'>🔊 Acoustic Tracking Metrics</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color:#00f0ff; font-family:\"Share Tech Mono\"; font-weight:bold; margin-bottom:5px;'>🔊 Acoustic Diagnostics Status</p>", unsafe_allow_html=True)
             aud = data["telemetry"]["acoustic_profile"]
-            st.metric(label=f"Profile: {aud['type']}", value=f"{aud['db_level']} dB", delta=f"{aud['status']}")
+            st.markdown(f"""
+                <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(0,240,255,0.1); padding:15px; border-radius:6px; font-family:'Share Tech Mono', monospace;">
+                    <p style="margin:0 0 8px 0;">Signal Profile: <span style="color:#ffb703;">{aud['type']}</span></p>
+                    <p style="margin:0;">Sensory Status: <span style="color:#10b981;">{aud['status']}</span></p>
+                </div>
+            """, unsafe_allow_html=True)
             
-        # --- FEATURE 2: HISTORICAL TIME-SERIES VISUALIZER ---
-        st.markdown("<p style='color:#ffb703; font-weight:bold; margin-top:15px;'>📈 Enterprise Historical Threat Analytics Trend Ledger</p>", unsafe_allow_html=True)
+        # Time-Series Analytics Ledger Charts component
+        st.markdown("<p style='color:#00f0ff; font-family:\"Share Tech Mono\"; font-weight:bold; margin-top:20px;'>📈 Long-Term Time-Series Incident Matrix Trend Logs</p>", unsafe_allow_html=True)
         try:
             h_res = requests.get(HISTORY_URL).json()
             h_df = pd.DataFrame(h_res["history"])
             if not h_df.empty:
-                fig = px.line(h_df, x="timestamp", y="risk_score", title="System Anomaly Threat Index Path", template="plotly_dark", markers=True)
-                fig.update_layout(height=180, margin=dict(l=10, r=10, t=25, b=10), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-                fig.update_traces(line_color="#00f0ff")
+                fig = px.line(h_df, x="timestamp", y="risk_score", template="plotly_dark", markers=True)
+                fig.update_layout(height=180, margin=dict(l=10, r=10, t=10, b=10), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                fig.update_traces(line_color="#00f0ff", marker=dict(color="#a855f7", size=6))
                 st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.caption("Awaiting initial telemetry logs to compile timeline graphic tracking arrays.")
         except Exception:
-            st.caption("Unable to load transactional data streams.")
+            st.caption("Awaiting initial telemetry logs pipeline connection traces.")
         
     with m_col2:
-        st.subheader("🧠 Aegis Core Tactical Assistant Interface")
-        chat_container = st.container(height=310)
+        st.markdown("<h3 style='font-size:1.2rem; margin-bottom:10px;'>🧠 Tactical Crisis Response AI Assistant</h3>", unsafe_allow_html=True)
+        chat_container = st.container(height=325)
         for msg in st.session_state.chat_history:
             with chat_container.chat_message(msg["role"]): st.markdown(msg["text"])
                 
-        user_input = st.chat_input("Query security parameters or prompt threat resolution steps...")
+        user_input = st.chat_input("Query threat tracking signatures or prompt containment protocols...")
         if user_input:
             with chat_container.chat_message("user"): st.markdown(user_input)
             st.session_state.chat_history.append({"role": "user", "text": user_input})
@@ -102,5 +193,7 @@ if "active_data" in st.session_state:
             with chat_container.chat_message("assistant"): st.markdown(ai_reply)
             st.session_state.chat_history.append({"role": "assistant", "text": ai_reply})
 
-    st.markdown("---")
-    st.code(f"[{datetime.now().strftime('%H:%M:%S')}] Core Computing Core -> Latency: {data['latency_ms']} ms | Weight Profile: {model_tier}\n[{datetime.now().strftime('%H:%M:%S')}] Automated System Log -> {data['fusion_layer']['automated_incident_report']}", language="bash")
+    st.markdown("<hr style='border: 0.5px solid rgba(0, 240, 255, 0.15);'>", unsafe_allow_html=True)
+    st.code(f"// Active Telemetry Registry Log Matrix Buffer\n[{datetime.now().strftime('%H:%M:%S')}] Core Processing Node -> Weights: {model_tier}\n[{datetime.now().strftime('%H:%M:%S')}] Neural Synthesis Report -> {data['fusion_layer']['automated_incident_report']}", language="javascript")
+else:
+    st.info("💡 Sensor Ingestion Offline. Select a streaming data profile vector from the left operations dashboard panel and engage parameters to populate active telemetry pipelines.")
