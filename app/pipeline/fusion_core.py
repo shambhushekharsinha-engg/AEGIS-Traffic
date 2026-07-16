@@ -1,16 +1,28 @@
 # app/pipeline/fusion_core.py
 
 import time
-from transformers import pipeline
+
+try:
+    from transformers import pipeline
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    pipeline = None
+    TRANSFORMERS_AVAILABLE = False
 
 try:
     print("🤖 Booting Production Zero-Shot Traffic Fusion Transformer...")
-    # Using the existing model for zero-shot text classification
-    classifier = pipeline("zero-shot-classification", model="typeform/distilbert-base-uncased-mnli")
-    TRANSFORMER_ONLINE = True
+    if TRANSFORMERS_AVAILABLE and pipeline is not None:
+        # Using the existing model for zero-shot text classification
+        classifier = pipeline("zero-shot-classification", model="typeform/distilbert-base-uncased-mnli")
+        TRANSFORMER_ONLINE = True
+    else:
+        print("⚠️ Zero-shot traffic classifier disabled (transformers library not installed).")
+        classifier = None
+        TRANSFORMER_ONLINE = False
 except Exception as e:
     print(f"⚠️ Neural network instantiation failure. Activating Circuit Breaker Backup: {str(e)}")
     TRANSFORMER_ONLINE = False
+
 
 class MultimodalFusionCore:
     def __init__(self):

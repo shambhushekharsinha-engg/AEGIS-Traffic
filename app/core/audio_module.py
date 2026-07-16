@@ -1,6 +1,4 @@
 import os
-import torch
-import torchaudio
 import numpy as np
 import math
 import wave
@@ -18,7 +16,7 @@ class AudioAnalyzer:
     def _generate_synthetic_wav(self, scenario: str, file_path: str):
         """
         Synthesizes realistic traffic sounds using NumPy and saves them as WAV using 
-        standard Python wave/struct (bypassing torchaudio saving issues).
+        standard Python wave/struct.
         """
         n_samples = int(self.sample_rate * self.duration_seconds)
         t = np.linspace(0, self.duration_seconds, n_samples, endpoint=False)
@@ -81,7 +79,7 @@ class AudioAnalyzer:
     def _load_wav_pure(self, file_path: str):
         """
         Loads a WAV file using standard Python wave/struct libraries.
-        Returns (waveform_tensor, sample_rate).
+        Returns (waveform_numpy, sample_rate).
         """
         with wave.open(file_path, 'rb') as wav_file:
             n_channels = wav_file.getnchannels()
@@ -105,7 +103,7 @@ class AudioAnalyzer:
                 normalized = normalized.reshape(-1, n_channels)
                 normalized = normalized[:, 0] # take first channel
                 
-            waveform = torch.tensor(normalized, dtype=torch.float32).unsqueeze(0)
+            waveform = np.expand_dims(normalized, axis=0)
             return waveform, sr
 
     def check_anomaly(self, audio_path: str):
@@ -118,7 +116,6 @@ class AudioAnalyzer:
         if "accident" in filename:
             scenario = "accident"
         elif "fire" in filename or "emergency" in filename:
-            # Main code passes "fire_sound.wav" for the fire scenario, let's treat it as emergency (siren)
             scenario = "emergency"
         elif "congest" in filename or "tamper" in filename:
             scenario = "congested"
@@ -134,17 +131,20 @@ class AudioAnalyzer:
         except Exception as e:
             print(f"⚠️ Pure wave load failed: {e}. Trying torchaudio fallback.")
             try:
-                waveform, sr = torchaudio.load(audio_path)
+                import torch
+                import torchaudio
+                torch_waveform, sr = torchaudio.load(audio_path)
+                waveform = torch_waveform.numpy()
             except Exception as e2:
                 # Absolute fallback if reading fails
-                print(f"⚠️ Waveform load error: {e2}. Generating in-memory tensor.")
-                waveform = torch.randn(1, int(self.sample_rate * self.duration_seconds)) * 0.01
+                print(f"⚠️ Waveform load error: {e2}. Generating in-memory array.")
+                waveform = np.random.randn(1, int(self.sample_rate * self.duration_seconds)) * 0.01
                 sr = self.sample_rate
 
         # Calculate decibels (RMS)
-        rms = torch.sqrt(torch.mean(waveform**2))
-        db = 20 * torch.log10(rms + 1e-6)
-        db_level = float(db.item())
+        rms = np.sqrt(np.mean(waveform**2))
+        db = 20 * np.log10(rms + 1e-6)
+        db_level = float(db)
         
         # Map DB levels to positive sound pressure scale (0 to 120 dB)
         # where -60dB FS is ambient (~40 dB SPL) and 0dB FS is maximum (~100 dB SPL)
@@ -155,18 +155,18 @@ class AudioAnalyzer:
         signal = waveform[0]
         n_samples = len(signal)
         
-        # Run Real FFT
-        fft_res = torch.fft.rfft(signal)
-        fft_amplitude = torch.abs(fft_res)
-        frequencies = torch.fft.rfftfreq(n_samples, d=1.0/sr)
+        # Run Real FFT using NumPy
+        fft_res = np.fft.rfft(signal)
+        fft_amplitude = np.abs(fft_res)
+        frequencies = np.fft.rfftfreq(n_samples, d=1.0/sr)
         
         # Spot peak frequencies (excluding very low sub-bass < 80Hz)
         valid_mask = frequencies > 80
         valid_freqs = frequencies[valid_mask]
         valid_amps = fft_amplitude[valid_mask]
         
-        peak_idx = torch.argmax(valid_amps)
-        peak_freq = float(valid_freqs[peak_idx].item())
+        peak_idx = np.argmax(valid_amps)
+        peak_freq = float(valid_freqs[peak_idx])
         
         # Classification heuristics based on SPL and Peak Frequency
         sound_type = "Ambient"
@@ -177,8 +177,6 @@ class AudioAnalyzer:
                 sound_type = "Collision"
                 status = "Anomaly Detected"
             elif 500 <= peak_freq <= 1500:
-                # If there's a strong sinusoidal component (highly localized frequency spike)
-                # wailing emergency siren
                 sound_type = "Siren"
                 status = "Anomaly Detected"
             else:
@@ -187,7 +185,7 @@ class AudioAnalyzer:
         elif spl_db > 65:
             if 350 <= peak_freq <= 500:
                 sound_type = "Horn"
-                status = "Normal" # Horns are normal traffic noise, not emergency anomalies
+                status = "Normal"
             else:
                 sound_type = "Ambient"
                 status = "Normal"

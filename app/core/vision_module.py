@@ -2,18 +2,29 @@ import os
 import cv2
 import numpy as np
 import base64
-from ultralytics import YOLO
+
+try:
+    from ultralytics import YOLO
+    ULTRALYTICS_AVAILABLE = True
+except ImportError:
+    YOLO = None
+    ULTRALYTICS_AVAILABLE = False
 
 class FolderStreamAnalyzer:
     def __init__(self):
         # Load the pre-trained YOLOv8 model
         # The model will download if not cached, but yolov8n.pt is in root.
         try:
-            self.model = YOLO("yolov8n.pt") 
-            self.model_loaded = True
+            if ULTRALYTICS_AVAILABLE and YOLO is not None:
+                self.model = YOLO("yolov8n.pt") 
+                self.model_loaded = True
+            else:
+                print("⚠️ YOLOv8 model not available (ultralytics not installed). Running in simulation fallback mode.")
+                self.model_loaded = False
         except Exception as e:
             print(f"⚠️ Failed to load YOLOv8 model: {e}. Running in simulation fallback mode.")
             self.model_loaded = False
+
 
     def generate_synthetic_traffic_frame(self, scenario: str) -> np.ndarray:
         """
