@@ -2,6 +2,15 @@
 import numpy as np
 import time
 
+def execute_async_broadcast(scenario_type: str, timestamp: str, registry_ref: dict):
+    """Asynchronous background worker simulating encrypted emergency notifications."""
+    registry_ref["status"] = "BROADCASTING"
+    time.sleep(1.5) 
+    registry_ref["status"] = "SUCCESS"
+    registry_ref["last_broadcast"] = f"SMS/Email packets deployed at {timestamp} for {scenario_type.upper()}"
+
+# The SimulatedVisionModule, SimulatedAudioModule, and AegisFusionCore follow below...
+
 class SimulatedVisionModule:
     def __init__(self):
         print("[System] Vision Subsystem Initialized (Simulated Mode).")
