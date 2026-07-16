@@ -5,6 +5,10 @@
 # 🚦 AEGIS — Traffic
 ### **Adaptive Edge-Grade Intelligence System for Smart-City Traffic Management**
 
+### 🌐 Live Deployment
+
+[![Live Demo](https://img.shields.io/badge/🚀%20LIVE%20DEMO-aegis--traffic.vercel.app-00f0ff?style=for-the-badge&labelColor=010308)](https://aegis-traffic.vercel.app)
+
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white"/>
   <img src="https://img.shields.io/badge/FastAPI-0.110+-009688?style=flat-square&logo=fastapi&logoColor=white"/>
@@ -381,8 +385,8 @@ Git
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/<your-username>/Aegis-MHR.git
-cd Aegis-MHR
+git clone https://github.com/shambhushekharsinha-engg/AEGIS-Traffic.git
+cd AEGIS-Traffic
 ```
 
 ### 2. Install Dependencies
@@ -713,18 +717,65 @@ AEGIS_SECRET_KEY=<Fernet-compatible base64 key>
 
 ## 📜 License
 
-```
-MIT License — Copyright (c) 2026 AEGIS-Traffic Contributors
+**MIT License — © 2026 [AEGIS-Traffic](https://aegis-traffic.vercel.app)**
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files, to deal in the Software
-without restriction, including without limitation the rights to use, copy,
-modify, merge, publish, distribute, sublicense, and/or sell copies of the
-Software, subject to the following conditions:
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-```
+---
+
+## 👨‍💻 Developer Profile
+
+<div align="center">
+
+<br/>
+
+<table>
+  <tr>
+    <td align="center" width="100%">
+      <img src="https://img.shields.io/badge/Developer-Shambhu%20Shekhar%20Sinha-00f0ff?style=for-the-badge&labelColor=010308" />
+      <br/><br/>
+      <table>
+        <tr>
+          <td>👤 <b>Name</b></td>
+          <td>Shambhu Shekhar Sinha</td>
+        </tr>
+        <tr>
+          <td>🎓 <b>Degree</b></td>
+          <td>B.Tech — Computer Science & Engineering (AI & ML)</td>
+        </tr>
+        <tr>
+          <td>🏫 <b>College</b></td>
+          <td>Greater Noida Institute of Technology</td>
+        </tr>
+        <tr>
+          <td>🏛️ <b>University</b></td>
+          <td>Dr. APJ Abdul Kalam Technological University, Lucknow</td>
+        </tr>
+        <tr>
+          <td>📍 <b>Location</b></td>
+          <td>Greater Noida, Uttar Pradesh, India</td>
+        </tr>
+        <tr>
+          <td>🐙 <b>GitHub</b></td>
+          <td><a href="https://github.com/shambhushekharsinha-engg">@shambhushekharsinha-engg</a></td>
+        </tr>
+        <tr>
+          <td>🌐 <b>Deployment</b></td>
+          <td><a href="https://aegis-traffic.vercel.app">aegis-traffic.vercel.app</a></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<br/>
+
+<img src="https://img.shields.io/badge/B.Tech-CSE%20%7C%20AI%20%26%20ML-00f0ff?style=flat-square&labelColor=010308"/>
+<img src="https://img.shields.io/badge/GNIT-Greater%20Noida-10b981?style=flat-square"/>
+<img src="https://img.shields.io/badge/AKTU-Lucknow-FF4B4B?style=flat-square"/>
+<img src="https://img.shields.io/badge/GitHub-shambhushekharsinha--engg-181717?style=flat-square&logo=github"/>
+
+</div>
 
 ---
 

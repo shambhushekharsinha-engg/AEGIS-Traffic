@@ -1,0 +1,19 @@
+# Exclude heavy ML model weights (downloaded at runtime from HuggingFace Hub)
+yolov8n.pt
+yolov8x.pt
+
+# Exclude Streamlit dashboard (deployed separately)
+dashboard/
+
+# Exclude demo screenshots and media
+Project Demo/
+
+# Exclude test data
+data/audio_samples/
+
+# Exclude development files
+requirements-dev.txt
+.pytest_cache/
+__pycache__/
+*.pyc
+.vscode/

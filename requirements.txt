@@ -1,9 +1,19 @@
-fastapi>=0.110.0
-uvicorn>=0.28.0
-pydantic>=2.6.0
-transformers>=4.38.0
-torch>=2.2.0
-streamlit>=1.31.0
-requests>=2.31.0
-pandas>=2.2.0
-plotly>=5.19.0
+# ─── Vercel-optimised requirements (FastAPI backend only) ────────────────────
+# Full local dev requirements → requirements-dev.txt
+# Streamlit dashboard is a SEPARATE service and is NOT deployed via Vercel Python.
+# PyTorch is pinned to the CPU-only wheel (~200 MB) to stay under Vercel's 500 MB limit.
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+fastapi==0.110.1
+uvicorn==0.29.0
+pydantic==2.6.4
+requests==2.31.0
+pandas==2.2.1
+plotly==5.20.0
+cryptography==42.0.5
+sqlalchemy==2.0.28
+python-multipart==0.0.9
+torch==2.2.2+cpu
+torchvision==0.17.2+cpu
+transformers==4.38.2
