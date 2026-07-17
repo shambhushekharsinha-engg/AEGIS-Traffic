@@ -1,6 +1,7 @@
 # app/pipeline/fusion_core.py
 
 import time
+import math
 
 try:
     from transformers import pipeline
@@ -48,6 +49,53 @@ class MultimodalFusionCore:
         vehicle_count = sum(1 for item in visual_data if item["label"] in vehicle_labels)
         
         has_tamper = any(item["label"] == "CAMERA_BLOCKED_TAMPER" for item in visual_data)
+
+        # ── §9  Traffic Density Calculation ──────────────────────────────
+        # Maximum capacity: ~50 vehicles observable in a single intersection frame
+        INTERSECTION_CAPACITY = 50
+        traffic_density_percent = round(min(100.0, vehicle_count / INTERSECTION_CAPACITY * 100), 1)
+        if traffic_density_percent <= 20:
+            density_level = "Low"
+        elif traffic_density_percent <= 50:
+            density_level = "Medium"
+        elif traffic_density_percent <= 80:
+            density_level = "High"
+        else:
+            density_level = "Very High"
+
+        # ── §10 Queue Length Estimation ──────────────────────────────────
+        # Each vehicle occupies ~5 m (sedan) + ~2 m gap on average
+        VEHICLE_SPACE_METERS = 7.0
+        queue_length_meters = round(vehicle_count * VEHICLE_SPACE_METERS, 1)
+
+        # ── §11 Speed Estimation ─────────────────────────────────────────
+        # Inverse relationship: more vehicles → lower average speed.
+        # Asymptotic: base 60 km/h at 0 vehicles, ~5 km/h in gridlock (50 vehicles).
+        # Formula: v = v_free / (1 + k * density)
+        V_FREE   = 60.0          # free-flow speed (km/h)
+        K_FACTOR = 0.05          # density sensitivity coefficient
+        avg_speed_kmh = round(V_FREE / (1.0 + K_FACTOR * vehicle_count), 1)
+
+        # ── §8  Lane Detection / Lane Counts ─────────────────────────────
+        # Assign each detection to a lane by bounding-box X-centre.
+        # Lane boundaries match vision_module.py (640-px frame split into 3 lanes)
+        # Lane 1: x < 220   Lane 2: 220 ≤ x < 420   Lane 3: x ≥ 420
+        lane_counts = {"Lane 1": 0, "Lane 2": 0, "Lane 3": 0}
+        for item in visual_data:
+            if item.get("label") not in vehicle_labels:
+                continue
+            box = item.get("box", [])
+            if len(box) >= 4:
+                center_x = (box[0] + box[2]) // 2
+            else:
+                # No box info → distribute evenly across lanes
+                center_x = 320  # default to centre lane
+            if center_x < 220:
+                lane_counts["Lane 1"] += 1
+            elif center_x < 420:
+                lane_counts["Lane 2"] += 1
+            else:
+                lane_counts["Lane 3"] += 1
         
         # Audio status details
         audio_type = audio_data.get("type", "Ambient")
@@ -157,7 +205,13 @@ class MultimodalFusionCore:
             "advisory": advisory,
             "signal_timing_seconds": signal_timing,
             "active_phase": active_phase,
-            "vehicle_count": vehicle_count
+            "vehicle_count": vehicle_count,
+            # ── New pipeline fields (§8, §9, §10, §11) ──
+            "traffic_density_percent": traffic_density_percent,
+            "density_level":           density_level,
+            "queue_length_meters":     queue_length_meters,
+            "avg_speed_kmh":           avg_speed_kmh,
+            "lane_counts":             lane_counts,
         }
 
     def _deterministic_fallback_logic(self, scenario: str, vehicle_count: int, audio_type: str) -> str:

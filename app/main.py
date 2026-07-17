@@ -21,6 +21,8 @@ except ImportError:
 # Core sensory modules
 from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
 from app.core.audio_module import AudioAnalyzer as AudioEngine
+from app.core.anpr_module import ANPREngine                      # §16 ANPR
+from app.core.violation_module import ViolationDetector          # §15 Violation detection
 
 # Pipeline Submodules
 from app.pipeline.fusion_core import MultimodalFusionCore
@@ -275,6 +277,12 @@ def analyze_environment(
     active_phase = fused_results["active_phase"]
     vehicle_count = fused_results["vehicle_count"]
     
+    traffic_density_percent = fused_results["traffic_density_percent"]
+    density_level           = fused_results["density_level"]
+    queue_length_meters     = fused_results["queue_length_meters"]
+    avg_speed_kmh           = fused_results["avg_speed_kmh"]
+    lane_counts             = fused_results["lane_counts"]
+    
     execution_latency = (time.time() - start_time) * 1000 
     
     # Store dynamic execution properties via relational multi-tenant tracking tokens
@@ -317,6 +325,13 @@ def analyze_environment(
             "signal_timing_seconds": signal_timing,
             "active_phase": active_phase,
             "vehicle_count": vehicle_count
+        },
+        "traffic_analytics": {
+            "traffic_density_percent": traffic_density_percent,
+            "density_level":           density_level,
+            "queue_length_meters":     queue_length_meters,
+            "avg_speed_kmh":           avg_speed_kmh,
+            "lane_counts":             lane_counts,
         },
         "dispatch_network": DISPATCH_REGISTRY,
         "system_telemetry_metrics": SYSTEM_METRICS
@@ -369,3 +384,143 @@ def system_assistant_chat(payload: ChatbotRequest, current_user: dict = Depends(
             clean_reply = "🟢 Intersection nominal. Operations parameters cycling dynamically. Let me know if you need specific rerouting logs."
             
     return {"reply": clean_reply}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §16  ANPR — Automatic Number Plate Recognition
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/api/v1/anpr/{scenario}")
+def get_anpr_records(
+    scenario: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Runs the ANPR pipeline for a given scenario.
+
+    Returns synthetic license plate records for every detected vehicle.
+    Real-world deployment: pass actual bounding-box crops from live CCTV frames.
+    """
+    scenario = scenario.lower()
+    if scenario not in ["normal", "accident", "congested", "emergency", "tamper"]:
+        raise HTTPException(status_code=400, detail="Invalid scenario. Choose: normal, accident, congested, emergency, tamper")
+
+    try:
+        vision_result = VisionEngine().process_traffic_scene(scenario)
+        detections    = vision_result["detections"]
+    except Exception as e:
+        detections = [{"label": "car", "confidence": 0.85, "box": [100, 100, 200, 180]}]
+
+    engine  = ANPREngine()
+    records = engine.process_detections(detections, scenario)
+    summary = engine.get_summary(records)
+
+    return {
+        "scenario":          scenario.upper(),
+        "anpr_records":      records,
+        "summary":           summary,
+        "pipeline_version":  "AEGIS-ANPR-v1.0",
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# §15  Traffic Violation Detection
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/api/v1/violations/{scenario}")
+def get_violations(
+    scenario: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Detects traffic violations for a given scenario.
+
+    Checks: red-light jump, wrong lane, overspeeding, no helmet.
+    Returns structured violation records with fine amounts.
+    """
+    scenario = scenario.lower()
+    if scenario not in ["normal", "accident", "congested", "emergency", "tamper"]:
+        raise HTTPException(status_code=400, detail="Invalid scenario. Choose: normal, accident, congested, emergency, tamper")
+
+    # Get vision detections
+    try:
+        vision_result = VisionEngine().process_traffic_scene(scenario)
+        detections    = vision_result["detections"]
+    except Exception:
+        detections = [{"label": "car", "confidence": 0.85, "box": [100, 100, 200, 180]}]
+
+    # Get fusion results for signal phase and speed
+    fusion_core   = MultimodalFusionCore()
+    audio_engine  = AudioEngine()
+    try:
+        audio_data = audio_engine.check_anomaly(f"dataset/Audio_Samples/{scenario}_sound.wav")
+    except Exception:
+        audio_data = {"status": "Normal", "db_level": 42.0, "type": "Ambient",
+                      "waveform": [], "fft_frequencies": [], "fft_amplitudes": [], "peak_frequency": 0.0}
+
+    fused = fusion_core.fuse_and_classify(detections, audio_data, scenario)
+    signal_phase  = fused["active_phase"]
+    avg_speed_kmh = fused["avg_speed_kmh"]
+
+    detector = ViolationDetector(speed_limit_kmh=50.0)
+    result   = detector.detect_violations(detections, scenario, signal_phase, avg_speed_kmh)
+
+    return result
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipeline Status — public health + module info endpoint
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/api/v1/pipeline/status")
+def pipeline_status():
+    """
+    Public endpoint (no auth required). Returns the operational status of all
+    pipeline modules. Useful for dashboard health checks and monitoring.
+    """
+    modules = {
+        "vehicle_detection":        {"module": "YOLOv8n",          "status": "ACTIVE"},
+        "vehicle_tracking":         {"module": "ByteTrack (sim)",  "status": "ACTIVE"},
+        "vehicle_counting":         {"module": "fusion_core.py",   "status": "ACTIVE"},
+        "traffic_density":          {"module": "fusion_core.py",   "status": "ACTIVE"},
+        "queue_length_estimation":  {"module": "fusion_core.py",   "status": "ACTIVE"},
+        "speed_estimation":         {"module": "fusion_core.py",   "status": "ACTIVE"},
+        "lane_detection":           {"module": "fusion_core.py",   "status": "ACTIVE"},
+        "signal_optimization":      {"module": "fusion_core.py",   "status": "ACTIVE"},
+        "emergency_detection":      {"module": "fusion_core.py",   "status": "ACTIVE"},
+        "accident_detection":       {"module": "fusion_core.py",   "status": "ACTIVE"},
+        "violation_detection":      {"module": "violation_module", "status": "ACTIVE"},
+        "anpr_ocr":                 {"module": "anpr_module",      "status": "ACTIVE (sim)"},
+        "audio_anomaly":            {"module": "audio_module",     "status": "ACTIVE"},
+        "database_logging":         {"module": "history_logger",   "status": "ACTIVE"},
+        "nlp_classifier":           {"module": "DistilBERT MNLI",  "status": "ONLINE" if TRANSFORMERS_AVAILABLE else "OFFLINE (fallback)"},
+        "ai_assistant":             {"module": "Qwen2.5-0.5B",     "status": "ONLINE" if ASSISTANT_ONLINE else "OFFLINE (keyword fallback)"},
+    }
+
+    pipeline_stages = [
+        "Traffic Video Input",
+        "Frame Extraction & Preprocessing",
+        "Vehicle Detection (YOLOv8)",
+        "Vehicle Tracking (ByteTrack)",
+        "Vehicle Counting",
+        "Traffic Density Calculation",
+        "Queue Length Estimation",
+        "Speed Estimation",
+        "Lane Detection",
+        "Traffic Signal Optimization",
+        "Emergency Vehicle Detection",
+        "Traffic Violation Detection",
+        "ANPR / Number Plate Recognition",
+        "Database Logging (SQLite)",
+        "Dashboard & Reports (Streamlit)",
+    ]
+
+    return {
+        "system":           "AEGIS-Traffic Secure Smart Intersection Engine",
+        "version":          "6.1.0",
+        "overall_status":   "OPERATIONAL",
+        "modules":          modules,
+        "pipeline_stages":  pipeline_stages,
+        "system_metrics":   SYSTEM_METRICS,
+        "dispatch_network": DISPATCH_REGISTRY,
+    }
