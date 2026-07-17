@@ -44,11 +44,14 @@ for key, default in [
 # GLOBAL CONSTANTS
 # ──────────────────────────────────────────────
 BACKEND   = os.environ.get("AEGIS_BACKEND_URL", "http://127.0.0.1:8000")
-ANALYZE_URL  = f"{BACKEND}/api/v1/analyze"
-HISTORY_URL  = f"{BACKEND}/api/v1/history"
-CHAT_URL     = f"{BACKEND}/api/v1/chat"
-LOGIN_URL    = f"{BACKEND}/api/v1/auth/login"
-REGISTER_URL = f"{BACKEND}/api/v1/auth/register"
+ANALYZE_URL      = f"{BACKEND}/api/v1/analyze"
+HISTORY_URL      = f"{BACKEND}/api/v1/history"
+CHAT_URL         = f"{BACKEND}/api/v1/chat"
+LOGIN_URL        = f"{BACKEND}/api/v1/auth/login"
+REGISTER_URL     = f"{BACKEND}/api/v1/auth/register"
+ANPR_URL         = f"{BACKEND}/api/v1/anpr"        # §16  NEW
+VIOLATIONS_URL   = f"{BACKEND}/api/v1/violations"  # §15  NEW
+PIPELINE_URL     = f"{BACKEND}/api/v1/pipeline/status"  # NEW
 
 SCENARIO_MAP = {
     "🟢 Normal Flowing Traffic":      "normal",
@@ -648,10 +651,11 @@ if scan_btn:
 
 
 # ══════════════════════════════════════════════════════════════
-# MAIN CONTENT — EIGHT TABS
+# MAIN CONTENT — TEN TABS
 # ══════════════════════════════════════════════════════════════
 (tab_hud, tab_analytics, tab_map_intel,
- tab_sandbox, tab_ai_chat, tab_guide, tab_manual, tab_security) = st.tabs([
+ tab_sandbox, tab_ai_chat, tab_guide, tab_manual, tab_security,
+ tab_anpr, tab_pipeline) = st.tabs([
     "📊 Operations HUD",
     "📈 Analytics",
     "🌍 Map Intelligence",
@@ -660,6 +664,8 @@ if scan_btn:
     "📚 Learning Guide",
     "📖 Diagnostics",
     "🔒 Security Ledger",
+    "🚘 ANPR & Violations",    # NEW §15/§16
+    "⚙️ Pipeline Status",      # NEW
 ])
 
 
@@ -832,6 +838,64 @@ with tab_hud:
             with dc2:
                 st.markdown("**Full Response Payload**")
                 st.json(data, expanded=False)
+
+        # ── TRAFFIC ANALYTICS (new today) ─────────────────────────
+        mini_separator()
+        sec_div("📊 TRAFFIC ANALYTICS — DENSITY · QUEUE · SPEED · LANES")
+        ta = data.get("traffic_analytics", {})
+        if ta:
+            ta1, ta2, ta3, ta4 = st.columns(4)
+            ta1.markdown(metric_tile("Traffic Density", ta.get("traffic_density_percent","—"), "%", "#00f0ff", "📊"), unsafe_allow_html=True)
+            ta2.markdown(metric_tile("Queue Length",    ta.get("queue_length_meters","—"),     "m", "#a855f7", "📏"), unsafe_allow_html=True)
+            ta3.markdown(metric_tile("Avg Speed",       ta.get("avg_speed_kmh","—"),           "km/h","#10b981","⚡"), unsafe_allow_html=True)
+            ta4.markdown(metric_tile("Density Level",   ta.get("density_level","—"),           "",   "#eab308","🏷️"), unsafe_allow_html=True)
+
+            lc = ta.get("lane_counts", {})
+            if lc:
+                st.markdown("<br>", unsafe_allow_html=True)
+                lc_cols = st.columns(len(lc))
+                for col, (lane, cnt) in zip(lc_cols, lc.items()):
+                    col.markdown(metric_tile(lane, cnt, " veh", "#06b6d4", "🛣️"), unsafe_allow_html=True)
+
+        # ── ANPR + VIOLATIONS PREVIEW (new today) ─────────────────
+        mini_separator()
+        sec_div("🚘 ANPR REAL-TIME OCR · TRAFFIC VIOLATIONS PREVIEW")
+        anpr_col, viol_col = st.columns(2)
+        scenario_key = SCENARIO_MAP.get(
+            next((k for k in SCENARIO_MAP if SCENARIO_MAP[k] == data.get("scenario","normal")), "🟢 Normal Flowing Traffic"),
+            "normal"
+        )
+        # Derive scenario from the analysis data (use the sidebar selection)
+        _scen_raw = data.get("scenario", "normal")
+        with anpr_col:
+            try:
+                _anpr = requests.get(f"{ANPR_URL}/{_scen_raw}", headers=auth_header(), timeout=10).json()
+                _plates = _anpr.get("anpr_records", [])
+                if _plates:
+                    for _p in _plates[:5]:
+                        st.markdown(
+                            f'<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:6px 10px;margin-bottom:4px;">'
+                            f'<span style="background:#fff;color:#000;font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:.78rem;padding:2px 6px;border-radius:3px;border:2px solid #000;">{_p.get("plate","—")}</span>'
+                            f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.7rem;color:#00f0ff;">{_p.get("vehicle_type","Vehicle")}</span>'
+                            f'</div>', unsafe_allow_html=True)
+                else:
+                    st.info("No plates detected for this scenario.")
+            except:
+                st.warning("ANPR offline — check backend.")
+        with viol_col:
+            try:
+                _viols = requests.get(f"{VIOLATIONS_URL}/{_scen_raw}", headers=auth_header(), timeout=10).json()
+                _vlist = _viols.get("violations", [])
+                if _vlist:
+                    for _v in _vlist[:5]:
+                        st.markdown(
+                            f'<div style="font-family:\'JetBrains Mono\',monospace;font-size:.75rem;color:#f59e0b;margin-bottom:6px;">'
+                            f'⚠️ <strong>{_v.get("type","—")}</strong> — {_v.get("vehicle_id","Unknown")}'
+                            f'</div>', unsafe_allow_html=True)
+                else:
+                    st.success("✅ No violations detected for this scenario.")
+            except:
+                st.warning("Violations module offline — check backend.")
 
 
 # ─────────────────────────────────────────────────
@@ -1710,6 +1774,168 @@ with tab_security:
             "pbkdf2_iterations":    100000,
         })
         st.info("ℹ️ All telemetry rows are encrypted as binary blobs in `data/aegis_secure_vault.db`. Raw file inspection returns unreadable bytes.")
+
+
+# ─────────────────────────────────────────────────
+# TAB 9 — ANPR & TRAFFIC VIOLATIONS
+# ─────────────────────────────────────────────────
+with tab_anpr:
+    sec_div("🚘 ANPR — AUTOMATIC NUMBER PLATE RECOGNITION  ·  TRAFFIC VIOLATION DETECTION")
+
+    anpr_scenario_label = st.selectbox(
+        "Select Scenario for ANPR & Violation Scan",
+        list(SCENARIO_MAP.keys()),
+        key="anpr_scenario_sel"
+    )
+    anpr_scenario = SCENARIO_MAP[anpr_scenario_label]
+
+    run_anpr_btn = st.button("🔍 Run ANPR & Violation Scan", type="primary", use_container_width=True, key="run_anpr_btn")
+
+    if run_anpr_btn:
+        col_anpr, col_viol = st.columns(2)
+
+        with col_anpr:
+            sec_div("📷 ANPR OCR — Number Plate Registry")
+            try:
+                anpr_res = requests.get(f"{ANPR_URL}/{anpr_scenario}", headers=auth_header(), timeout=15)
+                if anpr_res.status_code == 200:
+                    anpr_data = anpr_res.json()
+                    plates    = anpr_data.get("anpr_records", [])
+                    summary   = anpr_data.get("summary", {})
+
+                    # Summary metrics
+                    sm1, sm2, sm3 = st.columns(3)
+                    sm1.markdown(metric_tile("Plates Detected", summary.get("total_plates", len(plates)), "", "#00f0ff", "🔢"), unsafe_allow_html=True)
+                    sm2.markdown(metric_tile("Registered",      summary.get("registered", "—"),            "", "#10b981", "✅"), unsafe_allow_html=True)
+                    sm3.markdown(metric_tile("Flagged",         summary.get("flagged", "—"),               "", "#ef4444", "🚩"), unsafe_allow_html=True)
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    for p in plates:
+                        flag_color = "#ef4444" if p.get("flagged") else "#e2e8f0"
+                        st.markdown(
+                            f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                            f'background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.05);'
+                            f'border-radius:8px;padding:8px 14px;margin-bottom:6px;">'
+                            f'<span style="background:#fff;color:#000;font-family:\'JetBrains Mono\',monospace;'
+                            f'font-weight:700;padding:3px 8px;border-radius:3px;border:2px solid #000;font-size:.82rem;">'
+                            f'{p.get("plate","—")}</span>'
+                            f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.72rem;color:#00f0ff;">{p.get("vehicle_type","—")}</span>'
+                            f'<span style="font-size:.72rem;color:{flag_color};">{"🚩 FLAGGED" if p.get("flagged") else "✅ CLEAR"}</span>'
+                            f'</div>', unsafe_allow_html=True)
+                    if not plates:
+                        st.info("No plates detected for this scenario.")
+                elif anpr_res.status_code == 401:
+                    st.warning("🔑 Session expired. Please logout and login again.")
+                else:
+                    st.error(f"❌ ANPR API error: {anpr_res.status_code}")
+            except Exception as e:
+                st.error(f"❌ ANPR offline: {e}")
+
+        with col_viol:
+            sec_div("⚠️ TRAFFIC VIOLATION DETECTION")
+            try:
+                viol_res = requests.get(f"{VIOLATIONS_URL}/{anpr_scenario}", headers=auth_header(), timeout=15)
+                if viol_res.status_code == 200:
+                    viol_data = viol_res.json()
+                    violations = viol_data.get("violations", [])
+                    vsummary   = viol_data.get("summary", {})
+
+                    vm1, vm2 = st.columns(2)
+                    vm1.markdown(metric_tile("Total Violations", len(violations), "", "#ef4444", "⚠️"), unsafe_allow_html=True)
+                    vm2.markdown(metric_tile("Fine Total",       vsummary.get("total_fine_amount", "—"), "₹", "#f59e0b", "💰"), unsafe_allow_html=True)
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if violations:
+                        for v in violations:
+                            vtype  = v.get("type", "—")
+                            vid    = v.get("vehicle_id", "Unknown")
+                            fine   = v.get("fine_amount", "—")
+                            st.markdown(
+                                f'<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);'
+                                f'border-radius:8px;padding:8px 14px;margin-bottom:6px;font-family:\'JetBrains Mono\',monospace;font-size:.78rem;">'
+                                f'<span style="color:#ef4444;font-weight:700;">⚠️ {vtype}</span> &nbsp;|&nbsp; '
+                                f'<span style="color:#e2e8f0;">{vid}</span> &nbsp;|&nbsp; '
+                                f'<span style="color:#f59e0b;">Fine: ₹{fine}</span>'
+                                f'</div>', unsafe_allow_html=True)
+                    else:
+                        st.success("✅ No traffic violations detected for this scenario.")
+                else:
+                    st.error(f"❌ Violations API error: {viol_res.status_code}")
+            except Exception as e:
+                st.error(f"❌ Violations module offline: {e}")
+
+
+# ─────────────────────────────────────────────────
+# TAB 10 — PIPELINE STATUS
+# ─────────────────────────────────────────────────
+with tab_pipeline:
+    sec_div("⚙️ AEGIS TRAFFIC PIPELINE — MODULE STATUS DASHBOARD")
+
+    if st.button("↻ Refresh Pipeline Status", type="primary", key="refresh_pipeline"):
+        st.rerun()
+
+    try:
+        ps_res = requests.get(PIPELINE_URL, timeout=8)
+        if ps_res.status_code == 200:
+            ps_data  = ps_res.json()
+            modules  = ps_data.get("modules", {})
+            stages   = ps_data.get("pipeline_stages", [])
+            sm_ps    = ps_data.get("system_metrics", {})
+
+            # System overview metrics
+            psc1, psc2, psc3, psc4 = st.columns(4)
+            psc1.markdown(metric_tile("Overall Status", ps_data.get("overall_status","—"), "", "#10b981", "✅"), unsafe_allow_html=True)
+            psc2.markdown(metric_tile("Version",        ps_data.get("version","—"),        "", "#00f0ff", "🔢"), unsafe_allow_html=True)
+            psc3.markdown(metric_tile("Total Requests", sm_ps.get("total_requests",0),     "", "#a855f7", "📡"), unsafe_allow_html=True)
+            psc4.markdown(metric_tile("Critical Events",sm_ps.get("critical_incidents",0), "", "#ef4444", "🚨"), unsafe_allow_html=True)
+
+            mini_separator()
+
+            # Module status grid
+            sec_div("🧩 MODULE HEALTH MATRIX")
+            mod_cols = st.columns(3)
+            for idx, (mod_name, mod_info) in enumerate(modules.items()):
+                status_txt = mod_info.get("status","—")
+                is_online  = "OFFLINE" not in status_txt.upper()
+                col_hex    = "#10b981" if is_online else "#ef4444"
+                dot        = "🟢" if is_online else "🔴"
+                with mod_cols[idx % 3]:
+                    st.markdown(
+                        f'<div style="background:rgba(6,12,26,.85);border:1px solid rgba(0,240,255,.1);'
+                        f'border-radius:8px;padding:10px 14px;margin-bottom:8px;">'
+                        f'<div style="font-family:\'Orbitron\',sans-serif;font-size:.65rem;color:#4b6584;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">'
+                        f'{mod_name.replace("_"," ")}</div>'
+                        f'<div style="font-family:\'JetBrains Mono\',monospace;font-size:.72rem;color:{col_hex};">'
+                        f'{dot} {status_txt}</div>'
+                        f'<div style="font-size:.68rem;color:#4b6584;margin-top:2px;">{mod_info.get("module","")}</div>'
+                        f'</div>', unsafe_allow_html=True)
+
+            mini_separator()
+
+            # Pipeline stages
+            sec_div("🔄 END-TO-END PIPELINE FLOW")
+            for i, stage in enumerate(stages):
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;gap:10px;padding:7px 12px;'
+                    f'background:rgba(0,0,0,.2);border-radius:6px;margin-bottom:5px;'
+                    f'font-family:\'JetBrains Mono\',monospace;font-size:.78rem;color:#e2e8f0;">'
+                    f'<span style="color:#00f0ff;min-width:24px;">{"0" if i+1 < 10 else ""}{i+1}</span>'
+                    f'<span style="color:#00f0ff;margin-right:4px;">▶</span>'
+                    f'{stage}'
+                    f'</div>', unsafe_allow_html=True)
+        else:
+            st.error(f"❌ Pipeline status API returned {ps_res.status_code}")
+    except Exception as e:
+        st.error(f"❌ Pipeline status unavailable: {e}")
+        st.markdown("""
+        <div class="card card-alert-red" style="padding:20px;text-align:center;">
+            <div style="font-size:2rem;margin-bottom:8px;">⚙️</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:.88rem;color:#ef4444;">BACKEND MICROSERVICE OFFLINE</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:#64748b;margin-top:8px;">
+                Start FastAPI: <code style="color:#00f0ff;">uvicorn app.main:app --reload</code>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 
 # ──────────────────────────────────────────────
