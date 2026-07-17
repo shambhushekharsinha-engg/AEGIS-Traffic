@@ -8,9 +8,25 @@ from sqlalchemy.orm import sessionmaker
 import hashlib
 import secrets
 
-# Ensure data directory structures are fully initialized
-DB_DIR = "data"
-os.makedirs(DB_DIR, exist_ok=True)
+# Ensure data directory structures are fully initialized.
+# Vercel serverless functions run on a read-only filesystem.
+# Only /tmp is writable in that environment, so we fall back to it
+# automatically when the preferred local path cannot be created.
+def _resolve_db_dir() -> str:
+    for candidate in ["data", "/tmp/aegis_data"]:
+        try:
+            os.makedirs(candidate, exist_ok=True)
+            # Probe write access by touching a temp file
+            probe = os.path.join(candidate, ".write_probe")
+            with open(probe, "w") as _f:
+                _f.write("ok")
+            os.remove(probe)
+            return candidate
+        except OSError:
+            continue
+    return "/tmp"  # last resort
+
+DB_DIR = _resolve_db_dir()
 DATABASE_URL = f"sqlite:///{DB_DIR}/aegis_secure_vault.db"
 
 # --- INDUSTRIAL KEY MANAGEMENT & ROTATION ---
@@ -29,8 +45,9 @@ if not SECRET_KEY:
     try:
         with open(".env", "a") as f:
             f.write(f"\n# Aegis Cryptographic Vault Symmetric Secret Key\nAEGIS_SECRET_KEY={DEFAULT_KEY.decode('utf-8')}\n")
-    except Exception as e:
-        print(f"⚠️ Could not write to .env: {e}")
+    except OSError:
+        # Read-only filesystem (Vercel) — silently use embedded default key
+        pass
     SECRET_KEY = DEFAULT_KEY
 else:
     if isinstance(SECRET_KEY, str):

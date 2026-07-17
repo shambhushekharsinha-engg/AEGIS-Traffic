@@ -9,9 +9,19 @@ class AudioAnalyzer:
         self.sample_rate = 16000
         self.duration_seconds = 2.0
         
-        # Ensure directories exist
-        os.makedirs("data/audio_samples", exist_ok=True)
-        os.makedirs("dataset/Audio_Samples", exist_ok=True)
+        # Ensure directories exist.
+        # On Vercel the task root is read-only; /tmp is the only writable path.
+        # We try the preferred paths first and silently fall back to /tmp variants.
+        for path in ["data/audio_samples", "dataset/Audio_Samples"]:
+            try:
+                os.makedirs(path, exist_ok=True)
+            except OSError:
+                # Read-only filesystem (Vercel) — create equivalent under /tmp instead
+                tmp_path = "/tmp/" + path.replace("/", "_")
+                try:
+                    os.makedirs(tmp_path, exist_ok=True)
+                except OSError:
+                    pass  # /tmp itself always exists; nothing more to do
 
     def _generate_synthetic_wav(self, scenario: str, file_path: str):
         """
@@ -124,7 +134,20 @@ class AudioAnalyzer:
 
         # Check if the file exists. If not, synthesize it on the fly!
         if not os.path.exists(audio_path):
-            self._generate_synthetic_wav(scenario, audio_path)
+            # Try to write to the requested path; if the filesystem is read-only
+            # (Vercel), redirect the WAV to /tmp and load from there.
+            try:
+                os.makedirs(os.path.dirname(audio_path) or ".", exist_ok=True)
+                self._generate_synthetic_wav(scenario, audio_path)
+            except OSError:
+                # Fall back to /tmp for WAV synthesis
+                tmp_audio_path = "/tmp/" + os.path.basename(audio_path)
+                if not os.path.exists(tmp_audio_path):
+                    try:
+                        self._generate_synthetic_wav(scenario, tmp_audio_path)
+                    except Exception:
+                        pass
+                audio_path = tmp_audio_path
 
         try:
             waveform, sr = self._load_wav_pure(audio_path)
