@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Header, Depends, Security
+from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import time
@@ -162,6 +163,420 @@ class ChatbotRequest(BaseModel):
     user_message: str
     incident_context: str
     session_token: str
+
+@app.get("/", response_class=HTMLResponse)
+def read_root():
+    html_content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS-TRAFFIC // Multimodal Fusion Core</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #020617;
+            --card-bg: rgba(15, 23, 42, 0.65);
+            --border-color: rgba(6, 182, 212, 0.15);
+            --neon-cyan: #06b6d4;
+            --neon-purple: #a855f7;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
+        }
+
+        header {
+            padding: 2rem 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(12px);
+            background: rgba(2, 6, 23, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-indicator {
+            width: 12px;
+            height: 12px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 18px var(--success); }
+            100% { transform: scale(0.9); opacity: 0.6; }
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(120deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-cyan), rgba(6, 182, 212, 0.4));
+            color: #ffffff;
+            border: 1px solid rgba(6, 182, 212, 0.4);
+            box-shadow: 0 4px 20px rgba(6, 182, 212, 0.15);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 4px 25px rgba(6, 182, 212, 0.3);
+            transform: translateY(-2px);
+            border-color: var(--neon-cyan);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(6, 182, 212, 0.3);
+            transform: translateY(-2px);
+        }
+
+        main {
+            flex: 1;
+            padding: 3rem 4rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 3rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr;
+                padding: 2rem;
+            }
+            header {
+                padding: 1.5rem 2rem;
+            }
+        }
+
+        .hero-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff 30%, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            max-width: 600px;
+        }
+
+        .badge {
+            background: rgba(6, 182, 212, 0.15);
+            border: 1px solid var(--border-color);
+            color: var(--neon-cyan);
+            padding: 0.35rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            margin-bottom: 1.5rem;
+        }
+
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(16px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            border-color: rgba(6, 182, 212, 0.35);
+            box-shadow: 0 8px 30px rgba(6, 182, 212, 0.05);
+            transform: translateY(-4px);
+        }
+
+        .card-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .card-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #ffffff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .pipeline-card {
+            grid-column: 1 / -1;
+        }
+
+        .pipeline-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-top: 1.25rem;
+        }
+
+        .pipeline-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .pipeline-item::before {
+            content: "✓";
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .endpoints-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .endpoint-row {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            transition: all 0.2s;
+        }
+
+        .endpoint-row:hover {
+            border-color: rgba(168, 85, 247, 0.35);
+        }
+
+        .endpoint-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .method {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .method-get {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .method-post {
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--neon-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        .path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        footer {
+            padding: 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            font-family: 'Orbitron', sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-group">
+            <div class="logo-indicator"></div>
+            <div class="logo-text">AEGIS-TRAFFIC</div>
+        </div>
+        <div class="header-links">
+            <a href="/docs" class="btn btn-primary">Interactive Docs</a>
+            <a href="/api/v1/pipeline/status" class="btn btn-secondary">System Status</a>
+        </div>
+    </header>
+
+    <main>
+        <div>
+            <div class="badge">Adaptive Traffic Core v6.1.0</div>
+            <h1 class="hero-title">Multimodal Fusion Intersection Controller</h1>
+            <p class="hero-subtitle">
+                An advanced AI-powered urban flow core synthesizing real-time visual streams and acoustic data to deliver zero-trust traffic optimization, violation tracking, and ANPR telemetry.
+            </p>
+
+            <div class="grid-cards">
+                <div class="card">
+                    <div class="card-title">System Status</div>
+                    <div class="card-value" style="color: var(--success);">ONLINE</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Sensory Input</div>
+                    <div class="card-value" style="color: var(--neon-cyan);">ACTIVE</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Auth Engine</div>
+                    <div class="card-value" style="color: var(--neon-purple);">JWT</div>
+                </div>
+
+                <div class="card pipeline-card">
+                    <div class="card-title">Pipeline Integration Stages</div>
+                    <ul class="pipeline-list">
+                        <li class="pipeline-item">Traffic Video Input</li>
+                        <li class="pipeline-item">Frame Preprocessing</li>
+                        <li class="pipeline-item">Vehicle Detection (YOLOv8)</li>
+                        <li class="pipeline-item">Vehicle Tracking (ByteTrack)</li>
+                        <li class="pipeline-item">Vehicle Counting</li>
+                        <li class="pipeline-item">Traffic Density &amp; Bucketing</li>
+                        <li class="pipeline-item">Queue Length Estimation</li>
+                        <li class="pipeline-item">Speed Estimation</li>
+                        <li class="pipeline-item">Lane-wise Detection</li>
+                        <li class="pipeline-item">Emergency Vehicle Preemption</li>
+                        <li class="pipeline-item">Traffic Violation Engine</li>
+                        <li class="pipeline-item">ANPR OCR OCR Engine</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="card-title" style="margin-bottom: 1.5rem; font-size: 1rem;">Primary API Endpoints</h2>
+            <div class="endpoints-section">
+                <div class="endpoint-row">
+                    <div class="endpoint-meta">
+                        <span class="method method-post">POST</span>
+                        <span class="path">/api/v1/analyze</span>
+                    </div>
+                    <a href="/docs" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Test</a>
+                </div>
+                <div class="endpoint-row">
+                    <div class="endpoint-meta">
+                        <span class="method method-get">GET</span>
+                        <span class="path">/api/v1/anpr/{scenario}</span>
+                    </div>
+                    <a href="/docs" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Test</a>
+                </div>
+                <div class="endpoint-row">
+                    <div class="endpoint-meta">
+                        <span class="method method-get">GET</span>
+                        <span class="path">/api/v1/violations/{scenario}</span>
+                    </div>
+                    <a href="/docs" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Test</a>
+                </div>
+                <div class="endpoint-row">
+                    <div class="endpoint-meta">
+                        <span class="method method-get">GET</span>
+                        <span class="path">/api/v1/pipeline/status</span>
+                    </div>
+                    <a href="/api/v1/pipeline/status" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">View</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        &copy; 2026 AEGIS-TRAFFIC // SECURE SMART INTERSECTION OPERATIONS
+    </footer>
+
+</body>
+</html>"""
+    return HTMLResponse(content=html_content, status_code=200)
+
 
 # --- FEATURE 1: WEBHOOK ALERT DISPATCH PIPELINE ---
 def dispatch_enterprise_webhook(scenario: str, priority: str, payload: str):
