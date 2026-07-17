@@ -1,8 +1,11 @@
 import os
+import torch
+import torchaudio
 import numpy as np
 import math
 import wave
 import struct
+
 
 class AudioAnalyzer:
     def __init__(self):

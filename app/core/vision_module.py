@@ -1,25 +1,13 @@
 import os
+import cv2
+import numpy as np
 import base64
+from ultralytics import YOLO
 
-# ── cv2 / numpy are optional (heavy, not available on Vercel) ────────────────
-# When missing the module runs in SIMULATION mode: synthetic frame data is
-# returned as a base64-encoded PNG generated entirely with pure Python (struct).
-# All API behaviour is identical whether cv2 is present or not.
-try:
-    import cv2
-    import numpy as np
-    CV2_AVAILABLE = True
-except ImportError:
-    cv2 = None
-    np = None
-    CV2_AVAILABLE = False
+CV2_AVAILABLE = True
+ULTRALYTICS_AVAILABLE = True
 
-try:
-    from ultralytics import YOLO
-    ULTRALYTICS_AVAILABLE = True
-except ImportError:
-    YOLO = None
-    ULTRALYTICS_AVAILABLE = False
+
 
 
 # ── Pure-Python fallback image generator ─────────────────────────────────────
