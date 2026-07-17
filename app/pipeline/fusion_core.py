@@ -2,13 +2,22 @@
 
 import time
 import math
-from transformers import pipeline
+
+try:
+    from transformers import pipeline
+except ImportError:
+    pipeline = None
 
 try:
     print("🤖 Booting Production Zero-Shot Traffic Fusion Transformer...")
-    # Using the existing model for zero-shot text classification
-    classifier = pipeline("zero-shot-classification", model="typeform/distilbert-base-uncased-mnli")
-    TRANSFORMER_ONLINE = True
+    if pipeline is not None:
+        # Using the existing model for zero-shot text classification
+        classifier = pipeline("zero-shot-classification", model="typeform/distilbert-base-uncased-mnli")
+        TRANSFORMER_ONLINE = True
+    else:
+        print("⚠️ Zero-shot classifier offline (transformers not installed — Vercel mode). Activating Circuit Breaker Backup.")
+        classifier = None
+        TRANSFORMER_ONLINE = False
 except Exception as e:
     print(f"⚠️ Neural network instantiation failure. Activating Circuit Breaker Backup: {str(e)}")
     classifier = None

@@ -1,10 +1,17 @@
 import os
-import torch
-import torchaudio
 import numpy as np
 import math
 import wave
 import struct
+
+try:
+    import torch
+    import torchaudio
+    TORCH_AVAILABLE = True
+except ImportError:
+    torch = None
+    torchaudio = None
+    TORCH_AVAILABLE = False
 
 
 class AudioAnalyzer:

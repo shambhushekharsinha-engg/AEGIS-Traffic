@@ -1,12 +1,21 @@
 import os
-import cv2
-import numpy as np
 import base64
-from ultralytics import YOLO
 
-CV2_AVAILABLE = True
-ULTRALYTICS_AVAILABLE = True
+try:
+    import cv2
+    import numpy as np
+    CV2_AVAILABLE = True
+except ImportError:
+    cv2 = None
+    np = None
+    CV2_AVAILABLE = False
 
+try:
+    from ultralytics import YOLO
+    ULTRALYTICS_AVAILABLE = True
+except ImportError:
+    YOLO = None
+    ULTRALYTICS_AVAILABLE = False
 
 
 

@@ -12,8 +12,12 @@ import json
 import secrets
 import os
 
-from transformers import pipeline
-TRANSFORMERS_AVAILABLE = True  # used by /api/v1/pipeline/status
+try:
+    from transformers import pipeline
+    TRANSFORMERS_AVAILABLE = True  # used by /api/v1/pipeline/status
+except ImportError:
+    pipeline = None
+    TRANSFORMERS_AVAILABLE = False
 
 # Core sensory modules
 from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
@@ -45,19 +49,26 @@ DISPATCH_REGISTRY = {"status": "STABLE", "last_broadcast": "None"}
 
 print("🤖 Ingesting Local Threat Anomaly Classifier (DistilBERT)...")
 # DistilBERT classifier is kept to ensure zero-shot NLP capabilities
-try:
-    classifier = pipeline("zero-shot-classification", model="typeform/distilbert-base-uncased-mnli")
-except Exception as e:
-    print(f"⚠️ NLP Pipeline load error: {e}")
-    classifier = None
+classifier = None
+if pipeline is not None:
+    try:
+        classifier = pipeline("zero-shot-classification", model="typeform/distilbert-base-uncased-mnli")
+    except Exception as e:
+        print(f"⚠️ NLP Pipeline load error: {e}")
+else:
+    print("⚠️ NLP Pipeline disabled (transformers not installed — Vercel mode).")
 
 print("💬 Ingesting Local Interactive System Assistant (Qwen)...")
-try:
-    assistant = pipeline("text-generation", model="Qwen/Qwen2.5-0.5B-Instruct", max_new_tokens=120)
-    ASSISTANT_ONLINE = True
-except Exception as e:
-    print(f"⚠️ Assistant Pipeline load error: {e}. Reverting to standard keyword helper.")
-    ASSISTANT_ONLINE = False
+ASSISTANT_ONLINE = False
+assistant = None
+if pipeline is not None:
+    try:
+        assistant = pipeline("text-generation", model="Qwen/Qwen2.5-0.5B-Instruct", max_new_tokens=120)
+        ASSISTANT_ONLINE = True
+    except Exception as e:
+        print(f"⚠️ Assistant Pipeline load error: {e}. Reverting to standard keyword helper.")
+else:
+    print("⚠️ Assistant Pipeline disabled (transformers not installed — Vercel mode).")
 print("✅ All Secure Production Layers Initialized!")
 
 # --- SECURE JWT UTILITIES ---
