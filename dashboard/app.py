@@ -10,6 +10,7 @@ import time
 import json
 import math
 import random
+import os
 from io import BytesIO
 
 # ──────────────────────────────────────────────
@@ -42,7 +43,7 @@ for key, default in [
 # ──────────────────────────────────────────────
 # GLOBAL CONSTANTS
 # ──────────────────────────────────────────────
-BACKEND   = "http://127.0.0.1:8000"
+BACKEND   = os.environ.get("AEGIS_BACKEND_URL", "http://127.0.0.1:8000")
 ANALYZE_URL  = f"{BACKEND}/api/v1/analyze"
 HISTORY_URL  = f"{BACKEND}/api/v1/history"
 CHAT_URL     = f"{BACKEND}/api/v1/chat"
