@@ -17,7 +17,7 @@
 
 | Platform | Link | Description |
 |:---:|:---:|:---|
-| 🖥️ **Frontend** | [![Streamlit](https://img.shields.io/badge/STREAMLIT%20DASHBOARD-Live%20Frontend-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white&labelColor=010308)](https://aegis-traffic-dashboard.streamlit.app) | Full 10-tab Streamlit dashboard — all original tabs + new features |
+| 🖥️ **Frontend** | [![Streamlit](https://img.shields.io/badge/STREAMLIT%20DASHBOARD-Live%20Frontend-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white&labelColor=010308)](https://aegis-traffic.streamlit.app/) | Full 10-tab Streamlit dashboard — all original tabs + new features |
 | ⚙️ **Backend API** | [![Vercel](https://img.shields.io/badge/FASTAPI%20BACKEND-aegis--traffic.vercel.app-00f0ff?style=for-the-badge&logo=vercel&logoColor=white&labelColor=010308)](https://aegis-traffic.vercel.app) | FastAPI REST microservice — all AI inference & data endpoints |
 | 📖 **API Docs** | [![Swagger](https://img.shields.io/badge/SWAGGER%20UI-/docs-009688?style=for-the-badge&logo=swagger&logoColor=white&labelColor=010308)](https://aegis-traffic.vercel.app/docs) | Interactive Swagger / OpenAPI documentation |
 
@@ -960,7 +960,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
         </tr>
         <tr>
           <td>🖥️ <b>Frontend</b></td>
-          <td><a href="https://aegis-traffic-dashboard.streamlit.app">aegis-traffic-dashboard.streamlit.app</a></td>
+          <td><a href="https://aegis-traffic.streamlit.app/">aegis-traffic.streamlit.app</a></td>
         </tr>
         <tr>
           <td>⚙️ <b>Backend API</b></td>
