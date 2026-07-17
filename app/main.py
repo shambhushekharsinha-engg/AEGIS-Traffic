@@ -171,18 +171,23 @@ def read_root():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AEGIS-TRAFFIC // Multimodal Fusion Core</title>
+    <title>AEGIS-TRAFFIC // Secure Smart Intersection Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #020617;
-            --card-bg: rgba(15, 23, 42, 0.65);
-            --border-color: rgba(6, 182, 212, 0.15);
+            --card-bg: rgba(15, 23, 42, 0.45);
+            --card-hover: rgba(15, 23, 42, 0.65);
+            --border-color: rgba(6, 182, 212, 0.12);
+            --border-hover: rgba(6, 182, 212, 0.3);
             --neon-cyan: #06b6d4;
             --neon-purple: #a855f7;
+            --neon-pink: #ec4899;
             --text-primary: #f1f5f9;
             --text-secondary: #94a3b8;
             --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
         }
 
         * {
@@ -198,7 +203,6 @@ def read_root():
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
             overflow-x: hidden;
             background-image: 
                 radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
@@ -206,13 +210,13 @@ def read_root():
         }
 
         header {
-            padding: 2rem 4rem;
+            padding: 1.25rem 2.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--border-color);
-            backdrop-filter: blur(12px);
-            background: rgba(2, 6, 23, 0.5);
+            backdrop-filter: blur(16px);
+            background: rgba(2, 6, 23, 0.6);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -225,23 +229,23 @@ def read_root():
         }
 
         .logo-indicator {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             background-color: var(--success);
             border-radius: 50%;
-            box-shadow: 0 0 12px var(--success);
+            box-shadow: 0 0 10px var(--success);
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0% { transform: scale(0.9); opacity: 0.6; }
-            50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 18px var(--success); }
-            100% { transform: scale(0.9); opacity: 0.6; }
+            0% { transform: scale(0.95); opacity: 0.6; }
+            50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 15px var(--success); }
+            100% { transform: scale(0.95); opacity: 0.6; }
         }
 
         .logo-text {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             font-weight: 900;
             letter-spacing: 2px;
             background: linear-gradient(120deg, var(--neon-cyan), var(--neon-purple));
@@ -249,108 +253,173 @@ def read_root():
             -webkit-text-fill-color: transparent;
         }
 
-        .header-links {
+        .user-badge {
             display: flex;
-            gap: 1.5rem;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            border: 1px solid var(--border-color);
+        }
+
+        .role-indicator {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--neon-cyan);
         }
 
         .btn {
-            padding: 0.6rem 1.2rem;
+            padding: 0.5rem 1rem;
             border-radius: 6px;
             text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--neon-cyan), rgba(6, 182, 212, 0.4));
+            background: linear-gradient(135deg, var(--neon-cyan), rgba(6, 182, 212, 0.6));
             color: #ffffff;
-            border: 1px solid rgba(6, 182, 212, 0.4);
-            box-shadow: 0 4px 20px rgba(6, 182, 212, 0.15);
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.15);
         }
 
         .btn-primary:hover {
-            box-shadow: 0 4px 25px rgba(6, 182, 212, 0.3);
-            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* ── AUTH SCREEN ── */
+        .auth-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 2rem;
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 440px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .auth-card h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
             border-color: var(--neon-cyan);
         }
 
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--text-primary);
+        .quick-seeds {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .seed-btn {
+            background: rgba(255,255,255,0.03);
             border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.35rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(6, 182, 212, 0.3);
-            transform: translateY(-2px);
+        .seed-btn:hover {
+            color: #ffffff;
+            border-color: var(--neon-cyan);
+            background: rgba(6, 182, 212, 0.05);
         }
 
-        main {
+        /* ── MAIN DASHBOARD ── */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 360px;
+            gap: 1.5rem;
+            padding: 1.5rem;
             flex: 1;
-            padding: 3rem 4rem;
-            max-width: 1400px;
+            max-width: 1800px;
             margin: 0 auto;
             width: 100%;
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 3rem;
-            align-items: start;
         }
 
-        @media (max-width: 1024px) {
-            main {
+        @media (max-width: 1280px) {
+            .dashboard-container {
+                grid-template-columns: 300px 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-container {
                 grid-template-columns: 1fr;
-                padding: 2rem;
-            }
-            header {
-                padding: 1.5rem 2rem;
             }
         }
 
-        .hero-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(2rem, 4vw, 3.5rem);
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, #ffffff 30%, var(--text-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero-subtitle {
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 2rem;
-            max-width: 600px;
-        }
-
-        .badge {
-            background: rgba(6, 182, 212, 0.15);
-            border: 1px solid var(--border-color);
-            color: var(--neon-cyan);
-            padding: 0.35rem 0.75rem;
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: inline-flex;
-            margin-bottom: 1.5rem;
-        }
-
-        .grid-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        .panel {
+            display: flex;
+            flex-direction: column;
             gap: 1.5rem;
-            margin-bottom: 3rem;
         }
 
         .card {
@@ -359,219 +428,835 @@ def read_root():
             border-radius: 12px;
             padding: 1.5rem;
             backdrop-filter: blur(16px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
         }
 
         .card:hover {
-            border-color: rgba(6, 182, 212, 0.35);
-            box-shadow: 0 8px 30px rgba(6, 182, 212, 0.05);
-            transform: translateY(-4px);
+            border-color: var(--border-hover);
         }
 
-        .card-title {
+        .card-header-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
-        }
-
-        .card-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: #ffffff;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .pipeline-card {
-            grid-column: 1 / -1;
-        }
-
-        .pipeline-list {
-            list-style: none;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1rem;
-            margin-top: 1.25rem;
-        }
-
-        .pipeline-item {
+            margin-bottom: 1.25rem;
             display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            padding: 0.5rem;
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.01);
-            border: 1px solid rgba(255, 255, 255, 0.02);
-        }
-
-        .pipeline-item::before {
-            content: "✓";
-            color: var(--success);
-            font-weight: bold;
-        }
-
-        .endpoints-section {
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-        }
-
-        .endpoint-row {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1rem;
-            display: flex;
-            align-items: center;
             justify-content: space-between;
-            gap: 1rem;
-            transition: all 0.2s;
-        }
-
-        .endpoint-row:hover {
-            border-color: rgba(168, 85, 247, 0.35);
-        }
-
-        .endpoint-meta {
-            display: flex;
             align-items: center;
-            gap: 0.75rem;
         }
 
-        .method {
-            padding: 0.25rem 0.5rem;
+        /* controls */
+        .control-select {
+            width: 100%;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--border-color);
+            color: #ffffff;
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+
+        .control-select:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+        }
+
+        .live-stream-container {
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .live-stream-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .overlay-badge {
+            position: absolute;
+            top: 0.75rem;
+            left: 0.75rem;
+            background: rgba(2, 6, 23, 0.75);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 0.25rem 0.6rem;
             border-radius: 4px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            font-weight: 700;
+            font-size: 0.7rem;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
         }
 
-        .method-get {
+        /* charts */
+        .canvas-container {
+            width: 100%;
+            height: 100px;
+            position: relative;
+            background: rgba(0,0,0,0.15);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            overflow: hidden;
+        }
+
+        /* priorities & metrics */
+        .priority-banner {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            font-weight: 800;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            text-align: center;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+        }
+
+        .priority-nominal {
             background: rgba(16, 185, 129, 0.15);
             color: var(--success);
-            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.2);
         }
 
-        .method-post {
-            background: rgba(6, 182, 212, 0.15);
-            color: var(--neon-cyan);
-            border: 1px solid rgba(6, 182, 212, 0.2);
+        .priority-critical {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+            border-color: rgba(239, 68, 68, 0.2);
+            animation: pulse-border 1.5s infinite;
         }
 
-        .path {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.875rem;
-            color: var(--text-primary);
+        @keyframes pulse-border {
+            0% { border-color: rgba(239, 68, 68, 0.2); }
+            50% { border-color: rgba(239, 68, 68, 0.6); }
+            100% { border-color: rgba(239, 68, 68, 0.2); }
         }
 
-        footer {
-            padding: 2rem;
-            text-align: center;
-            border-top: 1px solid var(--border-color);
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .metric-mini {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 0.75rem;
+        }
+
+        .metric-mini-label {
+            font-size: 0.65rem;
             color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-mini-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* plate list */
+        .anpr-ticker {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 180px;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        .plate-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .plate-text {
+            font-family: 'JetBrains Mono', monospace;
+            background: #ffffff;
+            color: #000000;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-weight: 700;
             font-size: 0.8rem;
-            letter-spacing: 1px;
-            font-family: 'Orbitron', sans-serif;
+            border: 1px solid #000;
+        }
+
+        .plate-type {
+            font-size: 0.75rem;
+            color: var(--neon-cyan);
+        }
+
+        /* chatbot */
+        .chat-box {
+            display: flex;
+            flex-direction: column;
+            height: 260px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding-right: 0.25rem;
+        }
+
+        .chat-msg {
+            max-width: 85%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        .chat-msg-user {
+            background: var(--neon-cyan);
+            color: #000000;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-msg-copilot {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .chat-input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem;
+            color: #fff;
+            font-size: 0.8rem;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+        }
+
+        /* scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(6, 182, 212, 0.2);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(6, 182, 212, 0.4);
+        }
+
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 <body>
 
-    <header>
+    <!-- Header (Dynamic) -->
+    <header id="app-header" class="hidden">
         <div class="logo-group">
             <div class="logo-indicator"></div>
             <div class="logo-text">AEGIS-TRAFFIC</div>
         </div>
-        <div class="header-links">
-            <a href="/docs" class="btn btn-primary">Interactive Docs</a>
-            <a href="/api/v1/pipeline/status" class="btn btn-secondary">System Status</a>
+        <div class="header-links" style="align-items: center; gap: 1.5rem;">
+            <div class="user-badge">
+                <span id="user-display" style="font-weight:600; font-size:0.8rem;">dispatcher</span>
+                <span id="role-display" class="role-indicator">Operator</span>
+            </div>
+            <button onclick="handleLogout()" class="btn btn-danger">Disconnect</button>
         </div>
     </header>
 
-    <main>
-        <div>
-            <div class="badge">Adaptive Traffic Core v6.1.0</div>
-            <h1 class="hero-title">Multimodal Fusion Intersection Controller</h1>
-            <p class="hero-subtitle">
-                An advanced AI-powered urban flow core synthesizing real-time visual streams and acoustic data to deliver zero-trust traffic optimization, violation tracking, and ANPR telemetry.
-            </p>
+    <!-- Authentication Screen -->
+    <div id="auth-screen" class="auth-container">
+        <div class="auth-card">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🚦</div>
+            <h2>AEGIS PORTAL</h2>
+            <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 2rem;">SMART CITY OPERATIONAL ACCESS</p>
+            
+            <div id="auth-error" style="color: var(--error); font-size: 0.8rem; margin-bottom: 1rem;" class="hidden"></div>
+            
+            <form onsubmit="handleAuthSubmit(event)">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="auth-username" class="form-input" required placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="auth-password" class="form-input" required placeholder="Enter password">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">Authorize Connection</button>
+            </form>
 
-            <div class="grid-cards">
-                <div class="card">
-                    <div class="card-title">System Status</div>
-                    <div class="card-value" style="color: var(--success);">ONLINE</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Sensory Input</div>
-                    <div class="card-value" style="color: var(--neon-cyan);">ACTIVE</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Auth Engine</div>
-                    <div class="card-value" style="color: var(--neon-purple);">JWT</div>
+            <div class="quick-seeds">
+                <button onclick="seedCredentials('operator', 'operator123')" class="seed-btn">🔑 Operator Quick Entry</button>
+                <button onclick="seedCredentials('admin', 'admin123')" class="seed-btn">🔑 Admin Quick Entry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Application -->
+    <div id="dashboard-screen" class="dashboard-container hidden">
+        
+        <!-- Left Panel: Control center -->
+        <div class="panel">
+            <div class="card">
+                <div class="card-header-title">Diagnostic Input</div>
+                
+                <div class="form-group">
+                    <label>Scenario Stream</label>
+                    <select id="scenario-select" class="control-select">
+                        <option value="normal">🟢 Nominal Flowing Traffic</option>
+                        <option value="congested">🟡 Congested Traffic Queues</option>
+                        <option value="emergency">🚨 Emergency Vehicle Incoming</option>
+                        <option value="accident">💥 Vehicle Collision Accident</option>
+                        <option value="tamper">🛡️ Camera Feed Tampered</option>
+                    </select>
                 </div>
 
-                <div class="card pipeline-card">
-                    <div class="card-title">Pipeline Integration Stages</div>
-                    <ul class="pipeline-list">
-                        <li class="pipeline-item">Traffic Video Input</li>
-                        <li class="pipeline-item">Frame Preprocessing</li>
-                        <li class="pipeline-item">Vehicle Detection (YOLOv8)</li>
-                        <li class="pipeline-item">Vehicle Tracking (ByteTrack)</li>
-                        <li class="pipeline-item">Vehicle Counting</li>
-                        <li class="pipeline-item">Traffic Density &amp; Bucketing</li>
-                        <li class="pipeline-item">Queue Length Estimation</li>
-                        <li class="pipeline-item">Speed Estimation</li>
-                        <li class="pipeline-item">Lane-wise Detection</li>
-                        <li class="pipeline-item">Emergency Vehicle Preemption</li>
-                        <li class="pipeline-item">Traffic Violation Engine</li>
-                        <li class="pipeline-item">ANPR OCR OCR Engine</li>
-                    </ul>
+                <div class="form-group">
+                    <label>Operational Mode</label>
+                    <select id="mode-select" class="control-select" onchange="toggleManualControls()">
+                        <option value="AI Automated Fusion">🤖 AI Automated Fusion</option>
+                        <option value="Manual Override">🎛️ Manual Override</option>
+                        <option value="Predictive Optimization">🔮 Predictive Optimization</option>
+                        <option value="Security Lockdown">🔒 Security Lockdown</option>
+                    </select>
+                </div>
+
+                <!-- Manual controls -->
+                <div id="manual-controls-group" class="hidden" style="padding-top: 0.5rem; border-top: 1px dashed rgba(255,255,255,0.05); margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label>Active Phase Override</label>
+                        <select id="manual-phase" class="control-select" style="margin-bottom: 0.75rem;">
+                            <option value="North-South Green">North-South Green</option>
+                            <option value="East-West Green">East-West Green</option>
+                            <option value="ALL FLASHING YELLOW">ALL FLASHING YELLOW</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Signal Timing Override: <span id="manual-timing-val" style="color: var(--neon-cyan); font-family: monospace;">20</span>s</label>
+                        <input type="range" id="manual-timing" min="5" max="90" value="20" oninput="document.getElementById('manual-timing-val').innerText = this.value" style="width: 100%; accent-color: var(--neon-cyan);">
+                    </div>
+                </div>
+
+                <button onclick="runDiagnostic()" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem; margin-top: 0.5rem;">
+                    ⚡ Engage Stream Analysis
+                </button>
+            </div>
+
+            <!-- Acoustic panel -->
+            <div class="card">
+                <div class="card-header-title">Acoustic Telemetry</div>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <div>
+                        <div class="metric-mini-label" style="margin-bottom: 0;">Microphone Status</div>
+                        <div id="audio-status-text" style="font-weight: 700; font-size: 0.9rem; color: var(--success);">NOMINAL</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="metric-mini-label" style="margin-bottom: 0;">Decibels</div>
+                        <div id="audio-db-text" style="font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 700; color: var(--neon-cyan);">40.0 dB</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Acoustic Waveform Analysis</label>
+                    <div class="canvas-container">
+                        <canvas id="waveform-canvas" style="width:100%; height:100px; display:block;"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div>
-            <h2 class="card-title" style="margin-bottom: 1.5rem; font-size: 1rem;">Primary API Endpoints</h2>
-            <div class="endpoints-section">
-                <div class="endpoint-row">
-                    <div class="endpoint-meta">
-                        <span class="method method-post">POST</span>
-                        <span class="path">/api/v1/analyze</span>
-                    </div>
-                    <a href="/docs" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Test</a>
+        <!-- Center Panel: Visual feeds and telemetry -->
+        <div class="panel">
+            <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+                <div class="card-header-title">
+                    <span>Live Cam Stream</span>
+                    <span id="cam-status" style="color: var(--success); font-family: monospace; font-size: 0.75rem;">● STREAM ACTIVE</span>
                 </div>
-                <div class="endpoint-row">
-                    <div class="endpoint-meta">
-                        <span class="method method-get">GET</span>
-                        <span class="path">/api/v1/anpr/{scenario}</span>
+                
+                <div class="live-stream-container" style="flex: 1;">
+                    <div class="overlay-badge">INTERSECTION_CAM_01</div>
+                    <img id="stream-img" src="" class="live-stream-img hidden">
+                    <div id="stream-placeholder" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color: var(--text-secondary); background: #000; gap: 0.5rem;">
+                        <div style="font-size: 2rem;">📹</div>
+                        <div style="font-size:0.8rem;">Initialize Stream Analysis to render feed</div>
                     </div>
-                    <a href="/docs" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Test</a>
                 </div>
-                <div class="endpoint-row">
-                    <div class="endpoint-meta">
-                        <span class="method method-get">GET</span>
-                        <span class="path">/api/v1/violations/{scenario}</span>
+
+                <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                    <div class="metric-mini-label" style="margin-bottom: 0.5rem;">Visual Detection Matrix</div>
+                    <div id="detections-pills" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                        <span style="color: var(--text-secondary); font-size: 0.8rem;">Awaiting stream telemetry...</span>
                     </div>
-                    <a href="/docs" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Test</a>
-                </div>
-                <div class="endpoint-row">
-                    <div class="endpoint-meta">
-                        <span class="method method-get">GET</span>
-                        <span class="path">/api/v1/pipeline/status</span>
-                    </div>
-                    <a href="/api/v1/pipeline/status" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">View</a>
                 </div>
             </div>
         </div>
-    </main>
 
-    <footer>
-        &copy; 2026 AEGIS-TRAFFIC // SECURE SMART INTERSECTION OPERATIONS
-    </footer>
+        <!-- Right Panel: Analytics & AI Decisions -->
+        <div class="panel">
+            <div class="card">
+                <div class="card-header-title">Fusion Decision Engine</div>
+                <div id="priority-badge" class="priority-banner priority-nominal">✅ NOMINAL CONTROL</div>
+                
+                <div class="metric-mini" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div class="metric-mini-label">Active Signal Phase</div>
+                        <div id="active-phase-text" style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; font-weight: 700; color: #ffffff;">North-South Green</div>
+                    </div>
+                    <div style="text-align: right; background: rgba(0,0,0,0.2); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <div class="metric-mini-label">Green Timer</div>
+                        <div id="timer-val" style="font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700; color: var(--neon-cyan);">15s</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Advisory Directive</label>
+                    <div id="advisory-text" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary); background: rgba(0,0,0,0.15); padding: 0.75rem; border-radius: 6px; border-left: 3px solid var(--neon-cyan);">
+                        Standard dynamic signal cycles active. Zero threats present.
+                    </div>
+                </div>
+
+                <div class="analytics-grid">
+                    <div class="metric-mini">
+                        <div class="metric-mini-label">Traffic Density</div>
+                        <div id="density-val" class="metric-mini-value" style="color: var(--neon-cyan);">6.0%</div>
+                    </div>
+                    <div class="metric-mini">
+                        <div class="metric-mini-label">Estimated Queue</div>
+                        <div id="queue-val" class="metric-mini-value">21.0m</div>
+                    </div>
+                    <div class="metric-mini">
+                        <div class="metric-mini-label">Avg Lane Speed</div>
+                        <div id="speed-val" class="metric-mini-value">52.2 km/h</div>
+                    </div>
+                    <div class="metric-mini">
+                        <div class="metric-mini-label">Active Vehicle Count</div>
+                        <div id="count-val" class="metric-mini-value">3</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ANPR and Violation Tickers -->
+            <div class="card">
+                <div class="card-header-title">ANPR &amp; Traffic Violations</div>
+                
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>ANPR Real-time OCR Ticker</label>
+                    <div id="anpr-ticker" class="anpr-ticker">
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">No active number plate detections.</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Active Violation Ledger</label>
+                    <div id="violations-ticker" class="anpr-ticker" style="max-height: 120px;">
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">Nominal traffic logic. Zero active violations.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tactical AI Chatbot -->
+            <div class="card" style="padding-bottom: 1.25rem;">
+                <div class="card-header-title">Tactical Copilot AI</div>
+                <div class="chat-box">
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="chat-msg chat-msg-copilot">
+                            Operational Copilot connected. Ask me about dynamic rerouting or active lane anomalies.
+                        </div>
+                    </div>
+                    <div class="chat-input-group">
+                        <input type="text" id="chat-query" class="chat-input" placeholder="Query copilot..." onkeydown="handleChatKeyDown(event)">
+                        <button onclick="sendChatMessage()" class="btn btn-primary" style="padding: 0.5rem 0.8rem;">Send</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Script engine -->
+    <script>
+        let token = localStorage.getItem("aegis_token");
+        let username = localStorage.getItem("aegis_username") || "operator";
+        let role = localStorage.getItem("aegis_role") || "Operator";
+        let currentIncidentContext = "Intersection clear. Low density flow.";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (token) {
+                showDashboard();
+            } else {
+                showAuth();
+            }
+        });
+
+        function seedCredentials(u, p) {
+            document.getElementById("auth-username").value = u;
+            document.getElementById("auth-password").value = p;
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const u = document.getElementById("auth-username").value;
+            const p = document.getElementById("auth-password").value;
+            const errorDiv = document.getElementById("auth-error");
+
+            errorDiv.classList.add("hidden");
+
+            try {
+                const response = await fetch("/api/v1/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || "Authentication failed.");
+                }
+
+                const data = await response.json();
+                token = data.access_token;
+                username = data.username;
+                role = data.role;
+
+                localStorage.setItem("aegis_token", token);
+                localStorage.setItem("aegis_username", username);
+                localStorage.setItem("aegis_role", role);
+
+                showDashboard();
+            } catch (err) {
+                errorDiv.innerText = err.message;
+                errorDiv.classList.remove("hidden");
+            }
+        }
+
+        function handleLogout() {
+            token = null;
+            localStorage.clear();
+            showAuth();
+        }
+
+        function showAuth() {
+            document.getElementById("auth-screen").classList.remove("hidden");
+            document.getElementById("dashboard-screen").classList.add("hidden");
+            document.getElementById("app-header").classList.add("hidden");
+        }
+
+        function showDashboard() {
+            document.getElementById("auth-screen").classList.add("hidden");
+            document.getElementById("dashboard-screen").classList.remove("hidden");
+            document.getElementById("app-header").classList.remove("hidden");
+
+            document.getElementById("user-display").innerText = username;
+            document.getElementById("role-display").innerText = role;
+
+            drawWaveform(new Array(100).fill(0.0));
+        }
+
+        function toggleManualControls() {
+            const mode = document.getElementById("mode-select").value;
+            const group = document.getElementById("manual-controls-group");
+            if (mode === "Manual Override") {
+                group.classList.remove("hidden");
+            } else {
+                group.classList.add("hidden");
+            }
+        }
+
+        async function runDiagnostic() {
+            if (!token) return;
+
+            const scenario = document.getElementById("scenario-select").value;
+            const mode = document.getElementById("mode-select").value;
+            const manualPhase = document.getElementById("manual-phase").value;
+            const manualTiming = parseInt(document.getElementById("manual-timing").value);
+
+            const payload = {
+                scenario: scenario,
+                vision_threshold: 0.45,
+                model_tier: "YOLOv8-Nano (Speed Edge)",
+                operational_mode: mode
+            };
+
+            if (mode === "Manual Override") {
+                payload.manual_active_phase = manualPhase;
+                payload.manual_signal_timing = manualTiming;
+            }
+
+            try {
+                // 1. Call Analyze
+                const res = await fetch("/api/v1/analyze", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.status === 401) {
+                    handleLogout();
+                    return;
+                }
+
+                const data = await res.json();
+                updateFusionLayer(data);
+                
+                // 2. Call ANPR and Violations in parallel
+                fetchANPR(scenario);
+                fetchViolations(scenario);
+
+            } catch (err) {
+                console.error("Diagnostic failure:", err);
+            }
+        }
+
+        function updateFusionLayer(data) {
+            // Visual stream
+            const streamImg = document.getElementById("stream-img");
+            const placeholder = document.getElementById("stream-placeholder");
+            const camStatus = document.getElementById("cam-status");
+
+            if (data.telemetry && data.telemetry.visual_image_b64) {
+                streamImg.src = `data:image/jpeg;base64,${data.telemetry.visual_image_b64}`;
+                streamImg.classList.remove("hidden");
+                placeholder.classList.add("hidden");
+                camStatus.innerText = "● STREAM ACTIVE";
+                camStatus.style.color = "var(--success)";
+            } else {
+                streamImg.classList.add("hidden");
+                placeholder.classList.remove("hidden");
+                camStatus.innerText = "● CAM FEED LOSS";
+                camStatus.style.color = "var(--error)";
+            }
+
+            // Detection pills
+            const pills = document.getElementById("detections-pills");
+            pills.innerHTML = "";
+            const detections = data.telemetry?.visual_detections || [];
+            if (detections.length === 0) {
+                pills.innerHTML = `<span style="color: var(--text-secondary); font-size:0.8rem;">No detections in frame</span>`;
+            } else {
+                detections.forEach(d => {
+                    const span = document.createElement("span");
+                    span.style.background = "rgba(255,255,255,0.05)";
+                    span.style.border = "1px solid var(--border-color)";
+                    span.style.padding = "0.25rem 0.5rem";
+                    span.style.borderRadius = "4px";
+                    span.style.fontSize = "0.75rem";
+                    span.innerText = `${d.label} (${Math.round(d.confidence * 100)}%)`;
+                    pills.appendChild(span);
+                });
+            }
+
+            // Audio telemetry
+            const audioData = data.telemetry?.acoustic_profile || {};
+            const spl = audioData.db_level || 40.0;
+            document.getElementById("audio-db-text").innerText = `${spl.toFixed(1)} dB`;
+            const statusText = document.getElementById("audio-status-text");
+            statusText.innerText = audioData.status || "NOMINAL";
+            statusText.style.color = audioData.status === "Normal" ? "var(--success)" : "var(--error)";
+
+            if (audioData.waveform) {
+                drawWaveform(audioData.waveform);
+            }
+
+            // Fusion core decisions
+            const banner = document.getElementById("priority-badge");
+            const alertStatus = data.fusion_layer?.alert_status || "✅ NOMINAL CONTROL";
+            banner.innerText = alertStatus;
+            
+            if (alertStatus.includes("NOMINAL") || alertStatus.includes("CLEAR")) {
+                banner.className = "priority-banner priority-nominal";
+            } else {
+                banner.className = "priority-banner priority-critical";
+            }
+
+            document.getElementById("active-phase-text").innerText = data.fusion_layer?.active_phase || "Unknown";
+            document.getElementById("timer-val").innerText = `${data.fusion_layer?.signal_timing_seconds || 0}s`;
+            document.getElementById("advisory-text").innerText = data.fusion_layer?.rerouting_advisory || "Nominal flow.";
+            
+            currentIncidentContext = data.fused_context || "Nominal state.";
+
+            // Analytics
+            const ta = data.traffic_analytics || {};
+            document.getElementById("density-val").innerText = `${ta.traffic_density_percent || 0.0}%`;
+            document.getElementById("queue-val").innerText = `${ta.queue_length_meters || 0.0}m`;
+            document.getElementById("speed-val").innerText = `${ta.avg_speed_kmh || 0.0} km/h`;
+            document.getElementById("count-val").innerText = data.fusion_layer?.vehicle_count || 0;
+        }
+
+        async function fetchANPR(scenario) {
+            try {
+                const res = await fetch(`/api/v1/anpr/${scenario}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                const container = document.getElementById("anpr-ticker");
+                container.innerHTML = "";
+                const records = data.anpr_records || [];
+                
+                if (records.length === 0) {
+                    container.innerHTML = `<span style="font-size: 0.8rem; color: var(--text-secondary);">No recognized license plates.</span>`;
+                } else {
+                    records.forEach(r => {
+                        const item = document.createElement("div");
+                        item.className = "plate-item";
+                        item.innerHTML = `
+                            <span class="plate-text">${r.plate_text}</span>
+                            <span class="plate-type">${r.vehicle_type} (${Math.round(r.ocr_confidence * 100)}%)</span>
+                        `;
+                        container.appendChild(item);
+                    });
+                }
+            } catch (err) {
+                console.error("ANPR load error", err);
+            }
+        }
+
+        async function fetchViolations(scenario) {
+            try {
+                const res = await fetch(`/api/v1/violations/${scenario}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                const container = document.getElementById("violations-ticker");
+                container.innerHTML = "";
+                const violations = data.violations || [];
+                
+                if (violations.length === 0) {
+                    container.innerHTML = `<span style="font-size: 0.8rem; color: var(--text-secondary);">Nominal traffic logic. Zero active violations.</span>`;
+                } else {
+                    violations.forEach(v => {
+                        const item = document.createElement("div");
+                        item.className = "plate-item";
+                        item.style.borderLeft = "3px solid var(--error)";
+                        item.innerHTML = `
+                            <div style="display:flex; flex-direction:column; gap:0.15rem;">
+                                <span style="font-size:0.75rem; font-weight:600; color:#fff;">${v.type}</span>
+                                <span style="font-size:0.65rem; color:var(--text-secondary);">${v.evidence_note}</span>
+                            </div>
+                            <span style="font-size:0.75rem; font-weight:700; color:var(--error); font-family:monospace;">₹${v.fine_amount_inr}</span>
+                        `;
+                        container.appendChild(item);
+                    });
+                }
+            } catch (err) {
+                console.error("Violations load error", err);
+            }
+        }
+
+        function drawWaveform(points) {
+            const canvas = document.getElementById("waveform-canvas");
+            const ctx = canvas.getContext("2d");
+            const w = canvas.width = canvas.offsetWidth;
+            const h = canvas.height = canvas.offsetHeight;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.strokeStyle = "#06b6d4";
+            ctx.lineWidth = 1.5;
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = "#06b6d4";
+
+            ctx.beginPath();
+            const step = w / (points.length - 1);
+            
+            for (let i = 0; i < points.length; i++) {
+                const val = points[i]; // standard -1.0 to 1.0 or normalized
+                const x = i * step;
+                const y = h / 2 + (val * (h * 0.45));
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        }
+
+        function handleChatKeyDown(e) {
+            if (e.key === "Enter") {
+                sendChatMessage();
+            }
+        }
+
+        async function sendChatMessage() {
+            const queryInput = document.getElementById("chat-query");
+            const msg = queryInput.value.trim();
+            if (!msg || !token) return;
+
+            queryInput.value = "";
+            appendChatMessage(msg, "user");
+
+            try {
+                const res = await fetch("/api/v1/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        user_message: msg,
+                        incident_context: currentIncidentContext,
+                        session_token: token
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    appendChatMessage(data.reply, "copilot");
+                }
+            } catch (err) {
+                console.error("Chat failure", err);
+            }
+        }
+
+        function appendChatMessage(text, sender) {
+            const container = document.getElementById("chat-messages");
+            const div = document.createElement("div");
+            div.className = `chat-msg chat-msg-${sender}`;
+            div.innerText = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
 
 </body>
 </html>"""
