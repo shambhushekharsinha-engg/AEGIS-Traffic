@@ -50,6 +50,7 @@
 - [🆕 New Features Added](#-new-features-added)
 - [🛠️ Technology Stack](#️-technology-stack)
 - [🚀 Quick Start Guide](#-quick-start-guide)
+- [🐳 Running with Docker](#-running-with-docker)
 - [🔐 Security Architecture](#-security-architecture)
 - [🤖 AI Fusion Pipeline](#-ai-fusion-pipeline)
 - [⚙️ Operating Modes](#️-operating-modes)
@@ -617,6 +618,48 @@ streamlit run dashboard/app.py
 
 ---
 
+## 🐳 Running with Docker
+
+You can easily run the entire multi-service application (FastAPI backend + Streamlit frontend) using Docker and Docker Compose.
+
+### Prerequisites
+- [Docker](https://www.docker.com/get-started) installed on your system.
+- Docker Compose installed.
+
+### 1. Build and Start the Containers
+
+Run the following command from the root of the project to build the Docker image and start both services:
+
+```bash
+docker compose up --build
+```
+
+This command will:
+- Build a Python 3.12-slim base image containing all system libraries required for OpenCV, PyTorch, and YOLOv8.
+- Install python dependencies from `requirements-dev.txt`.
+- Copy your local workspace code.
+- Spin up two services in an isolated network:
+  - **`aegis-backend`** running on port `8000` (FastAPI)
+  - **`aegis-frontend`** running on port `8501` (Streamlit)
+
+### 2. Access the Application
+
+Once the containers are running:
+- **Streamlit Frontend Dashboard**: [http://localhost:8501](http://localhost:8501)
+- **FastAPI Backend Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+*The Streamlit frontend is automatically configured to talk to the backend container at `http://backend:8000` internally.*
+
+### 3. Stop the Containers
+
+To shut down the running containers, press `Ctrl+C` or run:
+
+```bash
+docker compose down
+```
+
+---
+
 ## 🔐 Security Architecture
 
 ```
@@ -734,6 +777,9 @@ AEGIS-Traffic/
 ├── vercel.json                      # Vercel serverless deployment config
 ├── .python-version                  # Python version pin for Vercel
 ├── .env                             # Secret key vault (auto-generated)
+├── .dockerignore                    # Excluded files from Docker build context
+├── Dockerfile                       # Multi-service Dockerfile (FastAPI/Streamlit)
+├── docker-compose.yml               # Multi-container service orchestrator
 └── README.md                        # This file
 ```
 
