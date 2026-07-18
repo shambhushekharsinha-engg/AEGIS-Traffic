@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE / editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Testing and caching
+.pytest_cache/
+.coverage
+htmlcov/
+.vercel/
+
+# User data / local database files (if any are generated dynamically)
+*.db
+*.sqlite3
