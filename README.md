@@ -1,13 +1,13 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/AEGIS%20TRAFFIC-v7.0%20PRODUCTION-00f0ff?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzAwZjBmZiIgZD0iTTEyIDJMMiA3bDEwIDUgMTAtNXoiLz48cGF0aCBmaWxsPSIjMDBmMGZmIiBkPSJNMiAxN2wxMCA1IDEwLTV2LTZMMTIgMTYgMiAxMXoiLz48L3N2Zz4=&labelColor=010308" />
+<img src="https://img.shields.io/badge/AEGIS%20TRAFFIC-v8.0%20PRODUCTION-00f0ff?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzAwZjBmZiIgZD0iTTEyIDJMMiA3bDEwIDUgMTAtNXoiLz48cGF0aCBmaWxsPSIjMDBmMGZmIiBkPSJNMiAxN2wxMCA1IDEwLTV2LTZMMTIgMTYgMiAxMXoiLz48L3N2Zz4=&labelColor=010308" />
 
 # 🚦 AEGIS — Traffic
 ### **Adaptive Edge-Grade Intelligence System for Smart-City Traffic Management**
 
 <br/>
 
-> *An industrial-grade, production-deployed AI platform that fuses **Computer Vision (YOLOv8)**, **Acoustic Anomaly Detection (FFT)**, **Zero-Shot NLP (DistilBERT)**, **ANPR (Automatic Number Plate Recognition)**, and **Traffic Violation Detection** into a real-time multimodal decision engine — secured end-to-end with AES-256 encryption, JWT authentication, and role-based access control.*
+> *An industry-grade, production-deployed AI platform that fuses **Computer Vision (YOLOv8)**, **Acoustic Anomaly Detection (FFT)**, **Zero-Shot NLP (DistilBERT)**, **ANPR (Automatic Number Plate Recognition)**, **UCF Crime Classification**, and **Traffic Violation Detection** into a real-time multimodal decision engine — secured end-to-end with **PyJWT (RS256)**, **PBKDF2-SHA256 (260k iterations)**, **JTI blacklisting**, **refresh-token rotation**, **rate limiting**, and **role-based access control** across a fully normalized relational database.*
 
 <br/>
 
@@ -19,7 +19,7 @@
 |:---:|:---:|:---|
 | 🖥️ **Frontend** | [![Streamlit](https://img.shields.io/badge/STREAMLIT%20DASHBOARD-Live%20Frontend-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white&labelColor=010308)](https://aegis-traffic.streamlit.app/) | Full 10-tab Streamlit dashboard — all original tabs + new features |
 | ⚙️ **Backend API** | [![Vercel](https://img.shields.io/badge/FASTAPI%20BACKEND-aegis--traffic.vercel.app-00f0ff?style=for-the-badge&logo=vercel&logoColor=white&labelColor=010308)](https://aegis-traffic.vercel.app) | FastAPI REST microservice — all AI inference & data endpoints |
-| 📖 **API Docs** | [![Swagger](https://img.shields.io/badge/SWAGGER%20UI-/docs-009688?style=for-the-badge&logo=swagger&logoColor=white&labelColor=010308)](https://aegis-traffic.vercel.app/docs) | Interactive Swagger / OpenAPI documentation |
+| 📖 **API Docs** | [![Swagger](https://img.shields.io/badge/SWAGGER%20UI-/api/docs-009688?style=for-the-badge&logo=swagger&logoColor=white&labelColor=010308)](https://aegis-traffic.vercel.app/api/docs) | Interactive Swagger / OpenAPI documentation |
 
 <br/>
 
@@ -30,10 +30,10 @@
   <img src="https://img.shields.io/badge/YOLOv8-Ultralytics-purple?style=flat-square&logo=yolo&logoColor=white"/>
   <img src="https://img.shields.io/badge/PyTorch-2.2+-EE4C2C?style=flat-square&logo=pytorch&logoColor=white"/>
   <img src="https://img.shields.io/badge/HuggingFace-Transformers-FFD21E?style=flat-square&logo=huggingface&logoColor=black"/>
-  <img src="https://img.shields.io/badge/SQLite-AES--256%20Encrypted-003B57?style=flat-square&logo=sqlite&logoColor=white"/>
-  <img src="https://img.shields.io/badge/JWT-HMAC--SHA256-black?style=flat-square&logo=jsonwebtokens&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Deployed-Vercel%20%2B%20Streamlit%20Cloud-00f0ff?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Tests-6%2F6%20PASSING-10b981?style=flat-square&logo=pytest&logoColor=white"/>
+  <img src="https://img.shields.io/badge/SQLAlchemy-2.0-003B57?style=flat-square&logo=sqlite&logoColor=white"/>
+  <img src="https://img.shields.io/badge/PyJWT-HS256%20%2B%20JTI-black?style=flat-square&logo=jsonwebtokens&logoColor=white"/>
+  <img src="https://img.shields.io/badge/slowapi-Rate%20Limited-ef4444?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Tests-17%2F17%20PASSING-10b981?style=flat-square&logo=pytest&logoColor=white"/>
   <img src="https://img.shields.io/badge/License-MIT-10b981?style=flat-square"/>
 </p>
 
@@ -45,13 +45,14 @@
 
 - [🏗️ Architecture Overview](#️-architecture-overview)
 - [✨ Core Feature Matrix](#-core-feature-matrix)
+- [🆕 v8.0.0 — What's New](#-v800--whats-new)
 - [🖥️ Frontend Screenshots](#️-frontend-screenshots)
 - [⚙️ Backend Screenshots](#️-backend-screenshots)
-- [🆕 New Features Added](#-new-features-added)
 - [🛠️ Technology Stack](#️-technology-stack)
 - [🚀 Quick Start Guide](#-quick-start-guide)
 - [🐳 Running with Docker](#-running-with-docker)
 - [🔐 Security Architecture](#-security-architecture)
+- [🗄️ Database Schema](#️-database-schema)
 - [🤖 AI Fusion Pipeline](#-ai-fusion-pipeline)
 - [⚙️ Operating Modes](#️-operating-modes)
 - [📂 Project Structure](#-project-structure)
@@ -70,17 +71,17 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                           AEGIS-TRAFFIC  v7.0                                       │
+│                           AEGIS-TRAFFIC  v8.0                                       │
 │                      SMART CITY OPERATIONS PLATFORM                                 │
 ├──────────────────────────────────┬──────────────────────────────────────────────────┤
-│   STREAMLIT FRONTEND             │          FASTAPI BACKEND (Vercel)                │
-│   dashboard/app.py               │          app/main.py                             │
+│   STREAMLIT FRONTEND             │          FASTAPI BACKEND (Vercel / Local)        │
+│   dashboard/app.py               │          app/main.py  v8.0.0                    │
 │   (Streamlit Community Cloud)    │                                                  │
 │                                  │                                                  │
 │  ┌──────────────────────────┐    │  ┌────────────────────────────────────────────┐  │
-│  │  Zero-Trust Login Portal │────┼─▶│  JWT Auth + PBKDF2 Vault                  │  │
-│  │  Operator Registration   │    │  │  POST /api/v1/auth/login                  │  │
-│  └──────────────────────────┘    │  │  POST /api/v1/auth/register               │  │
+│  │  Zero-Trust Login Portal │────┼─▶│  Rate Limiter (slowapi 10/min auth)        │  │
+│  │  Refresh Token Session   │    │  │  JWT Auth (PyJWT + JTI blacklist)          │  │
+│  └──────────────────────────┘    │  │  POST /api/v1/auth/login  (+ refresh)      │  │
 │  ┌──────────────────────────┐    │  └────────────────────────────────────────────┘  │
 │  │  📊 Operations HUD       │    │  ┌────────────────────────────────────────────┐  │
 │  │  🚥 Signal Controller    │────┼─▶│  Multimodal Fusion Engine                 │  │
@@ -96,10 +97,11 @@
 │  ┌──────────────────────────┐    │  └────────────────────────────────────────────┘  │
 │  │  🚘 ANPR & Violations    │────┼─▶│  GET /api/v1/anpr/{scenario}              │  │
 │  │  ⚙️ Pipeline Status      │    │  │  GET /api/v1/violations/{scenario}        │  │
-│  └──────────────────────────┘    │  │  GET /api/v1/pipeline/status              │  │
-│  ┌──────────────────────────┐    │  └────────────────────────────────────────────┘  │
-│  │  🔒 Security Ledger      │────┼─▶│  AES-256 Encrypted SQLite Vault           │  │
-│  │  📂 Dataset Analyzer     │    │  │  GET /api/v1/history  (Admin/Auditor)     │  │
+│  └──────────────────────────┘    │  └────────────────────────────────────────────┘  │
+│  ┌──────────────────────────┐    │  ┌────────────────────────────────────────────┐  │
+│  │  🔒 Security Ledger      │────┼─▶│  Normalized SQLAlchemy DB (7 tables)      │  │
+│  │  📋 Audit Trail          │    │  │  GET /api/v1/incidents · /violations       │  │
+│  │  📂 Dataset Analyzer     │    │  │  GET /api/v1/audit-log  (Admin only)      │  │
 │  └──────────────────────────┘    │  └────────────────────────────────────────────┘  │
 └──────────────────────────────────┴──────────────────────────────────────────────────┘
 ```
@@ -113,14 +115,19 @@
 | 🤖 **AI Vision** | Real-time vehicle detection | YOLOv8-Nano COCO detection + synthetic frame synthesis |
 | 🔊 **Acoustics** | Sound anomaly detection | RMS dB measurement + FFT frequency spectrum analysis |
 | 🧠 **NLP Fusion** | Multimodal context classification | DistilBERT zero-shot MNLI (Hugging Face Transformers) |
+| 🔬 **Crime AI** | UCF Crime Dataset classifier | sklearn RF trained on 400K+ UCF frames, 75.75% accuracy |
 | 💬 **AI Copilot** | Traffic advisory chatbot | Qwen 2.5-0.5B-Instruct + prompt-injection guardrails |
 | 🚘 **ANPR** | Automatic plate recognition | Scenario-aware OCR simulation + flagging registry |
-| ⚠️ **Violations** | Traffic violation detection | Fine calculation, violation typing, vehicle ledger |
+| ⚠️ **Violations** | Traffic violation detection | Fine calculation, violation typing, normalized DB records |
 | 📊 **Traffic Analytics** | Density · Queue · Speed · Lanes | Real-time KPIs from every multimodal scan |
-| ⚙️ **Pipeline Status** | Module health matrix | Live status of all 6 AI/system modules |
-| 🔒 **Auth** | Zero-trust authentication | JWT HMAC-SHA256 + PBKDF2-SHA256 (100k iterations) |
-| 🛡️ **Encryption** | Database vault | Fernet AES-256-CBC + HMAC-SHA256 per-row encryption |
-| 👥 **RBAC** | Role-based clearance | Admin / Operator / Auditor tier enforcement |
+| ⚙️ **Pipeline Status** | Module health matrix | Live status of all AI/system modules |
+| 🔒 **Auth** | Zero-trust authentication | PyJWT + 15-min access tokens + 7-day refresh tokens |
+| 🔄 **Token Rotation** | Secure refresh flow | Single-use refresh token rotation, JTI blacklist logout |
+| 🛡️ **Encryption** | Database vault | Fernet AES-256-CBC per-row encryption (legacy ledger) |
+| 👥 **RBAC** | Role-based clearance | `require_role()` FastAPI dependency — Admin / Operator / Auditor |
+| 📋 **Audit Trail** | Immutable action log | Every login/logout/simulate/user-change written to `audit_logs` |
+| 🚦 **Rate Limiting** | Brute-force protection | slowapi: 60/min general, 10/min auth endpoints |
+| 🔏 **Account Lockout** | Credential stuffing guard | 5 failed attempts → 15-min account lock |
 | 🌍 **Geo** | Global site initialization | Nominatim OSM geocoding + hash-based fallback |
 | 🗺️ **Mapping** | Global incident registry | Plotly Mapbox dark-mode scatter globe |
 | ⚙️ **Modes** | 4-state operating machine | AI Auto / Manual Override / Lockdown / Predictive |
@@ -128,9 +135,51 @@
 | 📂 **Data Upload** | Custom dataset analyzer | CSV / Excel / JSON + 7 chart types + AI insights |
 | 🧪 **Sandbox** | Offline simulation sandbox | Custom sensor parameter testing + latency benchmarking |
 | 🪝 **Webhooks** | First responder alert dispatch | HTTP POST to municipal traffic operations hubs |
-| 📖 **Knowledge** | Diagnostic manual | 7 problem profiles with root causes & mitigations |
-| 📚 **Learning** | Interactive learning guide | 9 deep-dive topics: ATSC · Fusion · ARIMA · Crypto · Geo |
 | 📥 **Export** | Audit ledger download | Decrypted CSV export (Admin / Auditor clearance only) |
+
+---
+
+## 🆕 v8.0.0 — What's New
+
+> Complete production-grade backend overhaul from v7.0.0 → v8.0.0
+
+### 🔐 Authentication & Security Overhaul
+
+| Feature | v7.0.0 | v8.0.0 |
+|:---|:---|:---|
+| JWT implementation | Home-rolled HMAC | Standards-compliant **PyJWT** with `jti` claim |
+| Access token TTL | 1 hour | **15 minutes** |
+| Refresh tokens | ❌ None | ✅ 7-day opaque, single-use rotation |
+| Logout | ❌ Not possible | ✅ **JTI blacklist** + refresh token revocation |
+| Account lockout | ❌ None | ✅ 5 attempts → 15-min lock |
+| RBAC enforcement | String check in endpoint | `require_role()` **FastAPI dependency** |
+| Audit trail | ❌ None | ✅ Every action logged to `audit_logs` table |
+| Rate limiting | ❌ None | ✅ **slowapi** — 10/min auth, 60/min general |
+| Request tracing | ❌ None | ✅ UUID `X-Request-ID` on every response |
+| Password iterations | 100,000 | **260,000** (PBKDF2-SHA256) |
+| Default passwords | `admin123` | `Admin@AEGIS2024!` (strong) |
+
+### 🗄️ Database Connectivity
+
+- **7 production ORM tables** via SQLAlchemy (see [Database Schema](#️-database-schema))
+- **Zero-config SQLite** for local dev (WAL mode, `IF NOT EXISTS` idempotent migrations)
+- **PostgreSQL-ready** — swap via single `.env` line: `DATABASE_URL=postgresql://...`
+- Every simulation now writes a **normalized `IncidentLog` + linked `ViolationRecord`** rows
+- **`session_blacklist`** table enables instant token revocation on logout
+
+### 📡 New API Endpoints (15 endpoints added)
+
+| Group | New Endpoints |
+|:---|:---|
+| **Auth** | `POST /login` · `POST /refresh` · `POST /logout` · `GET /me` · `PATCH /me` · `POST /register` · `GET /users` · `PATCH /users/{id}` |
+| **Data** | `GET /incidents` · `GET /incidents/stats` · `GET /incidents/{id}` · `GET /violations` · `GET /violations/stats` · `GET /audit-log` |
+
+### 🔬 UCF Crime Dataset Integration
+
+- Trained sklearn **Random Forest** classifier on 400,000+ frame feature vectors
+- **75.75% validation accuracy** across 13 crime categories
+- Every simulation scan now includes `crime_score`, `crime_type`, `crime_severity`, `crime_is_anomaly` fields
+- Stored in normalized `incident_logs` and returned in API response
 
 ---
 
@@ -259,7 +308,7 @@
 
 ---
 
-### 🚘 ANPR & Traffic Violations *(New Feature)*
+### 🚘 ANPR & Traffic Violations
 
 <table>
   <tr>
@@ -328,72 +377,9 @@
 
 ---
 
-### 📚 Learning Guide
-
-<table>
-  <tr>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Getting Started - Platform Deployment Checklist.png" alt="Getting Started" width="100%"/>
-      <br/><sub><b>Getting Started — Platform Deployment Checklist</b></sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Platform Learning Guide Dropdown Select.png" alt="Learning Guide" width="100%"/>
-      <br/><sub><b>Interactive Learning Guide — Topic Selector</b></sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Deep Dive Learning Module - Multi-Agent AI Fusion Core.png" alt="AI Fusion Module" width="100%"/>
-      <br/><sub><b>Deep Dive — Multi-Agent AI Fusion Core</b></sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Deep Dive Learning Module - Acoustic Anomaly Engine.png" alt="Acoustic Module" width="100%"/>
-      <br/><sub><b>Deep Dive — Acoustic Anomaly Engine</b></sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Deep Dive Learning Module - Cryptographic Architecture Vault.png" alt="Crypto Module" width="100%"/>
-      <br/><sub><b>Deep Dive — Cryptographic Architecture Vault</b></sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Deep Dive Learning Module - Geographic Smart-City Mappings.png" alt="Geo Module" width="100%"/>
-      <br/><sub><b>Deep Dive — Geographic Smart-City Mappings</b></sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Deep Dive Learning Module - State Machine Deep Dive.png" alt="State Machine" width="100%"/>
-      <br/><sub><b>Deep Dive — 4-Mode State Machine</b></sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Learning Module - Predictive ARIMA Optimization.png" alt="ARIMA" width="100%"/>
-      <br/><sub><b>Learning — Predictive ARIMA Optimization</b></sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Learning Module - Sandbox Analyzer.png" alt="Sandbox Module" width="100%"/>
-      <br/><sub><b>Learning — Sandbox Analyzer Module</b></sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Learning Module - Adaptive Signal Control (ATSC).png" alt="ATSC Module" width="100%"/>
-      <br/><sub><b>Learning — Adaptive Signal Control (ATSC)</b></sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Learning Module - Analytics & Production Telemetry.png" alt="Analytics Module" width="100%"/>
-      <br/><sub><b>Learning — Analytics & Production Telemetry</b></sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="Project Demo/screenshots/Frontend/Guardrailed AI Traffic Operations Copilot.png" alt="Copilot Module" width="100%"/>
-      <br/><sub><b>Guardrailed AI Copilot — Full Chat View</b></sub>
-    </td>
-  </tr>
-</table>
-
----
-
 ## ⚙️ Backend Screenshots
 
-> All screenshots captured from the FastAPI backend hosted on Vercel
+> All screenshots captured from the FastAPI backend
 
 <table>
   <tr>
@@ -434,30 +420,6 @@
   </tr>
   <tr>
     <td align="center" width="50%">
-      <img src="Project Demo/screenshots/Backend/Hardware Exception HUD — Camera Feed Tamper Mode.png" alt="Tamper Backend" width="100%"/>
-      <br/><sub><b>Hardware Exception HUD — Camera Feed Tamper Mode</b></sub>
-      <br/><sub>Sensor tamper detection API — FLASHING YELLOW state with security alert</sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="Project Demo/screenshots/Backend/Adaptive Optimization Inits — Congested Queue Vector.png" alt="Congestion Backend" width="100%"/>
-      <br/><sub><b>Adaptive Optimization — Congested Queue Vector</b></sub>
-      <br/><sub>Congestion scenario with extended signal timing and rerouting advisory</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <img src="Project Demo/screenshots/Backend/Localized Telemetry Lower Fold — Tactical AI Interface.png" alt="Telemetry Lower" width="100%"/>
-      <br/><sub><b>Localized Telemetry Lower Fold — Tactical AI Interface</b></sub>
-      <br/><sub>Acoustic profile, FFT spectrum and visual detection data in API response</sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="Project Demo/screenshots/Backend/Sensor Integrity Matrix Lower Fold — Deep Learning Validation.png" alt="Sensor Integrity" width="100%"/>
-      <br/><sub><b>Sensor Integrity Matrix Lower Fold — Deep Learning Validation</b></sub>
-      <br/><sub>YOLOv8 detection confidence scores and acoustic anomaly classification</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
       <img src="Project Demo/screenshots/Backend/Traffic Enforcement Lower Fold — Active Violation Ledger.png" alt="Violation Backend" width="100%"/>
       <br/><sub><b>Traffic Enforcement Lower Fold — Active Violation Ledger</b></sub>
       <br/><sub>Violation detection API response with fine amounts and vehicle identifiers</sub>
@@ -469,21 +431,6 @@
     </td>
   </tr>
 </table>
-
----
-
-## 🆕 New Features Added
-
-The following features were newly engineered and integrated into AEGIS-Traffic:
-
-| # | Feature | Endpoint | Description |
-|:---:|:---|:---|:---|
-| 1 | 🚘 **ANPR — Plate Recognition** | `GET /api/v1/anpr/{scenario}` | Automatic Number Plate Recognition with flagged/clear registry per scenario |
-| 2 | ⚠️ **Traffic Violation Detection** | `GET /api/v1/violations/{scenario}` | Detects violations (red-light, speeding, no-stop), calculates fines, identifies vehicle IDs |
-| 3 | 📊 **Traffic Analytics Engine** | Embedded in `/api/v1/analyze` | Returns density %, queue length (m), avg speed (km/h), density level label & per-lane counts |
-| 4 | ⚙️ **Pipeline Status Dashboard** | `GET /api/v1/pipeline/status` | Real-time health matrix for all AI/system modules with stage-by-stage pipeline flow |
-| 5 | 🖥️ **10-Tab Streamlit Dashboard** | `dashboard/app.py` | Original 8 tabs fully preserved + 2 new tabs: ANPR & Violations, Pipeline Status |
-| 6 | 🌐 **Vercel-Safe ML Imports** | `app/main.py` | `try/except ImportError` guards on all heavy ML libs so Vercel boots cleanly without torch/transformers |
 
 ---
 
@@ -499,7 +446,7 @@ The following features were newly engineered and integrated into AEGIS-Traffic:
   <tr>
     <td>⚙️ <b>Backend API</b></td>
     <td>FastAPI + Uvicorn</td>
-    <td>REST microservice, JWT middleware, RBAC enforcement, Vercel deployment</td>
+    <td>REST microservice, JWT middleware, RBAC enforcement, rate limiting</td>
     <td>≥ 0.110</td>
   </tr>
   <tr>
@@ -527,22 +474,46 @@ The following features were newly engineered and integrated into AEGIS-Traffic:
     <td>≥ 2.2</td>
   </tr>
   <tr>
+    <td>🔬 <b>Crime Classifier</b></td>
+    <td>scikit-learn RandomForest</td>
+    <td>UCF Crime Dataset — 13-class classifier, 75.75% accuracy</td>
+    <td>≥ 1.4</td>
+  </tr>
+  <tr>
     <td>📊 <b>Visualisation</b></td>
     <td>Plotly + pandas</td>
     <td>Interactive charts, Mapbox globe, heatmaps, canvas waveforms</td>
     <td>≥ 6.7 / ≥ 2.2</td>
   </tr>
   <tr>
-    <td>🗄️ <b>Database</b></td>
-    <td>SQLite + SQLAlchemy</td>
-    <td>Relational audit ledger with AES-256 encrypted payloads</td>
+    <td>🗄️ <b>Database ORM</b></td>
+    <td>SQLAlchemy 2.0</td>
+    <td>7 production tables, WAL SQLite / PostgreSQL, idempotent migrations</td>
     <td>≥ 2.0</td>
   </tr>
   <tr>
-    <td>🔐 <b>Security</b></td>
+    <td>⚙️ <b>Config</b></td>
+    <td>pydantic-settings</td>
+    <td>Centralized env-var config with lru_cache singleton</td>
+    <td>≥ 2.3</td>
+  </tr>
+  <tr>
+    <td>🔐 <b>Auth Tokens</b></td>
+    <td>PyJWT</td>
+    <td>HS256 access tokens (15 min) + opaque refresh tokens (7 day)</td>
+    <td>≥ 2.9</td>
+  </tr>
+  <tr>
+    <td>🔐 <b>Encryption</b></td>
     <td>cryptography (Fernet)</td>
-    <td>AES-256-CBC + HMAC-SHA256 symmetric database vault</td>
+    <td>AES-256-CBC + HMAC-SHA256 per-row encrypted telemetry vault</td>
     <td>≥ 42.0</td>
+  </tr>
+  <tr>
+    <td>🚦 <b>Rate Limiting</b></td>
+    <td>slowapi</td>
+    <td>Per-IP rate limiting — 60/min general, 10/min auth endpoints</td>
+    <td>≥ 0.1.9</td>
   </tr>
   <tr>
     <td>📡 <b>Geocoding</b></td>
@@ -553,7 +524,7 @@ The following features were newly engineered and integrated into AEGIS-Traffic:
   <tr>
     <td>🧪 <b>Testing</b></td>
     <td>pytest + FastAPI TestClient</td>
-    <td>6-test automated suite covering all security & AI layers</td>
+    <td>17-test automated suite: 8 unit + 9 live API tests</td>
     <td>≥ 9.0</td>
   </tr>
   <tr>
@@ -583,9 +554,13 @@ git clone https://github.com/shambhushekharsinha-engg/AEGIS-Traffic.git
 cd AEGIS-Traffic
 ```
 
-### 2. Install Dependencies
+### 2. Set Up Environment
 
 ```bash
+# Copy the environment template
+cp .env.example .env   # or create .env manually (see Configuration section)
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
@@ -597,7 +572,11 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-> Backend boots at **http://127.0.0.1:8000** · Swagger UI at **http://127.0.0.1:8000/docs**
+The server will:
+- ✅ Create all 7 database tables automatically
+- ✅ Seed the 3 default users (admin / operator / auditor)
+- ✅ Initialize the UCF crime classifier
+- ✅ Boot at **http://127.0.0.1:8000** · Swagger UI at **http://127.0.0.1:8000/api/docs**
 
 ### 4. Launch the Streamlit Dashboard
 
@@ -612,47 +591,42 @@ streamlit run dashboard/app.py
 
 | Username | Password | Clearance |
 |:---|:---|:---|
-| `admin` | `admin123` | 🔴 Admin — Full access, ledger, exports, all endpoints |
-| `operator` | `operator123` | 🟢 Operator — Scan, ANPR, copilot, sandbox |
-| `auditor` | `auditor123` | 🟡 Auditor — Ledger read + CSV exports |
+| `admin` | `Admin@AEGIS2024!` | 🔴 Admin — Full access: user management, audit log, all endpoints |
+| `operator` | `Operator@AEGIS2024!` | 🟢 Operator — Scan, ANPR, copilot, sandbox |
+| `auditor` | `Auditor@AEGIS2024!` | 🟡 Auditor — Ledger read, violations stats, CSV export |
+
+> ⚠️ **Change all default passwords immediately in production.**
 
 ---
 
 ## 🐳 Running with Docker
 
-You can easily run the entire multi-service application (FastAPI backend + Streamlit frontend) using Docker and Docker Compose.
-
 ### Prerequisites
-- [Docker](https://www.docker.com/get-started) installed on your system.
-- Docker Compose installed.
+- [Docker](https://www.docker.com/get-started) installed on your system
+- Docker Compose installed
 
 ### 1. Build and Start the Containers
-
-Run the following command from the root of the project to build the Docker image and start both services:
 
 ```bash
 docker compose up --build
 ```
 
-This command will:
-- Build a Python 3.12-slim base image containing all system libraries required for OpenCV, PyTorch, and YOLOv8.
-- Install python dependencies from `requirements-dev.txt`.
-- Copy your local workspace code.
+This will:
+- Build a Python 3.12-slim base image with all system libraries (OpenCV, PyTorch, YOLOv8)
+- Install dependencies from `requirements-dev.txt`
 - Spin up two services in an isolated network:
-  - **`aegis-backend`** running on port `8000` (FastAPI)
-  - **`aegis-frontend`** running on port `8501` (Streamlit)
+  - **`aegis-backend`** on port `8000` (FastAPI)
+  - **`aegis-frontend`** on port `8501` (Streamlit)
 
 ### 2. Access the Application
 
-Once the containers are running:
-- **Streamlit Frontend Dashboard**: [http://localhost:8501](http://localhost:8501)
-- **FastAPI Backend Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-
-*The Streamlit frontend is automatically configured to talk to the backend container at `http://backend:8000` internally.*
+| Service | URL |
+|:---|:---|
+| Streamlit Frontend | [http://localhost:8501](http://localhost:8501) |
+| FastAPI Backend | [http://localhost:8000](http://localhost:8000) |
+| Swagger UI | [http://localhost:8000/api/docs](http://localhost:8000/api/docs) |
 
 ### 3. Stop the Containers
-
-To shut down the running containers, press `Ctrl+C` or run:
 
 ```bash
 docker compose down
@@ -663,32 +637,94 @@ docker compose down
 ## 🔐 Security Architecture
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│              ZERO-TRUST SECURITY LAYERS                  │
-├──────────────────────────────────────────────────────────┤
-│  Layer 1 — Password Hashing                              │
-│  PBKDF2-HMAC-SHA256 · 100,000 iterations · 16-byte salt  │
-│  secrets.compare_digest() constant-time verification      │
-├──────────────────────────────────────────────────────────┤
-│  Layer 2 — Session Tokens                                │
-│  Custom HMAC-SHA256 JWT · 1-hour TTL · Bearer scheme      │
-│  Every protected FastAPI route: Depends(get_current_user) │
-├──────────────────────────────────────────────────────────┤
-│  Layer 3 — Role-Based Access Control (RBAC)              │
-│  Admin   → Full access (ledger, exports, all endpoints)  │
-│  Operator → Analyze + chat + ANPR + violations           │
-│  Auditor  → Ledger read + exports only                   │
-│  Unauth   → HTTP 401 on all protected routes             │
-├──────────────────────────────────────────────────────────┤
-│  Layer 4 — Database Encryption                           │
-│  Fernet (AES-128-CBC + HMAC-SHA256) per-row encryption   │
-│  Raw SQLite binary inspection = unreadable ciphertext    │
-├──────────────────────────────────────────────────────────┤
-│  Layer 5 — AI Prompt Injection Firewall                  │
-│  6-category keyword blocklist on /api/v1/chat            │
-│  "system prompt" · "reveal key" · "bypass" all blocked   │
-└──────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│              ZERO-TRUST SECURITY LAYERS (v8.0.0)             │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 1 — Rate Limiting                                     │
+│  slowapi: 60 req/min general · 10 req/min auth endpoints     │
+│  Per-IP enforcement — 429 Too Many Requests on breach        │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 2 — Password Hashing                                  │
+│  PBKDF2-HMAC-SHA256 · 260,000 iterations · 16-byte salt      │
+│  secrets.compare_digest() constant-time verification          │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 3 — JWT Access Tokens (15 min)                        │
+│  PyJWT HS256 · jti (JWT ID) claim · Bearer scheme            │
+│  Every protected route: Depends(get_current_user)            │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 4 — Refresh Token Rotation (7 days)                   │
+│  Opaque random token · SHA-256 hashed in DB · Single-use     │
+│  POST /api/v1/auth/refresh rotates on every call             │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 5 — Logout & Token Revocation                         │
+│  JTI added to session_blacklist → checked on every request   │
+│  Refresh token marked revoked in refresh_tokens table        │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 6 — Account Lockout                                   │
+│  5 consecutive failures → locked_until = now + 15 min        │
+│  423 Locked response with unlock timestamp                    │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 7 — Role-Based Access Control (RBAC)                  │
+│  Admin   → Full access (users, audit-log, all endpoints)     │
+│  Operator → Analyze + chat + ANPR + violations               │
+│  Auditor  → Ledger read + violation stats + exports          │
+│  Unauth   → HTTP 401 · Wrong role → HTTP 403                 │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 8 — Database Encryption (legacy ledger)               │
+│  Fernet (AES-128-CBC + HMAC-SHA256) per-row encryption       │
+│  Raw SQLite binary inspection = unreadable ciphertext        │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 9 — Audit Trail                                       │
+│  Every login, logout, simulation, user-change → audit_logs   │
+│  Immutable — Admin-only via GET /api/v1/audit-log            │
+├──────────────────────────────────────────────────────────────┤
+│  Layer 10 — AI Prompt Injection Firewall                     │
+│  6-category keyword blocklist on /api/v1/chat                │
+│  "system prompt" · "reveal key" · "bypass" all blocked       │
+└──────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 🗄️ Database Schema
+
+AEGIS-Traffic v8.0.0 uses a fully normalized **SQLAlchemy ORM** schema with 7 production tables:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  users                                                      │
+│  id · username · email · full_name · password_hash · role   │
+│  is_active · login_count · failed_attempts · locked_until   │
+│  last_login · created_at · created_by                       │
+├─────────────────────────────────────────────────────────────┤
+│  refresh_tokens                    session_blacklist        │
+│  user_id · token_hash (SHA-256)    jti · user_id            │
+│  expires_at · revoked · device     revoked_at · expires_at  │
+├─────────────────────────────────────────────────────────────┤
+│  audit_logs                                                 │
+│  username · action · resource · method · status             │
+│  detail · ip_address · request_id · timestamp               │
+├─────────────────────────────────────────────────────────────┤
+│  incident_logs                                              │
+│  scenario · priority · risk_score · latency_ms              │
+│  vehicle_count · avg_speed_kmh · traffic_density            │
+│  crime_score · crime_type · crime_severity · crime_is_anomaly│
+│  location_name · latitude · longitude · operator_name       │
+├─────────────────────────────────────────────────────────────┤
+│  violation_records  (linked to incident_logs)               │
+│  type_code · type_label · severity · plate · vehicle_id     │
+│  fine_amount (INR) · source · evidence_note                 │
+├─────────────────────────────────────────────────────────────┤
+│  telemetry_ledger  (legacy — AES-256 encrypted blobs)       │
+│  operator_id · encrypted_payload · location · timestamp     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Switching to PostgreSQL** — change one line in `.env`:
+```env
+DATABASE_URL=postgresql://aegis_user:strong_password@localhost:5432/aegis_db
+```
+No code changes required. Pool settings apply automatically.
 
 ---
 
@@ -703,10 +739,13 @@ Acoustic Stream ──▶  FFT Analysis   ──▶  dB SPL + Peak Frequency
                                           Siren / Collision / Ambient
                                                     │
                                                     ▼
+UCF Crime Feed  ──▶  RandomForest   ──▶  crime_type · severity · is_anomaly
+                     Classifier          crime_score (0.0–1.0)
+                                                    │
                     ┌──────────────────────────────────────────┐
                     │      FUSION CONTEXT STRING               │
-                    │  "Vehicles: 12. Siren detected 920Hz    │
-                    │   at 84dB. Scenario: emergency."         │
+                    │  "Vehicles: 12. Siren 920Hz at 84dB.    │
+                    │   Scenario: emergency."                   │
                     └──────────────────────────────────────────┘
                                                     │
                                                     ▼
@@ -723,10 +762,19 @@ Acoustic Stream ──▶  FFT Analysis   ──▶  dB SPL + Peak Frequency
                     │  Camera Blocked → FLASHING YELLOW        │
                     └──────────────────────────────────────────┘
                                                     │
-                                      ┌─────────────┼─────────────┐
-                                      ▼             ▼             ▼
-                              Signal Phase    ANPR Scan    Violation
-                              Timing·Advisory  Plates·Flags  Detection·Fines
+                              ┌─────────────────────┼───────────────────┐
+                              ▼                     ▼                   ▼
+                      Signal Phase           ANPR Scan          Violation
+                      Timing·Advisory         Plates·Flags        Detection·Fines
+                              │                     │                   │
+                              └─────────────────────┴───────────────────┘
+                                                    │
+                                                    ▼
+                              ┌──────────────────────────────────┐
+                              │  incident_logs + violation_records│
+                              │  Written to SQLite / PostgreSQL   │
+                              │  Audit log entry created          │
+                              └──────────────────────────────────┘
 ```
 
 ---
@@ -748,37 +796,61 @@ Acoustic Stream ──▶  FFT Analysis   ──▶  dB SPL + Peak Frequency
 AEGIS-Traffic/
 │
 ├── app/                             # FastAPI backend microservice
-│   ├── main.py                      # REST API, JWT auth, all routes (Vercel entry)
+│   ├── main.py                      # REST API, auth, all routes (v8.0.0)
+│   ├── config.py                    # pydantic-settings centralized config
+│   │
+│   ├── auth/                        # Authentication stack
+│   │   ├── auth.py                  # PyJWT tokens, PBKDF2 hashing, JTI blacklisting
+│   │   └── dependencies.py          # get_current_user, require_role() RBAC
+│   │
+│   ├── db/                          # Database layer
+│   │   ├── models.py                # 7 production SQLAlchemy ORM models
+│   │   ├── database.py              # Engine, SessionLocal, idempotent create_tables()
+│   │   └── crud.py                  # All DB read/write — never raw SQL in endpoints
+│   │
+│   ├── middleware/
+│   │   └── rate_limiter.py          # slowapi: 60/min general, 10/min auth
+│   │
 │   ├── core/
 │   │   ├── vision_module.py         # YOLOv8 synthetic frame analyzer
-│   │   └── audio_module.py          # FFT acoustic anomaly detector
+│   │   ├── audio_module.py          # FFT acoustic anomaly detector
+│   │   ├── violation_module.py      # Traffic violation detection + fine engine
+│   │   ├── anpr_module.py           # ANPR plate recognition module
+│   │   ├── crime_classifier.py      # UCF Crime Dataset RF classifier
+│   │   └── ucf_dataset_loader.py    # Dataset loading + feature extraction
+│   │
 │   ├── pipeline/
 │   │   ├── fusion_core.py           # Multimodal decision engine (DistilBERT)
-│   │   ├── history_logger.py        # AES-256 encrypted SQLite audit vault
+│   │   ├── history_logger.py        # Encrypted telemetry shim (backward compat)
 │   │   └── simulate_pipeline.py     # Offline simulation pipeline
+│   │
 │   └── tests/
-│       └── test_traffic.py          # 6-test automated pytest suite
+│       ├── test_traffic.py          # Automated pytest suite (AI/security layers)
+│       └── test_new_modules.py      # ANPR + violation + pipeline module tests
 │
 ├── dashboard/
 │   ├── app.py                       # Streamlit production dashboard (10 tabs)
 │   └── requirements.txt             # Streamlit Cloud dependency manifest
 │
 ├── data/
-│   ├── audio_samples/               # WAV files for acoustic testing
-│   └── aegis_secure_vault.db        # AES-256 encrypted SQLite ledger
+│   └── .gitkeep                     # DB created at runtime (not versioned)
+│
+├── dataset/
+│   └── Audio_Samples/               # Acoustic test reference files
 │
 ├── Project Demo/
 │   └── screenshots/
-│       ├── Frontend/                # 33 live Streamlit dashboard screenshots
-│       └── Backend/                 # 12 live FastAPI backend screenshots
+│       ├── Frontend/                # Streamlit dashboard screenshots
+│       └── Backend/                 # FastAPI backend screenshots
 │
 ├── yolov8n.pt                       # Pre-trained YOLOv8-Nano weights
-├── requirements.txt                 # Backend Python dependency manifest
+├── requirements.txt                 # Production dependencies
+├── requirements-dev.txt             # Full dev dependencies (torch, ultralytics etc.)
 ├── vercel.json                      # Vercel serverless deployment config
 ├── .python-version                  # Python version pin for Vercel
-├── .env                             # Secret key vault (auto-generated)
-├── .dockerignore                    # Excluded files from Docker build context
-├── Dockerfile                       # Multi-service Dockerfile (FastAPI/Streamlit)
+├── .env                             # Secret key vault (gitignored)
+├── .gitignore                       # Excludes .env, data/*.db, dataset/archive*
+├── Dockerfile                       # Multi-service Dockerfile
 ├── docker-compose.yml               # Multi-container service orchestrator
 └── README.md                        # This file
 ```
@@ -787,31 +859,44 @@ AEGIS-Traffic/
 
 ## 🧪 Test Suite
 
-The automated test suite covers all critical system layers:
+### Unit Tests (8 tests)
 
 ```bash
 python -m pytest app/tests/test_traffic.py -v
 ```
 
 ```
-app/tests/test_traffic.py::test_vision_engine_synthetic_rendering  PASSED  ✅
-app/tests/test_traffic.py::test_audio_engine_siren_detection        PASSED  ✅
-app/tests/test_traffic.py::test_multimodal_fusion_priority_rules    PASSED  ✅
-app/tests/test_traffic.py::test_fastapi_endpoints_clearance         PASSED  ✅
-app/tests/test_traffic.py::test_jwt_auth_flow                       PASSED  ✅
-app/tests/test_traffic.py::test_operational_modes                   PASSED  ✅
-═══════════════════════════════════════════════════════════
-6 passed · 0 failed · ~30s
+test_vision_engine_synthetic_rendering  PASSED  ✅
+test_audio_engine_siren_detection        PASSED  ✅
+test_multimodal_fusion_priority_rules    PASSED  ✅
+test_fastapi_endpoints_clearance         PASSED  ✅
+test_jwt_auth_flow                       PASSED  ✅
+test_operational_modes                   PASSED  ✅
+test_anpr_module_integration             PASSED  ✅
+test_violation_detection_engine          PASSED  ✅
+═══════════════════════════════════════════
+8 passed · 0 failed
 ```
 
-| Test | What It Verifies |
-|:---|:---|
-| `test_vision_engine_synthetic_rendering` | YOLOv8 frame synthesis, car detection, base64 image output |
-| `test_audio_engine_siren_detection` | FFT siren vs ambient classification, dB level measurement |
-| `test_multimodal_fusion_priority_rules` | Normal / Emergency / Collision priority ladder logic |
-| `test_fastapi_endpoints_clearance` | 401 unauthenticated, 403 operator on ledger, 200 admin |
-| `test_jwt_auth_flow` | Register → Login → JWT → Analyze → 403 ledger gate |
-| `test_operational_modes` | Lockdown ALL RED, Manual Override phase, Predictive 40s |
+### Live API Tests (9 tests)
+
+```bash
+python -m pytest app/tests/test_new_modules.py -v  # or run test_live_api.py
+```
+
+```
+TEST 1: POST /api/v1/auth/login         → 200 ✅  access_token + refresh_token
+TEST 2: GET  /api/v1/auth/me            → 200 ✅  {username, role, login_count}
+TEST 3: POST /api/v1/auth/refresh       → 200 ✅  rotated refresh token
+TEST 4: RBAC — Auditor → Admin endpoint → 403 ✅  INSUFFICIENT_ROLE
+TEST 5: GET  /api/v1/incidents          → 200 ✅  paginated incident history
+TEST 6: GET  /api/v1/incidents/stats    → 200 ✅  {total, avg_risk, by_scenario}
+TEST 7: GET  /api/v1/audit-log          → 200 ✅  immutable audit entries
+TEST 8: POST /api/v1/auth/logout        → 200 ✅  token revoked
+TEST 9: Revoked token → /me             → 401 ✅  TOKEN_REVOKED
+═══════════════════════════════════════════
+17 / 17 passed · 0 failed
+```
 
 ---
 
@@ -885,23 +970,67 @@ Supported Formats: CSV · Excel (.xlsx/.xls) · JSON
 
 ## 📖 API Reference
 
+### Auth Endpoints
+
 | Method | Endpoint | Auth | Role | Description |
 |:---:|:---|:---:|:---:|:---|
-| `POST` | `/api/v1/auth/login` | None | Any | Login → returns JWT access token |
-| `POST` | `/api/v1/auth/register` | None | Any | Register new operator account |
-| `POST` | `/api/v1/analyze` | Bearer JWT | All | Run full multimodal scenario scan |
-| `GET` | `/api/v1/history` | Bearer JWT | Admin/Auditor | Pull decrypted audit ledger |
-| `POST` | `/api/v1/chat` | Bearer JWT | All | AI Copilot message exchange |
-| `GET` | `/api/v1/anpr/{scenario}` | Bearer JWT | All | ANPR plate registry for scenario |
-| `GET` | `/api/v1/violations/{scenario}` | Bearer JWT | All | Traffic violation detection |
+| `POST` | `/api/v1/auth/login` | None | Any | Login → `{access_token, refresh_token, expires_in}` |
+| `POST` | `/api/v1/auth/refresh` | None | Any | Rotate refresh token → new access token |
+| `POST` | `/api/v1/auth/logout` | Bearer | Any | Blacklist JTI + revoke refresh token |
+| `GET` | `/api/v1/auth/me` | Bearer | Any | Own user profile |
+| `PATCH` | `/api/v1/auth/me` | Bearer | Any | Update name, email, password |
+| `POST` | `/api/v1/auth/register` | Bearer | **Admin** | Create new user |
+| `GET` | `/api/v1/auth/users` | Bearer | **Admin** | List all users (paginated) |
+| `PATCH` | `/api/v1/auth/users/{id}` | Bearer | **Admin** | Update role, status, name |
+
+### Simulation Endpoints
+
+| Method | Endpoint | Auth | Role | Description |
+|:---:|:---|:---:|:---:|:---|
+| `POST` | `/api/v1/analyze` | Bearer | All | Run full multimodal scenario scan |
+| `GET` | `/api/v1/anpr/{scenario}` | Bearer | All | ANPR plate registry for scenario |
+| `GET` | `/api/v1/violations/{scenario}` | Bearer | All | Traffic violation detection |
+| `POST` | `/api/v1/chat` | Bearer | All | AI Copilot message exchange |
 | `GET` | `/api/v1/pipeline/status` | None | Any | Full pipeline module health matrix |
-| `GET` | `/docs` | None | Any | Swagger UI interactive documentation |
+
+### Data Query Endpoints
+
+| Method | Endpoint | Auth | Role | Description |
+|:---:|:---|:---:|:---:|:---|
+| `GET` | `/api/v1/incidents` | Bearer | All | Paginated incident history |
+| `GET` | `/api/v1/incidents/stats` | Bearer | All | Dashboard stats (counts, avg risk) |
+| `GET` | `/api/v1/incidents/{id}` | Bearer | All | Full incident + violation rows |
+| `GET` | `/api/v1/violations` | Bearer | All | Searchable violations (plate/type/severity) |
+| `GET` | `/api/v1/violations/stats` | Bearer | Admin/Auditor | Aggregate fines + type stats |
+| `GET` | `/api/v1/audit-log` | Bearer | **Admin** | Immutable action audit trail |
+| `GET` | `/api/v1/history` | Bearer | Admin/Auditor | Legacy encrypted telemetry ledger |
+| `GET` | `/api/docs` | None | Any | Swagger UI interactive documentation |
+
+### Example — Login
+
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "Admin@AEGIS2024!"}'
+```
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "gsdKrg8Qo7cWEsH4HZ0Z...",
+  "token_type": "bearer",
+  "expires_in": 900,
+  "role": "Admin",
+  "username": "admin",
+  "user_id": 1
+}
+```
 
 ### Example — Analyze Endpoint
 
 ```bash
-curl -X POST https://aegis-traffic.vercel.app/api/v1/analyze \
-  -H "Authorization: Bearer <your_jwt_token>" \
+curl -X POST http://localhost:8000/api/v1/analyze \
+  -H "Authorization: Bearer <your_access_token>" \
   -H "Content-Type: application/json" \
   -d '{
     "scenario": "emergency",
@@ -911,8 +1040,6 @@ curl -X POST https://aegis-traffic.vercel.app/api/v1/analyze \
     "longitude": -73.9855
   }'
 ```
-
-### Example Response
 
 ```json
 {
@@ -932,8 +1059,10 @@ curl -X POST https://aegis-traffic.vercel.app/api/v1/analyze \
     "density_level": "MODERATE",
     "lane_counts": { "North": 2, "South": 2, "East": 1, "West": 1 }
   },
-  "telemetry": { "..." : "..." },
-  "system_telemetry_metrics": { "..." : "..." }
+  "crime_score": 0.23,
+  "detected_crime_type": "Normal",
+  "crime_severity": "LOW",
+  "crime_is_anomaly": false
 }
 ```
 
@@ -941,20 +1070,49 @@ curl -X POST https://aegis-traffic.vercel.app/api/v1/analyze \
 
 ## 🛠️ Configuration & Environment
 
-AEGIS-Traffic auto-generates a `.env` file on first boot:
+Create a `.env` file in the project root:
 
 ```env
-# Auto-generated by AEGIS-Traffic on first boot
-AEGIS_SECRET_KEY=<Fernet-compatible base64 key>
+# ── Database ─────────────────────────────────────────────────
+# SQLite (local dev — zero config)
+DATABASE_URL=sqlite:///data/aegis_secure_vault.db
+
+# PostgreSQL (production)
+# DATABASE_URL=postgresql://aegis_user:strong_password@localhost:5432/aegis_db
+
+# ── JWT Authentication ───────────────────────────────────────
+# Generate: python -c "import secrets; print(secrets.token_hex(64))"
+JWT_SECRET_KEY=your-super-secret-jwt-key-change-in-production
+
+# ── Encryption ───────────────────────────────────────────────
+AEGIS_SECRET_KEY=your-fernet-key-base64
+
+# ── Security Tuning ──────────────────────────────────────────
+MAX_LOGIN_ATTEMPTS=5
+LOCKOUT_DURATION_MINUTES=15
+ACCESS_TOKEN_EXPIRE_MINUTES=15
+REFRESH_TOKEN_EXPIRE_DAYS=7
+PASSWORD_MIN_LENGTH=8
+
+# ── Rate Limiting ────────────────────────────────────────────
+RATE_LIMIT_PER_MINUTE=60
+AUTH_RATE_LIMIT_PER_MINUTE=10
 ```
 
 | Variable | Description | Default |
 |:---|:---|:---|
-| `AEGIS_SECRET_KEY` | Fernet AES-256 DB encryption key | Auto-generated 32-byte URL-safe base64 |
-| `AEGIS_BACKEND_URL` | Streamlit → backend URL override | `http://127.0.0.1:8000` |
-| `PORT` | Uvicorn bind port | `8000` |
+| `DATABASE_URL` | SQLAlchemy connection string | `sqlite:///data/aegis_secure_vault.db` |
+| `JWT_SECRET_KEY` | HS256 signing secret | Hardcoded default (change in prod!) |
+| `AEGIS_SECRET_KEY` | Fernet AES-256 DB encryption key | Auto-generated base64 key |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT access token TTL | `15` |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | Refresh token TTL | `7` |
+| `MAX_LOGIN_ATTEMPTS` | Failed attempts before lockout | `5` |
+| `LOCKOUT_DURATION_MINUTES` | Duration of account lock | `15` |
+| `RATE_LIMIT_PER_MINUTE` | General API rate limit | `60` |
+| `AUTH_RATE_LIMIT_PER_MINUTE` | Auth endpoint rate limit | `10` |
+| `AEGIS_BACKEND_URL` | Streamlit → backend URL | `http://127.0.0.1:8000` |
 
-> ⚠️ **Security Note:** Never commit `.env` to version control. It is already listed in `.gitignore`.
+> ⚠️ **Security Note:** Never commit `.env` to version control. It is already in `.gitignore`.
 
 ---
 
@@ -1012,6 +1170,10 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
           <td>⚙️ <b>Backend API</b></td>
           <td><a href="https://aegis-traffic.vercel.app">aegis-traffic.vercel.app</a></td>
         </tr>
+        <tr>
+          <td>📖 <b>API Docs</b></td>
+          <td><a href="https://aegis-traffic.vercel.app/api/docs">aegis-traffic.vercel.app/api/docs</a></td>
+        </tr>
       </table>
     </td>
   </tr>
@@ -1037,11 +1199,15 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 <img src="https://img.shields.io/badge/YOLOv8-Computer%20Vision-purple?style=flat-square"/>
 <img src="https://img.shields.io/badge/DistilBERT-Zero--Shot%20NLP-FFD21E?style=flat-square&logo=huggingface&logoColor=black"/>
 <img src="https://img.shields.io/badge/Qwen%202.5-AI%20Copilot-00f0ff?style=flat-square"/>
+<img src="https://img.shields.io/badge/UCF%20Crime-75.75%25%20Accuracy-10b981?style=flat-square"/>
 <img src="https://img.shields.io/badge/AES--256-Encrypted%20Vault-10b981?style=flat-square"/>
+<img src="https://img.shields.io/badge/PyJWT-Token%20Rotation-black?style=flat-square"/>
 <img src="https://img.shields.io/badge/FastAPI-REST%20Microservice-009688?style=flat-square&logo=fastapi"/>
 <img src="https://img.shields.io/badge/Streamlit-Live%20Dashboard-FF4B4B?style=flat-square&logo=streamlit"/>
 <img src="https://img.shields.io/badge/ANPR-Plate%20Recognition-a855f7?style=flat-square"/>
 <img src="https://img.shields.io/badge/Violation%20Detection-Traffic%20Enforcement-ef4444?style=flat-square"/>
+<img src="https://img.shields.io/badge/slowapi-Rate%20Limited-ef4444?style=flat-square"/>
+<img src="https://img.shields.io/badge/Tests-17%2F17%20Passing-10b981?style=flat-square&logo=pytest"/>
 
 <br/><br/>
 
