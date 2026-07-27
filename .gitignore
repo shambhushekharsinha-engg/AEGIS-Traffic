@@ -1,22 +1,42 @@
-# Python bytecode cache
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
 
-# Local Environment and HuggingFace Cache
+# ── Virtual environments ──────────────────────────────────────────────────────
 .env
-.cache/
-.virtualenv/
+.venv/
 venv/
+.virtualenv/
 
-# Streamlit local configurations
-.streamlit/
-
-# Prevent large local data files from clogging up the repo commit history
+# ── Database (runtime data — not versioned) ───────────────────────────────────
 data/*
 !data/.gitkeep
-__pycache__/
+
+# ── Large raw dataset archives (not needed in repo — trained model is checked in) ──
+dataset/archive*/
+dataset/*.zip
+dataset/*.tar
+dataset/*.gz
+
+# ── Test / scratch output ─────────────────────────────────────────────────────
+verify_output.txt
+check_dataset.py
+verify_ucf.py
+test_ucf_pipeline.py
+train_ucf.py
+
+# ── Streamlit & editor configs ────────────────────────────────────────────────
+.streamlit/
+.cache/
 .pytest_cache/
-.env
-data/*
-!data/.gitkeep
-.streamlit/
+.vscode/
+*.suo
+*.user
+
+# ── Audio samples (binary — too large for git) ────────────────────────────────
+dataset/Audio_Samples/*.wav

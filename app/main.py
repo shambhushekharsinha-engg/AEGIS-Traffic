@@ -1,64 +1,142 @@
-from fastapi import FastAPI, HTTPException, Header, Depends, Security
-from fastapi.responses import HTMLResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
+# ────────────────────────────────────────────────────────────────────────────
+# AEGIS-Traffic v8.0.0 — Production Backend
+# ────────────────────────────────────────────────────────────────────────────
+import uuid
 import time
 import threading
-import base64
-import hmac
-import hashlib
-from typing import Optional
-import json
-import secrets
 import os
+from typing import Optional, List
+from datetime import datetime
+
+from fastapi import FastAPI, HTTPException, Header, Depends, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, Field
+from slowapi.errors import RateLimitExceeded
 
 try:
     from transformers import pipeline
-    TRANSFORMERS_AVAILABLE = True  # used by /api/v1/pipeline/status
+    TRANSFORMERS_AVAILABLE = True
 except ImportError:
     pipeline = None
     TRANSFORMERS_AVAILABLE = False
 
-# Core sensory modules
+# ── Production Config ──────────────────────────────────────────────────────────────
+from app.config import get_settings
+settings = get_settings()
+
+# ── Database layer ─────────────────────────────────────────────────────────────────
+from app.db.database import create_tables, get_db
+from app.db import crud
+from app.db.models import User as DBUser
+from sqlalchemy.orm import Session
+
+# ── Auth layer ────────────────────────────────────────────────────────────────────
+from app.auth.auth import (
+    hash_password, verify_password,
+    create_access_token, create_refresh_token_string,
+    store_refresh_token, rotate_refresh_token,
+    hash_refresh_token, blacklist_jti, write_audit,
+    record_failed_login, record_successful_login,
+)
+from app.auth.dependencies import get_current_user, require_role
+
+# ── Rate limiter ──────────────────────────────────────────────────────────────────
+from app.middleware.rate_limiter import limiter, rate_limit_exceeded_handler, AUTH_LIMIT, DEFAULT_LIMIT
+
+# ── Core sensory modules ───────────────────────────────────────────────────────────
 from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
 from app.core.audio_module import AudioAnalyzer as AudioEngine
-from app.core.anpr_module import ANPREngine                      # §16 ANPR
-from app.core.violation_module import ViolationDetector          # §15 Violation detection
+from app.core.anpr_module import ANPREngine
+from app.core.violation_module import ViolationDetector
 
-# Pipeline Submodules
+# ── UCF Crime Dataset ───────────────────────────────────────────────────────────────
+try:
+    from app.core.ucf_dataset_loader import UCFDatasetLoader
+    from app.core.crime_classifier import CrimeClassifier
+    _ucf_loader     = UCFDatasetLoader()
+    _ucf_classifier = CrimeClassifier()
+    UCF_AVAILABLE   = True
+except Exception as _ucf_e:
+    _ucf_loader     = None
+    _ucf_classifier = None
+    UCF_AVAILABLE   = False
+    print(f"[WARN] UCF modules unavailable: {_ucf_e}")
+
+# ── Pipeline ────────────────────────────────────────────────────────────────────────
 from app.pipeline.fusion_core import MultimodalFusionCore
 from app.pipeline.simulate_pipeline import execute_async_broadcast
 from app.pipeline.history_logger import (
-    log_incident_to_ledger, 
-    fetch_incident_history, 
-    SessionLocal, 
-    User, 
-    hash_password, 
-    verify_password
+    log_incident_to_ledger,
+    fetch_incident_history,
+    SessionLocal,
 )
 
-app = FastAPI(title="Aegis-Traffic: Secure Smart Intersection Multimodal Fusion Engine", version="6.0.0")
+# ────────────────────────────────────────────────────────────────────────────
+# FastAPI App
+# ────────────────────────────────────────────────────────────────────────────
+app = FastAPI(
+    title       = settings.app_name,
+    version     = settings.app_version,
+    description = "Production-grade multimodal traffic intelligence and crime detection system.",
+    docs_url    = "/api/docs",
+    redoc_url   = "/api/redoc",
+)
 
-# --- ENTERPRISE RELIABILITY Observability Metrics Matrix ---
+# ── Middleware ────────────────────────────────────────────────────────────────────
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins     = settings.allowed_origins,
+    allow_credentials = True,
+    allow_methods     = ["*"],
+    allow_headers     = ["*"],
+)
+
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    """Attach a unique request ID to every request for traceability."""
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+# ── Startup ───────────────────────────────────────────────────────────────────────
+@app.on_event("startup")
+def on_startup():
+    """Create all DB tables and seed default users on startup."""
+    create_tables()
+    db = next(get_db())
+    try:
+        crud.seed_default_users(db)
+    finally:
+        db.close()
+    print(f"[AEGIS] v{settings.app_version} — Database ready. All production layers initialized.")
+
+# ── Observability Metrics ──────────────────────────────────────────────────────────
 SYSTEM_METRICS = {
-    "total_requests": 0,
-    "critical_incidents": 0,
-    "unauthorized_breaches": 0
+    "total_requests":        0,
+    "critical_incidents":    0,
+    "unauthorized_breaches": 0,
 }
 DISPATCH_REGISTRY = {"status": "STABLE", "last_broadcast": "None"}
 
-print("🤖 Ingesting Local Threat Anomaly Classifier (DistilBERT)...")
-# DistilBERT classifier is kept to ensure zero-shot NLP capabilities
+
+# ── NLP models (loaded after DB startup) ──────────────────────────────────────────────────
+print("[AEGIS] Loading NLP classifiers...")
 classifier = None
 if pipeline is not None:
     try:
         classifier = pipeline("zero-shot-classification", model="typeform/distilbert-base-uncased-mnli")
     except Exception as e:
-        print(f"⚠️ NLP Pipeline load error: {e}")
+        print(f"[WARN] NLP Classifier load error: {e}")
 else:
-    print("⚠️ NLP Pipeline disabled (transformers not installed — Vercel mode).")
+    print("[INFO] NLP Pipeline disabled (transformers not installed).")
 
-print("💬 Ingesting Local Interactive System Assistant (Qwen)...")
 ASSISTANT_ONLINE = False
 assistant = None
 if pipeline is not None:
@@ -66,77 +144,14 @@ if pipeline is not None:
         assistant = pipeline("text-generation", model="Qwen/Qwen2.5-0.5B-Instruct", max_new_tokens=120)
         ASSISTANT_ONLINE = True
     except Exception as e:
-        print(f"⚠️ Assistant Pipeline load error: {e}. Reverting to standard keyword helper.")
+        print(f"[WARN] Assistant load error: {e}. Reverting to keyword helper.")
 else:
-    print("⚠️ Assistant Pipeline disabled (transformers not installed — Vercel mode).")
-print("✅ All Secure Production Layers Initialized!")
+    print("[INFO] Assistant Pipeline disabled (transformers not installed).")
+print("[AEGIS] All production layers initialized.")
 
-# --- SECURE JWT UTILITIES ---
-JWT_SECRET = os.environ.get("AEGIS_JWT_SECRET", "super-secret-aegis-key-998877")
-
-def base64url_encode(data: bytes) -> str:
-    return base64.urlsafe_b64encode(data).decode('utf-8').replace('=', '')
-
-def base64url_decode(data: str) -> bytes:
-    padding = '=' * (4 - (len(data) % 4))
-    return base64.urlsafe_b64decode(data + padding)
-
-def create_jwt(payload: dict, expires_in_seconds: int = 3600) -> str:
-    header = {"alg": "HS256", "typ": "JWT"}
-    payload = payload.copy()
-    payload["exp"] = int(time.time()) + expires_in_seconds
-    
-    header_b64 = base64url_encode(json.dumps(header).encode('utf-8'))
-    payload_b64 = base64url_encode(json.dumps(payload).encode('utf-8'))
-    
-    signature_data = f"{header_b64}.{payload_b64}".encode('utf-8')
-    signature = hmac.new(JWT_SECRET.encode('utf-8'), signature_data, hashlib.sha256).digest()
-    signature_b64 = base64url_encode(signature)
-    
-    return f"{header_b64}.{payload_b64}.{signature_b64}"
-
-def verify_jwt(token: str) -> dict:
-    try:
-        parts = token.split('.')
-        if len(parts) != 3:
-            return None
-        header_b64, payload_b64, signature_b64 = parts
-        
-        signature_data = f"{header_b64}.{payload_b64}".encode('utf-8')
-        expected_signature = hmac.new(JWT_SECRET.encode('utf-8'), signature_data, hashlib.sha256).digest()
-        expected_signature_b64 = base64url_encode(expected_signature)
-        
-        if not secrets.compare_digest(signature_b64, expected_signature_b64):
-            return None
-            
-        payload = json.loads(base64url_decode(payload_b64).decode('utf-8'))
-        if payload.get("exp", 0) < time.time():
-            return None
-            
-        return payload
-    except Exception:
-        return None
-
-security_bearer = HTTPBearer(auto_error=False)
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Security(security_bearer),
-    x_session_auth: str = Header(None),
-    x_role_profile: str = Header(None)
-):
-    if credentials:
-        payload = verify_jwt(credentials.credentials)
-        if payload:
-            return payload
-        SYSTEM_METRICS["unauthorized_breaches"] += 1
-        raise HTTPException(status_code=401, detail="Access Denied: Invalid or expired JWT token.")
-        
-    if x_session_auth and x_role_profile:
-        # Fallback for backward compatibility/tests
-        return {"username": x_session_auth, "role": x_role_profile}
-        
-    SYSTEM_METRICS["unauthorized_breaches"] += 1
-    raise HTTPException(status_code=401, detail="Access Denied: Missing authorization headers.")
+# ────────────────────────────────────────────────────────────────────────────
+# Request / Response Models
+# ────────────────────────────────────────────────────────────────────────────
 
 class LoginRequest(BaseModel):
     username: str
@@ -144,8 +159,24 @@ class LoginRequest(BaseModel):
 
 class RegisterRequest(BaseModel):
     username: str
-    password: str
-    role: str
+    password: str = Field(..., min_length=8)
+    role:     str = "Operator"
+    email:    Optional[str] = None
+    full_name: Optional[str] = None
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+class UpdateUserRequest(BaseModel):
+    full_name:  Optional[str] = None
+    email:      Optional[str] = None
+    password:   Optional[str] = None
+
+class AdminUpdateUserRequest(BaseModel):
+    role:       Optional[str] = None
+    is_active:  Optional[bool] = None
+    full_name:  Optional[str] = None
+    email:      Optional[str] = None
 
 class SimulationRequest(BaseModel):
     scenario: str
@@ -1269,52 +1300,297 @@ def dispatch_enterprise_webhook(scenario: str, priority: str, payload: str):
     time.sleep(1.0)
     print(f"🚀 [MUNICIPAL FIRST RESPONDERS NOTIFIED] High-priority pager alert delivered live for vector: {scenario.upper()}")
 
-@app.post("/api/v1/auth/login")
-def login(payload: LoginRequest):
-    db = SessionLocal()
-    try:
-        user = db.query(User).filter(User.username == payload.username).first()
-        if not user or not verify_password(payload.password, user.password_hash):
-            SYSTEM_METRICS["unauthorized_breaches"] += 1
-            raise HTTPException(status_code=401, detail="Invalid username or password.")
-        
-        token = create_jwt({"username": user.username, "role": user.role})
-        return {
-            "access_token": token, 
-            "token_type": "bearer", 
-            "role": user.role, 
-            "username": user.username
-        }
-    finally:
-        db.close()
 
-@app.post("/api/v1/auth/register")
-def register(payload: RegisterRequest):
-    if payload.role not in ["Admin", "Operator", "Auditor"]:
-        raise HTTPException(status_code=400, detail="Invalid role specified.")
-    
-    db = SessionLocal()
-    try:
-        existing = db.query(User).filter(User.username == payload.username).first()
-        if existing:
-            raise HTTPException(status_code=400, detail="Username already exists.")
-        
-        new_user = User(
-            username=payload.username,
-            password_hash=hash_password(payload.password),
-            role=payload.role
+# ────────────────────────────────────────────────────────────────────────────
+# Auth Endpoints
+# ────────────────────────────────────────────────────────────────────────────
+
+@app.post("/api/v1/auth/login", tags=["Auth"])
+@limiter.limit(AUTH_LIMIT)
+def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
+    """
+    Authenticate user. Returns access token (15 min) + refresh token (7 days).
+    Account is locked after 5 consecutive failed attempts for 15 minutes.
+    """
+    user = crud.get_user_by_username(db, payload.username)
+
+    # Account lockout check
+    if user and user.is_locked:
+        write_audit(db, "LOGIN", user.username, user.id, "/api/v1/auth/login", "POST",
+                    "FAILURE", "Account locked",
+                    ip_address=request.client.host if request.client else None)
+        raise HTTPException(
+            status_code=423,
+            detail={"error": "AccountLocked", "code": "ACCOUNT_LOCKED",
+                    "detail": f"Account locked until {user.locked_until.strftime('%Y-%m-%d %H:%M UTC')}. Too many failed attempts."},
         )
-        db.add(new_user)
-        db.commit()
-        return {"status": "success", "message": f"User {payload.username} registered with role {payload.role}."}
-    except HTTPException:
-        # Let HTTP-level errors (e.g. 400 duplicate) propagate unchanged
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Database write failure: {e}")
-    finally:
-        db.close()
+
+    if not user or not verify_password(payload.password, user.password_hash):
+        SYSTEM_METRICS["unauthorized_breaches"] += 1
+        if user:
+            record_failed_login(db, user)
+            write_audit(db, "LOGIN", user.username, user.id, "/api/v1/auth/login", "POST",
+                        "FAILURE", f"Bad password (attempt {user.failed_attempts})",
+                        ip_address=request.client.host if request.client else None)
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "Unauthorized", "code": "INVALID_CREDENTIALS",
+                    "detail": "Invalid username or password."},
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "Unauthorized", "code": "ACCOUNT_DISABLED",
+                    "detail": "Account is disabled. Contact an administrator."},
+        )
+
+    # Issue tokens
+    access_token, jti = create_access_token(user)
+    refresh_token     = create_refresh_token_string()
+    device_info = request.headers.get("user-agent", "")[:200]
+    store_refresh_token(db, user, refresh_token,
+                        ip_address=request.client.host if request.client else None,
+                        device_info=device_info)
+    record_successful_login(db, user)
+
+    write_audit(db, "LOGIN", user.username, user.id, "/api/v1/auth/login", "POST",
+                "SUCCESS", None, ip_address=request.client.host if request.client else None,
+                request_id=getattr(request.state, 'request_id', None))
+
+    return {
+        "access_token":  access_token,
+        "refresh_token": refresh_token,
+        "token_type":    "bearer",
+        "expires_in":    settings.access_token_expire_minutes * 60,
+        "role":          user.role,
+        "username":      user.username,
+        "user_id":       user.id,
+        "full_name":     user.full_name,
+    }
+
+
+@app.post("/api/v1/auth/refresh", tags=["Auth"])
+@limiter.limit(AUTH_LIMIT)
+def refresh_token_endpoint(
+    request: Request,
+    payload: RefreshRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Exchange a valid refresh token for a new access token + rotated refresh token.
+    Refresh tokens are single-use (rotation on every call).
+    """
+    result = rotate_refresh_token(
+        db, payload.refresh_token,
+        ip_address=request.client.host if request.client else None,
+    )
+    if not result:
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "Unauthorized", "code": "INVALID_REFRESH_TOKEN",
+                    "detail": "Refresh token is invalid, expired, or already used."},
+        )
+    new_token_str, _ = result
+
+    # Get user from old token hash to create new access token
+    token_hash = hash_refresh_token(new_token_str)
+    from app.db.models import RefreshToken
+    rt = db.query(RefreshToken).filter(RefreshToken.token_hash == token_hash).first()
+    if not rt:
+        raise HTTPException(status_code=401, detail={"error": "Unauthorized", "code": "RT_NOT_FOUND"})
+    user = crud.get_user_by_id(db, rt.user_id)
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail={"error": "Unauthorized", "code": "ACCOUNT_DISABLED"})
+
+    access_token, _ = create_access_token(user)
+    return {
+        "access_token":  access_token,
+        "refresh_token": new_token_str,
+        "token_type":    "bearer",
+        "expires_in":    settings.access_token_expire_minutes * 60,
+    }
+
+
+@app.post("/api/v1/auth/logout", tags=["Auth"])
+def logout(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    payload: RefreshRequest = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Revoke the current access token (JTI blacklist) and optional refresh token.
+    After logout, the access token is immediately invalid even within its 15-minute window.
+    """
+    from datetime import datetime as _dt, timedelta
+    jti = current_user.get("jti")
+    exp = current_user.get("exp", int(time.time()) + 900)
+    if jti:
+        expires_at = _dt.utcfromtimestamp(exp)
+        blacklist_jti(db, jti, int(current_user.get("sub", 0)), expires_at)
+
+    # Revoke refresh token if provided
+    if payload and payload.refresh_token:
+        from app.db.models import RefreshToken
+        token_hash = hash_refresh_token(payload.refresh_token)
+        rt = db.query(RefreshToken).filter(RefreshToken.token_hash == token_hash).first()
+        if rt:
+            rt.revoked    = True
+            rt.revoked_at = _dt.utcnow()
+            db.commit()
+
+    write_audit(db, "LOGOUT", current_user.get("username", "unknown"),
+                int(current_user.get("sub", 0)), "/api/v1/auth/logout", "POST",
+                "SUCCESS", None, ip_address=request.client.host if request.client else None)
+
+    return {"status": "success", "message": "Logged out successfully. Token has been revoked."}
+
+
+@app.get("/api/v1/auth/me", tags=["Auth"])
+def get_me(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get current authenticated user’s full profile."""
+    user = crud.get_user_by_id(db, int(current_user.get("sub", 0)))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {
+        "id":             user.id,
+        "username":       user.username,
+        "email":          user.email,
+        "full_name":      user.full_name,
+        "role":           user.role,
+        "is_active":      user.is_active,
+        "created_at":     user.created_at.isoformat() if user.created_at else None,
+        "last_login":     user.last_login.isoformat() if user.last_login else None,
+        "login_count":    user.login_count,
+    }
+
+
+@app.patch("/api/v1/auth/me", tags=["Auth"])
+def update_me(
+    request: Request,
+    body: UpdateUserRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update own profile (full_name, email, password)."""
+    user = crud.get_user_by_id(db, int(current_user.get("sub", 0)))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if body.password and len(body.password) < settings.password_min_length:
+        raise HTTPException(status_code=400,
+            detail=f"Password must be at least {settings.password_min_length} characters.")
+    updated = crud.update_user(db, user, full_name=body.full_name,
+                               email=body.email, password=body.password)
+    write_audit(db, "UPDATE_PROFILE", user.username, user.id, "/api/v1/auth/me", "PATCH",
+                "SUCCESS", None, ip_address=request.client.host if request.client else None)
+    return {"status": "updated", "username": updated.username, "full_name": updated.full_name, "email": updated.email}
+
+
+@app.post("/api/v1/auth/register", tags=["Auth"])
+@limiter.limit(AUTH_LIMIT)
+def register(
+    request: Request,
+    payload: RegisterRequest,
+    current_user: dict = Depends(require_role("Admin")),
+    db: Session = Depends(get_db),
+):
+    """
+    Admin-only endpoint to create a new user.
+    Requires: role=Admin JWT token.
+    """
+    if payload.role not in ["Admin", "Operator", "Auditor"]:
+        raise HTTPException(status_code=400,
+            detail={"error": "BadRequest", "code": "INVALID_ROLE",
+                    "detail": "Role must be one of: Admin, Operator, Auditor."})
+    if len(payload.password) < settings.password_min_length:
+        raise HTTPException(status_code=400,
+            detail={"error": "BadRequest", "code": "WEAK_PASSWORD",
+                    "detail": f"Password must be at least {settings.password_min_length} characters."})
+    if crud.get_user_by_username(db, payload.username):
+        raise HTTPException(status_code=409,
+            detail={"error": "Conflict", "code": "USERNAME_EXISTS",
+                    "detail": f"Username '{payload.username}' is already taken."})
+    if payload.email and crud.get_user_by_email(db, payload.email):
+        raise HTTPException(status_code=409,
+            detail={"error": "Conflict", "code": "EMAIL_EXISTS",
+                    "detail": f"Email '{payload.email}' is already registered."})
+
+    new_user = crud.create_user(
+        db, payload.username, payload.password, payload.role,
+        email=payload.email, full_name=payload.full_name,
+        created_by=current_user.get("username"),
+    )
+    write_audit(db, "CREATE_USER", current_user.get("username", "admin"),
+                int(current_user.get("sub", 0)), "/api/v1/auth/register", "POST",
+                "SUCCESS", f"Created user: {payload.username} ({payload.role})",
+                ip_address=request.client.host if request.client else None)
+    return {
+        "status":   "created",
+        "user_id":  new_user.id,
+        "username": new_user.username,
+        "role":     new_user.role,
+        "message":  f"User '{payload.username}' created successfully.",
+    }
+
+
+@app.get("/api/v1/auth/users", tags=["Auth"])
+def list_users(
+    current_user: dict = Depends(require_role("Admin")),
+    db: Session = Depends(get_db),
+    skip: int = 0,
+    limit: int = 50,
+    role: Optional[str] = None,
+    is_active: Optional[bool] = None,
+):
+    """Admin only: list all users with pagination and optional filters."""
+    users, total = crud.get_all_users(db, skip=skip, limit=limit, role=role, is_active=is_active)
+    return {
+        "total": total,
+        "skip":  skip,
+        "limit": limit,
+        "users": [
+            {
+                "id":           u.id,
+                "username":     u.username,
+                "email":        u.email,
+                "full_name":    u.full_name,
+                "role":         u.role,
+                "is_active":    u.is_active,
+                "created_at":   u.created_at.isoformat() if u.created_at else None,
+                "last_login":   u.last_login.isoformat() if u.last_login else None,
+                "login_count":  u.login_count,
+                "is_locked":    u.is_locked,
+                "created_by":   u.created_by,
+            }
+            for u in users
+        ],
+    }
+
+
+@app.patch("/api/v1/auth/users/{user_id}", tags=["Auth"])
+def admin_update_user(
+    request: Request,
+    user_id: int,
+    body: AdminUpdateUserRequest,
+    current_user: dict = Depends(require_role("Admin")),
+    db: Session = Depends(get_db),
+):
+    """Admin only: update another user's role, status, name or email."""
+    target = crud.get_user_by_id(db, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if body.role and body.role not in ["Admin", "Operator", "Auditor"]:
+        raise HTTPException(status_code=400, detail="Invalid role.")
+    updated = crud.update_user(db, target, role=body.role, is_active=body.is_active,
+                               full_name=body.full_name, email=body.email)
+    write_audit(db, "ADMIN_UPDATE_USER", current_user.get("username", "admin"),
+                int(current_user.get("sub", 0)), f"/api/v1/auth/users/{user_id}", "PATCH",
+                "SUCCESS", f"Updated user {target.username}: role={body.role}, active={body.is_active}",
+                ip_address=request.client.host if request.client else None)
+    return {"status": "updated", "user_id": updated.id, "username": updated.username,
+            "role": updated.role, "is_active": updated.is_active}
+
 
 @app.post("/api/v1/analyze")
 def analyze_environment(
@@ -1382,24 +1658,59 @@ def analyze_environment(
     avg_speed_kmh           = fused_results["avg_speed_kmh"]
     lane_counts             = fused_results["lane_counts"]
     
-    execution_latency = (time.time() - start_time) * 1000 
-    
-    # Store dynamic execution properties via relational multi-tenant tracking tokens
+
+    execution_latency = (time.time() - start_time) * 1000
+
+    # ── Write to new normalized DB (incident + violations) ─────────────────────────
+    try:
+        _db = next(get_db())
+        user_id = int(current_user.get("sub", 0)) or None
+        # Build violations list from detector
+        _detector_v = ViolationDetector(speed_limit_kmh=50.0)
+        _viols_raw  = _detector_v.detect_violations(
+            visual_data, scenario, active_phase, avg_speed_kmh
+        ).get("violations", [])
+        req_id = getattr(request.state, 'request_id', None) if hasattr(request, 'state') else None
+        crud.create_incident(
+            _db,
+            operator_name    = current_user.get("username", "system"),
+            operator_id      = user_id,
+            scenario         = scenario,
+            priority         = priority,
+            risk_score       = risk_score,
+            latency_ms       = round(execution_latency, 2),
+            vehicle_count    = vehicle_count,
+            avg_speed_kmh    = avg_speed_kmh,
+            traffic_density  = density_level,
+            active_phase     = active_phase,
+            signal_timing    = signal_timing,
+            operational_mode = payload.operational_mode,
+            crime_score      = fused_results.get("crime_score"),
+            crime_type       = fused_results.get("detected_crime_type"),
+            crime_severity   = fused_results.get("crime_severity"),
+            crime_is_anomaly = fused_results.get("crime_is_anomaly"),
+            location_name    = payload.location_name,
+            latitude         = payload.latitude,
+            longitude        = payload.longitude,
+            request_id       = req_id,
+            violations_data  = _viols_raw,
+        )
+        _db.close()
+    except Exception as _log_err:
+        print(f"[DB] Incident log warning: {_log_err}")
+
+    # ── Also write to legacy encrypted ledger (backward compat) ──────────────────
     log_incident_to_ledger(
-        current_user.get("username", "system"), 
-        priority, 
-        scenario, 
-        risk_score, 
+        current_user.get("username", "system"),
+        priority, scenario, risk_score,
         round(execution_latency, 2),
-        vehicle_count,
-        active_phase,
-        signal_timing,
-        location_name=payload.location_name,
-        latitude=payload.latitude,
-        longitude=payload.longitude,
-        operational_mode=payload.operational_mode
+        vehicle_count, active_phase, signal_timing,
+        location_name    = payload.location_name,
+        latitude         = payload.latitude,
+        longitude        = payload.longitude,
+        operational_mode = payload.operational_mode
     )
-    
+
     if priority in ["🚨 COLLISION ALERT (PRIORITY 2)", "🚨 EMERGENCY OVERRIDE (PRIORITY 1)", "🛡️ TAMPER WARNING (PRIORITY 3)", "🔒 SECURITY LOCKDOWN (CRITICAL)"]:
         SYSTEM_METRICS["critical_incidents"] += 1
         timestamp = time.strftime('%H:%M:%S')
@@ -1436,16 +1747,137 @@ def analyze_environment(
         "system_telemetry_metrics": SYSTEM_METRICS
     }
 
-@app.get("/api/v1/history")
-def get_historical_metrics(current_user: dict = Depends(get_current_user)):
-    """Exposes decrypted transaction logs to Admin and Auditor clearances only.
-    Operators are granted access to the Analytics tab header but not raw ledger data."""
-    if current_user["role"].upper() not in ["ADMIN", "AUDITOR"]:
-        raise HTTPException(
-            status_code=403,
-            detail="Forbidden: Operator clearance does not permit raw ledger access. Contact your Admin."
-        )
+# ────────────────────────────────────────────────────────────────────────────
+# Data Query Endpoints — Incidents, Violations, Audit Log (v8.0.0)
+# ────────────────────────────────────────────────────────────────────────────
+
+@app.get("/api/v1/incidents", tags=["Data"])
+def get_incidents(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    skip: int = 0, limit: int = 20,
+    scenario: Optional[str] = None,
+    priority: Optional[str] = None,
+):
+    """Paginated incident history. All authenticated roles can access."""
+    items, total = crud.get_incidents(db, skip=skip, limit=limit,
+                                      scenario=scenario, priority=priority)
+    return {
+        "total": total, "skip": skip, "limit": limit,
+        "incidents": [
+            {"id": i.id, "scenario": i.scenario, "priority": i.priority,
+             "risk_score": i.risk_score, "operator": i.operator_name,
+             "vehicle_count": i.vehicle_count, "location": i.location_name,
+             "crime_score": i.crime_score, "crime_type": i.crime_type,
+             "created_at": i.created_at.isoformat() if i.created_at else None,
+             "violation_count": len(i.violations)}
+            for i in items
+        ],
+    }
+
+
+@app.get("/api/v1/incidents/stats", tags=["Data"])
+def incident_stats_endpoint(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Dashboard summary: counts by scenario/priority, avg risk, crime detections."""
+    return crud.get_incident_stats(db)
+
+
+@app.get("/api/v1/incidents/{incident_id}", tags=["Data"])
+def get_incident_detail(
+    incident_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Full incident record with all linked violation rows."""
+    incident = crud.get_incident_by_id(db, incident_id)
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found.")
+    return {
+        "id": incident.id, "scenario": incident.scenario,
+        "priority": incident.priority, "risk_score": incident.risk_score,
+        "latency_ms": incident.latency_ms, "operator": incident.operator_name,
+        "vehicle_count": incident.vehicle_count, "avg_speed_kmh": incident.avg_speed_kmh,
+        "traffic_density": incident.traffic_density, "active_phase": incident.active_phase,
+        "crime_score": incident.crime_score, "crime_type": incident.crime_type,
+        "crime_severity": incident.crime_severity, "crime_is_anomaly": incident.crime_is_anomaly,
+        "location_name": incident.location_name,
+        "latitude": incident.latitude, "longitude": incident.longitude,
+        "created_at": incident.created_at.isoformat() if incident.created_at else None,
+        "violations": [
+            {"id": v.id, "type_code": v.type_code, "type_label": v.type_label,
+             "severity": v.severity, "plate": v.plate, "fine_amount": v.fine_amount,
+             "source": v.source, "evidence_note": v.evidence_note}
+            for v in incident.violations
+        ],
+    }
+
+
+@app.get("/api/v1/violations", tags=["Data"])
+def get_violations_endpoint(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    skip: int = 0, limit: int = 20,
+    plate: Optional[str] = None,
+    type_code: Optional[str] = None,
+    severity: Optional[str] = None,
+):
+    """Searchable, paginated violation records. Filter by plate, type, or severity."""
+    items, total = crud.get_violations(db, skip=skip, limit=limit,
+                                       plate=plate, type_code=type_code, severity=severity)
+    return {
+        "total": total, "skip": skip, "limit": limit,
+        "violations": [
+            {"id": v.id, "incident_id": v.incident_id, "type_code": v.type_code,
+             "type_label": v.type_label, "severity": v.severity, "plate": v.plate,
+             "fine_amount": v.fine_amount, "location": v.location_name, "source": v.source,
+             "created_at": v.created_at.isoformat() if v.created_at else None}
+            for v in items
+        ],
+    }
+
+
+@app.get("/api/v1/violations/stats", tags=["Data"])
+def violation_stats_endpoint(
+    current_user: dict = Depends(require_role("Admin", "Auditor")),
+    db: Session = Depends(get_db),
+):
+    """Admin/Auditor: aggregate violation statistics and total fines collected."""
+    return crud.get_violation_stats(db)
+
+
+@app.get("/api/v1/audit-log", tags=["Data"])
+def get_audit_log(
+    current_user: dict = Depends(require_role("Admin")),
+    db: Session = Depends(get_db),
+    skip: int = 0, limit: int = 50,
+    username: Optional[str] = None,
+    action: Optional[str] = None,
+    log_status: Optional[str] = None,
+):
+    """Admin only: immutable audit trail of all sensitive actions."""
+    items, total = crud.get_audit_logs(db, skip=skip, limit=limit,
+                                       username=username, action=action, status=log_status)
+    return {
+        "total": total, "skip": skip, "limit": limit,
+        "entries": [
+            {"id": e.id, "username": e.username, "action": e.action,
+             "resource": e.resource, "method": e.method, "status": e.status,
+             "detail": e.detail, "ip_address": e.ip_address,
+             "timestamp": e.timestamp.isoformat() if e.timestamp else None,
+             "request_id": e.request_id}
+            for e in items
+        ],
+    }
+
+
+@app.get("/api/v1/history", tags=["Data"])
+def get_historical_metrics(current_user: dict = Depends(require_role("Admin", "Auditor"))):
+    """Legacy encrypted telemetry ledger. Admin and Auditor only."""
     return {"history": fetch_incident_history(), "role": current_user["role"]}
+
 
 @app.post("/api/v1/chat")
 def system_assistant_chat(payload: ChatbotRequest, current_user: dict = Depends(get_current_user)):
@@ -1594,6 +2026,12 @@ def pipeline_status():
         "database_logging":         {"module": "history_logger",   "status": "ACTIVE"},
         "nlp_classifier":           {"module": "DistilBERT MNLI",  "status": "ONLINE" if TRANSFORMERS_AVAILABLE else "OFFLINE (fallback)"},
         "ai_assistant":             {"module": "Qwen2.5-0.5B",     "status": "ONLINE" if ASSISTANT_ONLINE else "OFFLINE (keyword fallback)"},
+        "ucf_crime_classifier":     {
+            "module": "HOG + SGDClassifier",
+            "status": ("ACTIVE (model loaded)" if (UCF_AVAILABLE and _ucf_classifier and _ucf_classifier.is_model_available())
+                       else "READY (model not trained — run train_ucf.py)"),
+            "dataset": "UCF Crime Dataset",
+        },
     }
 
     pipeline_stages = [
@@ -1616,10 +2054,155 @@ def pipeline_status():
 
     return {
         "system":           "AEGIS-Traffic Secure Smart Intersection Engine",
-        "version":          "6.1.0",
+        "version":          "7.0.0",
         "overall_status":   "OPERATIONAL",
         "modules":          modules,
         "pipeline_stages":  pipeline_stages,
         "system_metrics":   SYSTEM_METRICS,
         "dispatch_network": DISPATCH_REGISTRY,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# UCF Crime Dataset Endpoints
+# ─────────────────────────────────────────────────────────────────────────────────
+
+
+@app.get("/api/v1/ucf/dataset-status")
+def ucf_dataset_status():
+    """
+    Public endpoint — no authentication required.
+    Returns the current extraction status of the UCF Crime Dataset,
+    including per-category frame counts and whether extraction is complete.
+    Safe to call while extraction is still ongoing.
+    """
+    if not UCF_AVAILABLE or _ucf_loader is None:
+        return {
+            "available": False,
+            "message": "UCF Crime Dataset modules are not loaded.",
+        }
+
+    status = _ucf_loader.get_dataset_status()
+    model_info = _ucf_classifier.get_model_info() if _ucf_classifier else {"model_available": False}
+
+    return {
+        "available":    True,
+        "dataset":      status,
+        "classifier":   model_info,
+        "message": (
+            "Extraction complete. Run `python train_ucf.py` to train the crime classifier."
+            if status["extraction_complete"]
+            else f"Extraction ongoing — {len(status['all_known_categories'])}/14 categories available. "
+                 f"Training can start with available data."
+        ),
+    }
+
+
+class UCFAnalyzeRequest(BaseModel):
+    image_b64: str                        # Base64-encoded PNG/JPEG frame
+    location_name: str = "CCTV Feed"
+    include_violations: bool = True       # Also return violation records
+
+
+@app.post("/api/v1/ucf/analyze-frame")
+def ucf_analyze_frame(
+    req: UCFAnalyzeRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Authenticated endpoint.
+    Accepts a base64-encoded image frame and runs the UCF Crime Classifier on it.
+    Returns the predicted crime category, crime_score, severity, and optionally
+    a list of violation records.
+
+    Requires: Bearer JWT token (login via /api/v1/auth/login).
+    """
+    SYSTEM_METRICS["total_requests"] += 1
+
+    if not UCF_AVAILABLE or _ucf_classifier is None:
+        raise HTTPException(
+            status_code=503,
+            detail="UCF Crime Classifier is not available. Check server logs.",
+        )
+
+    if not _ucf_classifier.is_model_available():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "UCF Crime model has not been trained yet. "
+                "Run `python train_ucf.py` on the server or POST /api/v1/ucf/train."
+            ),
+        )
+
+    # Run classification
+    prediction = _ucf_classifier.predict_frame_b64(req.image_b64)
+
+    violations = []
+    if req.include_violations:
+        detector = ViolationDetector()
+        violations = detector.detect_crime_violations(prediction, req.location_name)
+
+    return {
+        "prediction":   prediction,
+        "violations":   violations,
+        "location":     req.location_name,
+        "analyzed_by":  current_user.get("username", "unknown"),
+    }
+
+
+class UCFTrainRequest(BaseModel):
+    max_per_class:  int = 200
+    force_retrain:  bool = False
+
+
+@app.post("/api/v1/ucf/train")
+def ucf_train(
+    req: UCFTrainRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Authenticated endpoint (admin recommended).
+    Triggers model training on the currently available UCF Crime Dataset frames.
+    Training runs synchronously — may take 2–5 minutes for 200 frames/class.
+
+    Returns training results including per-class accuracy.
+    Also available as: `python train_ucf.py --max-per-class 200`
+    """
+    SYSTEM_METRICS["total_requests"] += 1
+
+    if not UCF_AVAILABLE or _ucf_classifier is None:
+        raise HTTPException(
+            status_code=503,
+            detail="UCF modules are not available. Check server logs.",
+        )
+
+    if _ucf_classifier.is_model_available() and not req.force_retrain:
+        model_info = _ucf_classifier.get_model_info()
+        return {
+            "status":   "already_trained",
+            "message":  "Model already exists. Set force_retrain=true to retrain.",
+            "model":    model_info,
+        }
+
+    # Check dataset has some data first
+    if _ucf_loader is not None:
+        ds_status = _ucf_loader.get_dataset_status()
+        if ds_status["train"]["total_frames"] == 0:
+            raise HTTPException(
+                status_code=422,
+                detail="No training frames found in dataset. Ensure extraction is underway.",
+            )
+
+    result = _ucf_classifier.train(
+        max_per_class=min(req.max_per_class, 500),  # cap to prevent OOM
+        verbose=True,
+    )
+
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=f"Training failed: {result.get('error')}")
+
+    return {
+        "status":  "trained",
+        "result":  result,
+        "message": f"Model trained on {result['n_train_frames']} frames across {result['n_classes']} classes.",
     }

@@ -1,15 +1,29 @@
-# ─── Vercel-optimised requirements (FastAPI backend only) ────────────────────
+# ─── AEGIS-Traffic v8.0.0 — Production Requirements ─────────────────────────
+# Vercel-optimised (FastAPI backend only).
+# Streamlit dashboard is a separate service.
 # Full local dev requirements → requirements-dev.txt
-# Streamlit dashboard is a SEPARATE service and is NOT deployed via Vercel Python.
-# Pinned to standard packages to stay under Vercel's 500 MB limit and avoid dependency conflicts.
 
+# Web Framework
 fastapi==0.110.1
 uvicorn==0.29.0
-pydantic==2.6.4
-requests==2.31.0
-pandas==2.2.1
-plotly==5.20.0
-cryptography==42.0.5
-sqlalchemy==2.0.28
 python-multipart==0.0.9
 
+# Data / Validation
+pydantic==2.6.4
+pydantic-settings==2.3.4
+
+# Database (SQLite dev / PostgreSQL prod)
+sqlalchemy==2.0.28
+
+# Authentication & Security
+PyJWT==2.9.0
+cryptography==42.0.5
+
+# Rate Limiting
+slowapi==0.1.9
+
+# Utilities
+requests==2.31.0
+python-dotenv==1.2.2
+pandas==2.2.1
+plotly==5.20.0

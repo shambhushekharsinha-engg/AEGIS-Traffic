@@ -27,13 +27,20 @@ from datetime import datetime, timedelta
 # --------------------------------------------------------------------------- #
 
 VIOLATION_TYPES = {
-    "RED_LIGHT_JUMP":   "🚦 Red Light Jump",
-    "WRONG_LANE":       "⬅️  Wrong Lane",
-    "ILLEGAL_UTURN":    "🔄 Illegal U-Turn",
-    "OVERSPEEDING":     "💨 Overspeeding",
-    "NO_HELMET":        "🪖 No Helmet (Motorcycle)",
-    "ILLEGAL_PARKING":  "🅿️  Illegal Parking",
-    "WRONG_WAY":        "⛔ Wrong Way Driving",
+    "RED_LIGHT_JUMP":      "🚦 Red Light Jump",
+    "WRONG_LANE":          "⬅️  Wrong Lane",
+    "ILLEGAL_UTURN":       "🔄 Illegal U-Turn",
+    "OVERSPEEDING":        "💨 Overspeeding",
+    "NO_HELMET":           "🪖 No Helmet (Motorcycle)",
+    "ILLEGAL_PARKING":     "🅿️  Illegal Parking",
+    "WRONG_WAY":           "⛔ Wrong Way Driving",
+    # ── UCF Crime Dataset-driven violation types ──────────────────────────
+    "ROAD_ACCIDENT":       "🚗 Road Accident Detected",
+    "ASSAULT_DETECTED":    "🥊 Physical Assault / Fight",
+    "EXPLOSION_HAZARD":    "💥 Explosion / Arson Hazard",
+    "CRIMINAL_ACTIVITY":   "🔫 Criminal Activity Detected",
+    "VANDALISM_DETECTED":  "🧨 Vandalism Detected",
+    "SUSPICIOUS_ARREST":   "🚔 Arrest / Burglary Incident",
 }
 
 # Violations that are plausible per scenario
@@ -43,6 +50,33 @@ SCENARIO_VIOLATION_MAP: dict[str, list[str]] = {
     "accident":   ["RED_LIGHT_JUMP", "OVERSPEEDING", "WRONG_WAY"],           # Pre-collision actions
     "emergency":  [],                                                         # Emergency override — bypass violations
     "tamper":     [],                                                         # Feed lost — unverifiable
+}
+
+# UCF Crime label → AEGIS violation type mapping
+UCF_LABEL_TO_VIOLATION: dict[str, str] = {
+    "RoadAccidents": "ROAD_ACCIDENT",
+    "Assault":       "ASSAULT_DETECTED",
+    "Abuse":         "ASSAULT_DETECTED",
+    "Fighting":      "ASSAULT_DETECTED",
+    "Explosion":     "EXPLOSION_HAZARD",
+    "Arson":         "EXPLOSION_HAZARD",
+    "Shooting":      "CRIMINAL_ACTIVITY",
+    "Robbery":       "CRIMINAL_ACTIVITY",
+    "Shoplifting":   "CRIMINAL_ACTIVITY",
+    "Stealing":      "CRIMINAL_ACTIVITY",
+    "Vandalism":     "VANDALISM_DETECTED",
+    "Arrest":        "SUSPICIOUS_ARREST",
+    "Burglary":      "SUSPICIOUS_ARREST",
+}
+
+# Fine amounts (INR) and severity for each UCF-driven violation
+UCF_VIOLATION_DETAILS: dict[str, dict] = {
+    "ROAD_ACCIDENT":      {"fine": 5000,  "severity": "CRITICAL"},
+    "ASSAULT_DETECTED":   {"fine": 10000, "severity": "CRITICAL"},
+    "EXPLOSION_HAZARD":   {"fine": 0,     "severity": "CRITICAL"},
+    "CRIMINAL_ACTIVITY":  {"fine": 0,     "severity": "CRITICAL"},
+    "VANDALISM_DETECTED": {"fine": 3000,  "severity": "HIGH"},
+    "SUSPICIOUS_ARREST":  {"fine": 0,     "severity": "HIGH"},
 }
 
 # Plate pool (consistent within a session via seeded random)
@@ -315,3 +349,68 @@ class ViolationDetector:
             "signal_phase":    signal_phase,
             "checked_at":      datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
         }
+
+    # ------------------------------------------------------------------ #
+    #  UCF Crime-driven violation injection                                #
+    # ------------------------------------------------------------------ #
+
+    def detect_crime_violations(
+        self,
+        crime_prediction: dict,
+        location_name: str = "Intersection",
+    ) -> list[dict]:
+        """
+        Converts a CrimeClassifier prediction into a violation record.
+
+        Args:
+            crime_prediction:  dict from CrimeClassifier.predict_frame()
+            location_name:     Human-readable location string.
+
+        Returns:
+            list of violation dicts (empty if no anomaly detected).
+        """
+        violations: list[dict] = []
+
+        label      = crime_prediction.get("label", "NormalVideos")
+        is_anomaly = crime_prediction.get("is_anomaly", False)
+        confidence = crime_prediction.get("confidence", 0.0)
+        crime_score = crime_prediction.get("crime_score", 0.0)
+        severity   = crime_prediction.get("severity", "NONE")
+
+        # Only create violations for anomalous predictions with reasonable confidence
+        if not is_anomaly or confidence < 0.3:
+            return violations
+
+        violation_type = UCF_LABEL_TO_VIOLATION.get(label)
+        if not violation_type:
+            # Binary mode: "Anomalous" label → generic criminal activity
+            if label == "Anomalous" and is_anomaly:
+                violation_type = "CRIMINAL_ACTIVITY"
+            else:
+                return violations
+
+        details = UCF_VIOLATION_DETAILS.get(violation_type, {"fine": 0, "severity": "HIGH"})
+        vid_id  = f"UCF-{label.upper()[:4]}-{int(crime_score):03d}"
+
+        violations.append({
+            "violation_id":       _violation_id(violation_type, vid_id),
+            "type":               VIOLATION_TYPES[violation_type],
+            "type_code":          violation_type,
+            "vehicle_id":         vid_id,
+            "plate":              "N/A (CCTV Frame)",
+            "ucf_label":          label,
+            "crime_score":        crime_score,
+            "classifier_confidence": round(confidence, 4),
+            "fine_amount_inr":    details["fine"],
+            "timestamp":          _make_timestamp(0),
+            "evidence_note":      (
+                f"UCF Crime Classifier detected '{label}' activity with "
+                f"{confidence:.0%} confidence (crime_score={crime_score:.1f}). "
+                f"Location: {location_name}."
+            ),
+            "image_placeholder":  f"evidence/ucf_{label.lower()}_{vid_id}.jpg",
+            "severity":           details["severity"],
+            "source":             "UCF_CRIME_CLASSIFIER",
+        })
+
+        return violations
