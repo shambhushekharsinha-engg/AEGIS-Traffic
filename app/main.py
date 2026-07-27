@@ -106,16 +106,21 @@ async def request_id_middleware(request: Request, call_next):
     return response
 
 # ── Startup ───────────────────────────────────────────────────────────────────────
+IS_VERCEL = os.environ.get("VERCEL") == "1" or os.environ.get("VERCEL_ENV") is not None
+
 @app.on_event("startup")
 def on_startup():
     """Create all DB tables and seed default users on startup."""
-    create_tables()
-    db = next(get_db())
     try:
-        crud.seed_default_users(db)
-    finally:
-        db.close()
-    print(f"[AEGIS] v{settings.app_version} — Database ready. All production layers initialized.")
+        create_tables()
+        db = next(get_db())
+        try:
+            crud.seed_default_users(db)
+        finally:
+            db.close()
+        print(f"[AEGIS] v{settings.app_version} — Database ready. All production layers initialized.")
+    except Exception as e:
+        print(f"[AEGIS WARN] Startup initialization notice: {e}")
 
 # ── Observability Metrics ──────────────────────────────────────────────────────────
 SYSTEM_METRICS = {
@@ -126,27 +131,26 @@ SYSTEM_METRICS = {
 DISPATCH_REGISTRY = {"status": "STABLE", "last_broadcast": "None"}
 
 
-# ── NLP models (loaded after DB startup) ──────────────────────────────────────────────────
-print("[AEGIS] Loading NLP classifiers...")
+# ── NLP models ───────────────────────────────────────────────────────────────────
 classifier = None
-if pipeline is not None:
+ASSISTANT_ONLINE = False
+assistant = None
+
+if pipeline is not None and not IS_VERCEL:
+    print("[AEGIS] Loading NLP classifiers...")
     try:
         classifier = pipeline("zero-shot-classification", model="typeform/distilbert-base-uncased-mnli")
     except Exception as e:
         print(f"[WARN] NLP Classifier load error: {e}")
-else:
-    print("[INFO] NLP Pipeline disabled (transformers not installed).")
 
-ASSISTANT_ONLINE = False
-assistant = None
-if pipeline is not None:
     try:
         assistant = pipeline("text-generation", model="Qwen/Qwen2.5-0.5B-Instruct", max_new_tokens=120)
         ASSISTANT_ONLINE = True
     except Exception as e:
         print(f"[WARN] Assistant load error: {e}. Reverting to keyword helper.")
 else:
-    print("[INFO] Assistant Pipeline disabled (transformers not installed).")
+    print("[INFO] NLP / LLM Pipeline disabled (serverless environment or transformers not installed).")
+
 print("[AEGIS] All production layers initialized.")
 
 # ────────────────────────────────────────────────────────────────────────────

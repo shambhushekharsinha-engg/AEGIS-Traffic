@@ -86,16 +86,24 @@ def test_fastapi_endpoints_clearance():
 
 def test_jwt_auth_flow():
     """Verify registration, login, and JWT-authenticated requests."""
-    # 1. Register a test operator
+    # 0. Login as seeded admin to obtain Admin authorization for user registration
+    admin_login = client.post("/api/v1/auth/login", json={
+        "username": "admin",
+        "password": "Admin@AEGIS2024!"
+    })
+    assert admin_login.status_code == 200
+    admin_token = admin_login.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # 1. Register a test operator as Admin
     reg_response = client.post("/api/v1/auth/register", json={
         "username": "test_operator_99",
         "password": "securepassword",
         "role": "Operator"
-    })
-    # If the user already exists from a previous run, it might return 400. That's fine, let's proceed.
+    }, headers=admin_headers)
     assert reg_response.status_code in [200, 400]
     
-    # 2. Login to get token
+    # 2. Login as newly registered operator to get token
     login_response = client.post("/api/v1/auth/login", json={
         "username": "test_operator_99",
         "password": "securepassword"
