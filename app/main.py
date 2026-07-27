@@ -754,8 +754,9 @@ def read_root():
             </form>
 
             <div class="quick-seeds">
-                <button onclick="seedCredentials('operator', 'operator123')" class="seed-btn">🔑 Operator Quick Entry</button>
-                <button onclick="seedCredentials('admin', 'admin123')" class="seed-btn">🔑 Admin Quick Entry</button>
+                <button onclick="seedCredentials('operator', 'Operator@AEGIS2024!')" class="seed-btn">🔑 Operator Quick Entry</button>
+                <button onclick="seedCredentials('admin', 'Admin@AEGIS2024!')" class="seed-btn">🔑 Admin Quick Entry</button>
+                <button onclick="seedCredentials('auditor', 'Auditor@AEGIS2024!')" class="seed-btn">🔑 Auditor Quick Entry</button>
             </div>
         </div>
     </div>

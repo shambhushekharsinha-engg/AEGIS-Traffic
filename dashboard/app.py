@@ -426,11 +426,30 @@ if "jwt_token" not in st.session_state:
 
         with tab_login:
             st.markdown("<br>", unsafe_allow_html=True)
+
+            # Quick Fill Action Buttons
+            col_q1, col_q2, col_q3 = st.columns(3)
+            if col_q1.button("🔑 Admin Quick Entry", use_container_width=True):
+                st.session_state.quick_user = "admin"
+                st.session_state.quick_pass = "Admin@AEGIS2024!"
+                st.rerun()
+            if col_q2.button("🔑 Operator Quick Entry", use_container_width=True):
+                st.session_state.quick_user = "operator"
+                st.session_state.quick_pass = "Operator@AEGIS2024!"
+                st.rerun()
+            if col_q3.button("🔑 Auditor Quick Entry", use_container_width=True):
+                st.session_state.quick_user = "auditor"
+                st.session_state.quick_pass = "Auditor@AEGIS2024!"
+                st.rerun()
+
+            default_u = st.session_state.get("quick_user", "")
+            default_p = st.session_state.get("quick_pass", "")
+
             with st.form("login_form", clear_on_submit=False):
                 st.markdown('<div class="t-section" style="margin-bottom:14px;">Operator Credentials</div>', unsafe_allow_html=True)
-                username = st.text_input("Username", placeholder="e.g. admin", label_visibility="collapsed")
+                username = st.text_input("Username", value=default_u, placeholder="e.g. admin", label_visibility="collapsed")
                 st.caption("Username")
-                password = st.text_input("Password", type="password", placeholder="••••••••", label_visibility="collapsed")
+                password = st.text_input("Password", value=default_p, type="password", placeholder="••••••••", label_visibility="collapsed")
                 st.caption("Password")
                 st.markdown("<br>", unsafe_allow_html=True)
                 submitted = st.form_submit_button("🔐  AUTHENTICATE & CONNECT", use_container_width=True)
@@ -458,9 +477,9 @@ if "jwt_token" not in st.session_state:
             st.markdown("""
             <div class="cred-hint">
                 🔑 <strong>Demo Accounts</strong><br>
-                admin / admin123 → Admin Clearance<br>
-                operator / operator123 → Operator<br>
-                auditor / auditor123 → Auditor View
+                admin / Admin@AEGIS2024! → Admin Clearance<br>
+                operator / Operator@AEGIS2024! → Operator<br>
+                auditor / Auditor@AEGIS2024! → Auditor View
             </div>
             """, unsafe_allow_html=True)
 
@@ -1531,7 +1550,7 @@ with tab_guide:
             "steps": [
                 ("1️⃣ Boot the Backend", "Run `uvicorn app.main:app --reload` from the project root. The FastAPI server initialises on port 8000."),
                 ("2️⃣ Launch Dashboard",  "Run `streamlit run dashboard/app.py` and navigate to localhost:8501."),
-                ("3️⃣ Login",             "Use demo credentials: admin/admin123 for full Admin clearance."),
+                ("3️⃣ Login",             "Use demo credentials: admin/Admin@AEGIS2024! for full Admin clearance."),
                 ("4️⃣ Choose Location",   "Type any city or intersection in the Geographic Registry sidebar panel and click \'Initialize Site Node\'."),
                 ("5️⃣ Select Scenario",   "Choose from Normal, Congested, Emergency, Accident, or Tamper scenarios in the sidebar."),
                 ("6️⃣ Execute Scan",      "Click ⚡ EXECUTE SCENARIO SCAN. Results populate all eight dashboard tabs."),
