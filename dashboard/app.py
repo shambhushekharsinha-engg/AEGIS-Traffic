@@ -68,7 +68,7 @@ def sync_geo_context(location_name: str = "", lat: float = 0.0, lon: float = 0.0
     """Dynamically syncs country flag, currency, speed limit, and drive side in session state."""
     try:
         from app.core.geo_currency import detect_country, get_country_config
-        cc  = detect_country(location_name=location_name, lat=lat, lon=lon, try_nominatim=False)
+        cc  = detect_country(location_name=location_name, lat=lat, lon=lon, try_nominatim=True)
         cfg = get_country_config(cc)
         st.session_state.country_code    = cc
         st.session_state.country_flag    = cfg["flag"]

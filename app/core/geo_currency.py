@@ -489,7 +489,7 @@ def _nominatim_detect(lat: float, lon: float, timeout: int = 4) -> Optional[str]
         )
         if r.ok:
             cc = r.json().get("address", {}).get("country_code", "").upper()
-            if cc in COUNTRY_CONFIG:
+            if cc:
                 return cc
     except Exception:
         pass
@@ -510,38 +510,104 @@ def detect_country(
     Detect ISO country code from location context.
 
     Priority:
-      1. Keyword scan of location_name (fast, zero network latency)
-      2. Coordinate bounding box lookup (fast, offline)
-      3. Reverse-geocode via Nominatim (network call)
+      1. Reverse-geocode via Nominatim (accurate, network call)
+      2. Keyword scan of location_name (fast, zero latency)
+      3. Coordinate bounding box lookup (fast, offline)
       4. Default → 'IN' (India)
 
     Returns:
-        2-letter ISO country code (always a key in COUNTRY_CONFIG).
+        2-letter ISO country code.
     """
-    # Priority 1: Keyword scan of location string
-    if location_name:
-        cc = _keyword_detect(location_name)
-        if cc:
-            return cc
-
-    # Priority 2: Lat/Lon bounding box check
-    if lat != 0.0 or lon != 0.0:
-        for code, (lat_min, lat_max, lon_min, lon_max) in COUNTRY_BOUNDS.items():
-            if lat_min <= lat <= lat_max and lon_min <= lon <= lon_max:
-                return code
-
-    # Priority 3: Reverse-geocode via Nominatim
+    # Priority 1: Reverse-geocode via Nominatim (if coordinates provided)
     if try_nominatim and (lat != 0.0 or lon != 0.0):
         cc = _nominatim_detect(lat, lon)
         if cc:
             return cc
 
+    # Priority 2: Keyword scan of location string
+    if location_name:
+        cc = _keyword_detect(location_name)
+        if cc:
+            return cc
+
+    # Priority 3: Lat/Lon bounding box check
+    if lat != 0.0 or lon != 0.0:
+        for code, (lat_min, lat_max, lon_min, lon_max) in COUNTRY_BOUNDS.items():
+            if lat_min <= lat <= lat_max and lon_min <= lon <= lon_max:
+                return code
+
     return _DEFAULT_COUNTRY
 
 
+DYNAMIC_CURRENCIES: dict[str, tuple[str, str, float, int, str]] = {
+    # iso: (currency_code, symbol, usd_rate, urban_speed_kmh, drive_side)
+    "NL": ("EUR", "€", 0.92, 50, "right"),
+    "BE": ("EUR", "€", 0.92, 50, "right"),
+    "AT": ("EUR", "€", 0.92, 50, "right"),
+    "IE": ("EUR", "€", 0.92, 50, "left"),
+    "PT": ("EUR", "€", 0.92, 50, "right"),
+    "GR": ("EUR", "€", 0.92, 50, "right"),
+    "FI": ("EUR", "€", 0.92, 50, "right"),
+    "SE": ("SEK", "kr", 10.5, 50, "right"),
+    "NO": ("NOK", "kr", 10.8, 50, "right"),
+    "DK": ("DKK", "kr", 6.9, 50, "right"),
+    "CH": ("CHF", "Fr", 0.88, 50, "right"),
+    "MX": ("MXN", "$", 17.0, 50, "right"),
+    "EG": ("EGP", "E£", 47.0, 60, "right"),
+    "NZ": ("NZD", "NZ$", 1.65, 50, "left"),
+    "TH": ("THB", "฿", 36.0, 50, "right"),
+    "TR": ("TRY", "₺", 32.0, 50, "right"),
+    "AR": ("ARS", "$", 880.0, 60, "right"),
+    "ID": ("IDR", "Rp", 16000.0, 50, "right"),
+    "PH": ("PHP", "₱", 57.0, 50, "right"),
+    "VN": ("VND", "₫", 25000.0, 50, "right"),
+    "PL": ("PLN", "zł", 4.0, 50, "right"),
+    "CZ": ("CZK", "Kč", 23.0, 50, "right"),
+    "HU": ("HUF", "Ft", 360.0, 50, "right"),
+    "CL": ("CLP", "$", 950.0, 50, "right"),
+    "CO": ("COP", "$", 3900.0, 50, "right"),
+    "PE": ("PEN", "S/", 3.7, 50, "right"),
+}
+
+
+def _make_flag(cc: str) -> str:
+    """Returns flag emoji for a 2-letter ISO country code."""
+    try:
+        return "".join(chr(127397 + ord(c)) for c in cc.upper())
+    except Exception:
+        return "🌐"
+
+
 def get_country_config(country_code: str) -> dict:
-    """Return the full config dict for a country code, defaulting to India."""
-    return COUNTRY_CONFIG.get(country_code, COUNTRY_CONFIG[_DEFAULT_COUNTRY])
+    """Return the full config dict for a country code, with dynamic ISO fallback."""
+    cc = (country_code or "IN").upper()
+    if cc in COUNTRY_CONFIG:
+        return COUNTRY_CONFIG[cc]
+
+    # Dynamic fallback for unlisted ISO countries
+    if cc in DYNAMIC_CURRENCIES:
+        code, sym, rate, speed, drive = DYNAMIC_CURRENCIES[cc]
+    else:
+        code, sym, rate, speed, drive = ("USD", "$", 1.0, 50, "right")
+
+    flag_str = _make_flag(cc)
+    us_fines = COUNTRY_CONFIG["US"]["fines"]
+    scaled_fines = {k: round((v / COUNTRY_CONFIG["US"]["usd_rate"]) * rate) for k, v in us_fines.items()}
+
+    return {
+        "name": f"Jurisdiction ({cc})",
+        "flag": flag_str,
+        "currency_code": code,
+        "currency_symbol": sym,
+        "usd_rate": rate,
+        "speed_limit_urban": speed,
+        "speed_limit_highway": speed * 2,
+        "drive_side": drive,
+        "plate_format": "XXX 0000",
+        "plate_example": "ABC 1234",
+        "plate_keywords": [cc],
+        "fines": scaled_fines,
+    }
 
 
 def get_fine(violation_type: str, country_code: str) -> int:
