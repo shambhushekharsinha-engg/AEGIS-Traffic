@@ -1,15 +1,20 @@
 # app/core/violation_module.py
 """
-Traffic Violation Detection Module
-===================================
+Traffic Violation Detection Module — Global Edition
+=====================================================
 Pipeline (spec §15):
     Signal state + vehicle position → Cross stop-line check → Violation record
     Lane assignment + vehicle path   → Wrong-lane check
     Vehicle speed + threshold        → Overspeed check
     Parking zone + stopped vehicle   → Illegal parking
 
-In simulation mode (Vercel) violations are deterministically generated from
-the scenario name + active signal phase so the API returns believable, varied
+Global support:
+    Fine amounts are automatically converted to the jurisdiction's local
+    currency using the geo_currency module.  Every violation record now
+    carries `fine_local`, `fine_usd`, `currency_code`, `currency_symbol`.
+
+In simulation mode violations are deterministically generated from the
+scenario name + active signal phase so the API returns believable, varied
 records without requiring live video frames.
 
 Real-world upgrade path:
@@ -17,13 +22,17 @@ Real-world upgrade path:
     check_red_light_jump() and check_wrong_lane() with a virtual stop-line.
 """
 
-import random
 import hashlib
 from datetime import datetime, timedelta
 
+from app.core.geo_currency import (
+    get_country_config, get_fine, format_fine_with_usd,
+    COUNTRY_CONFIG, _DEFAULT_COUNTRY,
+)
+
 
 # --------------------------------------------------------------------------- #
-#  Violation type catalogue                                                   #
+#  Violation type catalogue                                                    #
 # --------------------------------------------------------------------------- #
 
 VIOLATION_TYPES = {
@@ -45,11 +54,11 @@ VIOLATION_TYPES = {
 
 # Violations that are plausible per scenario
 SCENARIO_VIOLATION_MAP: dict[str, list[str]] = {
-    "normal":     [],                                                         # Nominal — no violations
-    "congested":  ["WRONG_LANE", "ILLEGAL_PARKING", "NO_HELMET"],
-    "accident":   ["RED_LIGHT_JUMP", "OVERSPEEDING", "WRONG_WAY"],           # Pre-collision actions
-    "emergency":  [],                                                         # Emergency override — bypass violations
-    "tamper":     [],                                                         # Feed lost — unverifiable
+    "normal":    [],
+    "congested": ["WRONG_LANE", "ILLEGAL_PARKING", "NO_HELMET"],
+    "accident":  ["RED_LIGHT_JUMP", "OVERSPEEDING", "WRONG_WAY"],
+    "emergency": [],
+    "tamper":    [],
 }
 
 # UCF Crime label → AEGIS violation type mapping
@@ -69,26 +78,19 @@ UCF_LABEL_TO_VIOLATION: dict[str, str] = {
     "Burglary":      "SUSPICIOUS_ARREST",
 }
 
-# Fine amounts (INR) and severity for each UCF-driven violation
-UCF_VIOLATION_DETAILS: dict[str, dict] = {
-    "ROAD_ACCIDENT":      {"fine": 5000,  "severity": "CRITICAL"},
-    "ASSAULT_DETECTED":   {"fine": 10000, "severity": "CRITICAL"},
-    "EXPLOSION_HAZARD":   {"fine": 0,     "severity": "CRITICAL"},
-    "CRIMINAL_ACTIVITY":  {"fine": 0,     "severity": "CRITICAL"},
-    "VANDALISM_DETECTED": {"fine": 3000,  "severity": "HIGH"},
-    "SUSPICIOUS_ARREST":  {"fine": 0,     "severity": "HIGH"},
+# Severity for UCF-driven violations (fine is sourced from geo_currency)
+UCF_VIOLATION_SEVERITY: dict[str, str] = {
+    "ROAD_ACCIDENT":      "CRITICAL",
+    "ASSAULT_DETECTED":   "CRITICAL",
+    "EXPLOSION_HAZARD":   "CRITICAL",
+    "CRIMINAL_ACTIVITY":  "CRITICAL",
+    "VANDALISM_DETECTED": "HIGH",
+    "SUSPICIOUS_ARREST":  "HIGH",
 }
-
-# Plate pool (consistent within a session via seeded random)
-_PLATE_POOL = [
-    "MH12 AA1234", "DL05 ZX9876", "KA09 BB4321", "TN22 XY5678",
-    "GJ01 CC2345", "UP32 YZ6789", "RJ14 DD3456", "WB28 AB7890",
-    "AP07 EF8901", "TS11 GH0123", "MH43 IJ2345", "DL09 KL4567",
-]
 
 
 # --------------------------------------------------------------------------- #
-#  Helpers                                                                    #
+#  Helpers                                                                     #
 # --------------------------------------------------------------------------- #
 
 def _stable_random(seed_str: str, lo: float, hi: float) -> float:
@@ -101,10 +103,6 @@ def _make_vehicle_id(scenario: str, idx: int) -> str:
     return f"VH-{scenario.upper()[:3]}-{idx:03d}"
 
 
-def _make_plate(idx: int) -> str:
-    return _PLATE_POOL[idx % len(_PLATE_POOL)]
-
-
 def _make_timestamp(offset_seconds: int = 0) -> str:
     ts = datetime.utcnow() - timedelta(seconds=offset_seconds)
     return ts.strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -115,6 +113,51 @@ def _violation_id(violation_type: str, vehicle_id: str) -> str:
     return "VIO-" + hashlib.sha1(raw.encode()).hexdigest()[:10].upper()
 
 
+def _build_violation(
+    violation_type: str,
+    vehicle_id: str,
+    plate: str,
+    country_code: str,
+    severity: str,
+    extra_fields: dict,
+    timestamp_offset: int = 0,
+) -> dict:
+    """
+    Build a normalized violation record with global currency support.
+    Merges fine info from geo_currency and extra context fields.
+    """
+    country_cfg  = get_country_config(country_code)
+    fine_amount  = get_fine(violation_type, country_code)
+    fine_info    = format_fine_with_usd(fine_amount, country_code)
+
+    return {
+        "violation_id":      _violation_id(violation_type, vehicle_id),
+        "type":              VIOLATION_TYPES.get(violation_type, violation_type),
+        "type_code":         violation_type,
+        "vehicle_id":        vehicle_id,
+        "plate":             plate,
+        # ── Global currency fields ───────────────────────────────────────
+        "fine_amount":       fine_amount,
+        "fine_local":        fine_info["local_formatted"],
+        "fine_usd":          fine_info["usd_formatted"],
+        "currency_code":     fine_info["currency_code"],
+        "currency_symbol":   fine_info["currency_symbol"],
+        "usd_equivalent":    fine_info["usd_equivalent"],
+        # ── Jurisdiction context ────────────────────────────────────────
+        "country_code":      country_code,
+        "country_name":      country_cfg["name"],
+        "country_flag":      country_cfg["flag"],
+        "jurisdiction":      f"{country_cfg['flag']} {country_cfg['name']}",
+        # ── Metadata ────────────────────────────────────────────────────
+        "severity":          severity,
+        "timestamp":         _make_timestamp(timestamp_offset),
+        "evidence_note":     extra_fields.get("evidence_note", ""),
+        "image_placeholder": extra_fields.get("image_placeholder", ""),
+        **{k: v for k, v in extra_fields.items()
+           if k not in ("evidence_note", "image_placeholder")},
+    }
+
+
 # --------------------------------------------------------------------------- #
 #  Violation Detector                                                          #
 # --------------------------------------------------------------------------- #
@@ -123,21 +166,32 @@ class ViolationDetector:
     """
     Detects traffic violations based on scenario state.
 
-    Attributes:
-        stop_line_y (int): Y-pixel coordinate of the virtual stop line (default 160).
-        lane_boundaries (list): X-pixel boundaries of each lane.
-        speed_limit_kmh (float): Speed limit threshold for overspeeding check.
+    Args:
+        stop_line_y:      Y-pixel coordinate of the virtual stop line.
+        lane_boundaries:  X-pixel boundaries of each lane.
+        speed_limit_kmh:  Speed limit override. If None, uses country default.
+        country_code:     ISO 3166-1 alpha-2 country code (from geo_currency).
     """
 
     def __init__(
         self,
         stop_line_y: int = 160,
         lane_boundaries: list[int] = None,
-        speed_limit_kmh: float = 50.0,
+        speed_limit_kmh: float = None,
+        country_code: str = _DEFAULT_COUNTRY,
     ):
-        self.stop_line_y      = stop_line_y
-        self.lane_boundaries  = lane_boundaries or [0, 220, 420, 640]  # matches vision_module
-        self.speed_limit_kmh  = speed_limit_kmh
+        self.stop_line_y     = stop_line_y
+        self.lane_boundaries = lane_boundaries or [0, 220, 420, 640]
+        self.country_code    = country_code
+        self.country_cfg     = get_country_config(country_code)
+
+        # Speed limit: caller override > country urban default
+        if speed_limit_kmh is not None:
+            self.speed_limit_kmh = speed_limit_kmh
+        else:
+            self.speed_limit_kmh = float(
+                self.country_cfg.get("speed_limit_urban", 50)
+            )
 
     # ------------------------------------------------------------------ #
     #  Individual violation checkers                                      #
@@ -147,124 +201,93 @@ class ViolationDetector:
         self, vehicle_id: str, plate: str, box: list[int],
         signal_phase: str, idx: int
     ) -> dict | None:
-        """
-        Returns a violation record if vehicle crossed the stop line on RED.
-        Logic: If signal_phase contains 'RED' and vehicle's bottom y > stop_line_y
-        """
         is_red = "RED" in signal_phase.upper() and "GREEN" not in signal_phase.upper()
         if not is_red:
             return None
-
-        # Simulate: not every vehicle jumps red (only odd-indexed ones)
         if idx % 2 == 0:
             return None
-
         bottom_y = box[3] if len(box) >= 4 else 200
         if bottom_y < self.stop_line_y:
-            return None     # Vehicle hasn't reached stop line yet
+            return None
 
-        return {
-            "violation_id":     _violation_id("RED_LIGHT_JUMP", vehicle_id),
-            "type":             VIOLATION_TYPES["RED_LIGHT_JUMP"],
-            "type_code":        "RED_LIGHT_JUMP",
-            "vehicle_id":       vehicle_id,
-            "plate":            plate,
-            "signal_phase":     signal_phase,
-            "stop_line_y_px":   self.stop_line_y,
-            "vehicle_bottom_y": bottom_y,
-            "fine_amount_inr":  2000,
-            "timestamp":        _make_timestamp(offset_seconds=idx * 3),
-            "evidence_note":    "Vehicle crossed stop line while signal was RED.",
-            "image_placeholder": f"evidence/{vehicle_id}_red_jump.jpg",
-            "severity":         "HIGH",
-        }
+        return _build_violation(
+            "RED_LIGHT_JUMP", vehicle_id, plate, self.country_code, "HIGH",
+            {
+                "signal_phase":     signal_phase,
+                "stop_line_y_px":   self.stop_line_y,
+                "vehicle_bottom_y": bottom_y,
+                "evidence_note":    "Vehicle crossed stop line while signal was RED.",
+                "image_placeholder": f"evidence/{vehicle_id}_red_jump.jpg",
+            },
+            timestamp_offset=idx * 3,
+        )
 
     def check_wrong_lane(
         self, vehicle_id: str, plate: str, box: list[int], expected_lane: int, idx: int
     ) -> dict | None:
-        """
-        Returns a violation if vehicle's center X falls outside its assigned lane.
-        """
         if len(box) < 4:
             return None
-
-        center_x = (box[0] + box[2]) // 2
-        # Determine which lane the vehicle is actually in
+        center_x    = (box[0] + box[2]) // 2
         actual_lane = 1
         for lane_num, boundary in enumerate(self.lane_boundaries[1:], start=1):
             if center_x < boundary:
                 actual_lane = lane_num
                 break
-
         if actual_lane == expected_lane:
             return None
 
-        return {
-            "violation_id":     _violation_id("WRONG_LANE", vehicle_id),
-            "type":             VIOLATION_TYPES["WRONG_LANE"],
-            "type_code":        "WRONG_LANE",
-            "vehicle_id":       vehicle_id,
-            "plate":            plate,
-            "expected_lane":    f"Lane {expected_lane}",
-            "actual_lane":      f"Lane {actual_lane}",
-            "center_x_px":      center_x,
-            "fine_amount_inr":  500,
-            "timestamp":        _make_timestamp(offset_seconds=idx * 5),
-            "evidence_note":    f"Vehicle detected in Lane {actual_lane}, expected Lane {expected_lane}.",
-            "image_placeholder": f"evidence/{vehicle_id}_wrong_lane.jpg",
-            "severity":         "MEDIUM",
-        }
+        return _build_violation(
+            "WRONG_LANE", vehicle_id, plate, self.country_code, "MEDIUM",
+            {
+                "expected_lane": f"Lane {expected_lane}",
+                "actual_lane":   f"Lane {actual_lane}",
+                "center_x_px":   center_x,
+                "evidence_note": f"Vehicle detected in Lane {actual_lane}, expected Lane {expected_lane}.",
+                "image_placeholder": f"evidence/{vehicle_id}_wrong_lane.jpg",
+            },
+            timestamp_offset=idx * 5,
+        )
 
     def check_overspeeding(
         self, vehicle_id: str, plate: str, speed_kmh: float, idx: int
     ) -> dict | None:
-        """Returns a violation if estimated speed exceeds speed_limit_kmh."""
         if speed_kmh <= self.speed_limit_kmh:
             return None
-
-        excess = round(speed_kmh - self.speed_limit_kmh, 1)
+        excess   = round(speed_kmh - self.speed_limit_kmh, 1)
         severity = "HIGH" if excess > 20 else "MEDIUM"
-        fine = 2000 if excess > 20 else 1000
 
-        return {
-            "violation_id":     _violation_id("OVERSPEEDING", vehicle_id),
-            "type":             VIOLATION_TYPES["OVERSPEEDING"],
-            "type_code":        "OVERSPEEDING",
-            "vehicle_id":       vehicle_id,
-            "plate":            plate,
-            "measured_speed_kmh": round(speed_kmh, 1),
-            "speed_limit_kmh":  self.speed_limit_kmh,
-            "excess_kmh":       excess,
-            "fine_amount_inr":  fine,
-            "timestamp":        _make_timestamp(offset_seconds=idx * 2),
-            "evidence_note":    f"Vehicle travelling at {speed_kmh:.1f} km/h in a {self.speed_limit_kmh} km/h zone.",
-            "image_placeholder": f"evidence/{vehicle_id}_overspeed.jpg",
-            "severity":         severity,
-        }
+        return _build_violation(
+            "OVERSPEEDING", vehicle_id, plate, self.country_code, severity,
+            {
+                "measured_speed_kmh": round(speed_kmh, 1),
+                "speed_limit_kmh":    self.speed_limit_kmh,
+                "excess_kmh":         excess,
+                "evidence_note": (
+                    f"Vehicle travelling at {speed_kmh:.1f} km/h "
+                    f"in a {self.speed_limit_kmh} km/h zone."
+                ),
+                "image_placeholder": f"evidence/{vehicle_id}_overspeed.jpg",
+            },
+            timestamp_offset=idx * 2,
+        )
 
     def check_no_helmet(
         self, vehicle_id: str, plate: str, label: str, idx: int
     ) -> dict | None:
-        """Flags motorcycle riders without a helmet (simulated probabilistically)."""
         if label.lower() != "motorcycle":
             return None
-        # 40% chance of no-helmet violation for motorcycles in congested scenes
         seed_val = _stable_random(f"helmet-{vehicle_id}", 0, 1)
         if seed_val > 0.4:
             return None
 
-        return {
-            "violation_id":     _violation_id("NO_HELMET", vehicle_id),
-            "type":             VIOLATION_TYPES["NO_HELMET"],
-            "type_code":        "NO_HELMET",
-            "vehicle_id":       vehicle_id,
-            "plate":            plate,
-            "fine_amount_inr":  1000,
-            "timestamp":        _make_timestamp(offset_seconds=idx * 4),
-            "evidence_note":    "Motorcycle rider detected without helmet.",
-            "image_placeholder": f"evidence/{vehicle_id}_no_helmet.jpg",
-            "severity":         "MEDIUM",
-        }
+        return _build_violation(
+            "NO_HELMET", vehicle_id, plate, self.country_code, "MEDIUM",
+            {
+                "evidence_note": "Motorcycle rider detected without helmet.",
+                "image_placeholder": f"evidence/{vehicle_id}_no_helmet.jpg",
+            },
+            timestamp_offset=idx * 4,
+        )
 
     # ------------------------------------------------------------------ #
     #  Main public method                                                  #
@@ -276,24 +299,50 @@ class ViolationDetector:
         scenario: str,
         signal_phase: str,
         avg_speed_kmh: float = 30.0,
+        plate_pool: list[str] = None,
     ) -> dict:
         """
         Runs all applicable violation checks for the current scenario.
 
         Args:
-            detections:     list of detection dicts (label, confidence, box)
-            scenario:       one of normal/congested/accident/emergency/tamper
-            signal_phase:   e.g. "ALL RED (CONTAINMENT)", "North-South Green"
-            avg_speed_kmh:  estimated average speed from fusion_core
+            detections:    list of detection dicts (label, confidence, box)
+            scenario:      one of normal/congested/accident/emergency/tamper
+            signal_phase:  e.g. "ALL RED (CONTAINMENT)", "North-South Green"
+            avg_speed_kmh: estimated average speed from fusion_core
+            plate_pool:    country-specific plate strings from geo_currency
 
         Returns:
             {
-                "violations": [...],
-                "total_count": int,
-                "summary": { type_code: count },
-                "total_fines_inr": int,
+              "violations": [...],
+              "total_count": int,
+              "summary": { type_code: count },
+              "total_fines_local": int,
+              "total_fine_amount": int,    # alias
+              "currency_code": str,
+              "currency_symbol": str,
+              "country_code": str,
+              "country_name": str,
+              "country_flag": str,
+              "speed_limit_kmh": float,
+              "drive_side": str,
             }
         """
+        from app.core.geo_currency import COUNTRY_CONFIG
+
+        # Country info for summary
+        cc   = self.country_code
+        cfg  = self.country_cfg
+        sym  = cfg["currency_symbol"]
+        code = cfg["currency_code"]
+
+        # Default plate pool if not provided
+        if plate_pool is None:
+            from app.core.geo_currency import get_plate_pool
+            plate_pool = get_plate_pool(cc)
+
+        def _get_plate(idx: int) -> str:
+            return plate_pool[idx % len(plate_pool)] if plate_pool else f"UNKNOWN-{idx:03d}"
+
         applicable_types = SCENARIO_VIOLATION_MAP.get(scenario.lower(), [])
         violations: list[dict] = []
         vehicle_idx = 0
@@ -304,12 +353,10 @@ class ViolationDetector:
                 continue
 
             vehicle_idx += 1
-            vehicle_id = _make_vehicle_id(scenario, vehicle_idx)
-            plate      = _make_plate(vehicle_idx)
-            box        = det.get("box", [0, 0, 200, 200])
-
-            # Vary speed per vehicle slightly
-            veh_speed = avg_speed_kmh + _stable_random(f"spd-{vehicle_id}", -5, 25)
+            vehicle_id  = _make_vehicle_id(scenario, vehicle_idx)
+            plate       = _get_plate(vehicle_idx)
+            box         = det.get("box", [0, 0, 200, 200])
+            veh_speed   = avg_speed_kmh + _stable_random(f"spd-{vehicle_id}", -5, 25)
 
             if "RED_LIGHT_JUMP" in applicable_types:
                 v = self.check_red_light_jump(vehicle_id, plate, box, signal_phase, vehicle_idx)
@@ -334,20 +381,36 @@ class ViolationDetector:
 
         # Summary
         type_summary: dict[str, int] = {}
-        total_fines = 0
+        total_fine_local = 0
+        total_fine_usd   = 0.0
+
         for v in violations:
             tc = v["type_code"]
             type_summary[tc] = type_summary.get(tc, 0) + 1
-            total_fines += v.get("fine_amount_inr", 0)
+            total_fine_local += v.get("fine_amount", 0)
+            total_fine_usd   += v.get("usd_equivalent", 0.0)
 
         return {
-            "violations":      violations,
-            "total_count":     len(violations),
-            "summary":         type_summary,
-            "total_fines_inr": total_fines,
-            "scenario":        scenario.upper(),
-            "signal_phase":    signal_phase,
-            "checked_at":      datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "violations":        violations,
+            "total_count":       len(violations),
+            "summary":           type_summary,
+            # ── Currency-aware totals ───────────────────────────────────
+            "total_fines_local": total_fine_local,
+            "total_fine_amount": total_fine_local,   # alias for backward compat
+            "total_fines_usd":   round(total_fine_usd, 2),
+            "currency_code":     code,
+            "currency_symbol":   sym,
+            # ── Jurisdiction ────────────────────────────────────────────
+            "country_code":      cc,
+            "country_name":      cfg["name"],
+            "country_flag":      cfg["flag"],
+            "jurisdiction":      f"{cfg['flag']} {cfg['name']}",
+            "speed_limit_kmh":   self.speed_limit_kmh,
+            "drive_side":        cfg.get("drive_side", "right"),
+            # ── Context ─────────────────────────────────────────────────
+            "scenario":          scenario.upper(),
+            "signal_phase":      signal_phase,
+            "checked_at":        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
         }
 
     # ------------------------------------------------------------------ #
@@ -360,57 +423,42 @@ class ViolationDetector:
         location_name: str = "Intersection",
     ) -> list[dict]:
         """
-        Converts a CrimeClassifier prediction into a violation record.
-
-        Args:
-            crime_prediction:  dict from CrimeClassifier.predict_frame()
-            location_name:     Human-readable location string.
-
-        Returns:
-            list of violation dicts (empty if no anomaly detected).
+        Converts a CrimeClassifier prediction into a violation record
+        with global currency support.
         """
-        violations: list[dict] = []
-
         label      = crime_prediction.get("label", "NormalVideos")
         is_anomaly = crime_prediction.get("is_anomaly", False)
         confidence = crime_prediction.get("confidence", 0.0)
         crime_score = crime_prediction.get("crime_score", 0.0)
-        severity   = crime_prediction.get("severity", "NONE")
 
-        # Only create violations for anomalous predictions with reasonable confidence
         if not is_anomaly or confidence < 0.3:
-            return violations
+            return []
 
         violation_type = UCF_LABEL_TO_VIOLATION.get(label)
         if not violation_type:
-            # Binary mode: "Anomalous" label → generic criminal activity
             if label == "Anomalous" and is_anomaly:
                 violation_type = "CRIMINAL_ACTIVITY"
             else:
-                return violations
+                return []
 
-        details = UCF_VIOLATION_DETAILS.get(violation_type, {"fine": 0, "severity": "HIGH"})
-        vid_id  = f"UCF-{label.upper()[:4]}-{int(crime_score):03d}"
+        severity = UCF_VIOLATION_SEVERITY.get(violation_type, "HIGH")
+        vid_id   = f"UCF-{label.upper()[:4]}-{int(crime_score):03d}"
 
-        violations.append({
-            "violation_id":       _violation_id(violation_type, vid_id),
-            "type":               VIOLATION_TYPES[violation_type],
-            "type_code":          violation_type,
-            "vehicle_id":         vid_id,
-            "plate":              "N/A (CCTV Frame)",
-            "ucf_label":          label,
-            "crime_score":        crime_score,
-            "classifier_confidence": round(confidence, 4),
-            "fine_amount_inr":    details["fine"],
-            "timestamp":          _make_timestamp(0),
-            "evidence_note":      (
-                f"UCF Crime Classifier detected '{label}' activity with "
-                f"{confidence:.0%} confidence (crime_score={crime_score:.1f}). "
-                f"Location: {location_name}."
-            ),
-            "image_placeholder":  f"evidence/ucf_{label.lower()}_{vid_id}.jpg",
-            "severity":           details["severity"],
-            "source":             "UCF_CRIME_CLASSIFIER",
-        })
-
-        return violations
+        return [
+            _build_violation(
+                violation_type, vid_id, "N/A (CCTV Frame)",
+                self.country_code, severity,
+                {
+                    "ucf_label":             label,
+                    "crime_score":           crime_score,
+                    "classifier_confidence": round(confidence, 4),
+                    "evidence_note": (
+                        f"UCF Crime Classifier detected '{label}' activity with "
+                        f"{confidence:.0%} confidence (crime_score={crime_score:.1f}). "
+                        f"Location: {location_name}."
+                    ),
+                    "image_placeholder":  f"evidence/ucf_{label.lower()}_{vid_id}.jpg",
+                    "source":             "UCF_CRIME_CLASSIFIER",
+                },
+            )
+        ]

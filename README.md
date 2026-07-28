@@ -117,8 +117,10 @@
 | 🧠 **NLP Fusion** | Multimodal context classification | DistilBERT zero-shot MNLI (Hugging Face Transformers) |
 | 🔬 **Crime AI** | UCF Crime Dataset classifier | sklearn RF trained on 400K+ UCF frames, 75.75% accuracy |
 | 💬 **AI Copilot** | Traffic advisory chatbot | Qwen 2.5-0.5B-Instruct + prompt-injection guardrails |
-| 🚘 **ANPR** | Automatic plate recognition | Scenario-aware OCR simulation + flagging registry |
-| ⚠️ **Violations** | Traffic violation detection | Fine calculation, violation typing, normalized DB records |
+| 🌍 **Global Geo-Currency** | Multi-jurisdiction rules | 22+ countries supported: auto-detected currency, speed limits, drive-side & fine schedules |
+| 🗺️ **Map Intelligence** | Interactive Folium mapping | Token-free Leaflet/Folium map with Street/Satellite/Dark tiles, OSRM routing, live vehicle pins |
+| 🚘 **ANPR** | Automatic plate recognition | Country-specific OCR plate generation (e.g. UK, US, India, Japan, UAE) + watchlist hits |
+| ⚠️ **Violations** | Traffic violation detection | Jurisdiction-aware fine amounts (local currency + USD conversion), severity levels & DB storage |
 | 📊 **Traffic Analytics** | Density · Queue · Speed · Lanes | Real-time KPIs from every multimodal scan |
 | ⚙️ **Pipeline Status** | Module health matrix | Live status of all AI/system modules |
 | 🔒 **Auth** | Zero-trust authentication | PyJWT + 15-min access tokens + 7-day refresh tokens |
@@ -128,8 +130,7 @@
 | 📋 **Audit Trail** | Immutable action log | Every login/logout/simulate/user-change written to `audit_logs` |
 | 🚦 **Rate Limiting** | Brute-force protection | slowapi: 60/min general, 10/min auth endpoints |
 | 🔏 **Account Lockout** | Credential stuffing guard | 5 failed attempts → 15-min account lock |
-| 🌍 **Geo** | Global site initialization | Nominatim OSM geocoding + hash-based fallback |
-| 🗺️ **Mapping** | Global incident registry | Plotly Mapbox dark-mode scatter globe |
+| 🌍 **Geo** | Global site initialization | Nominatim OSM geocoding + hash-based fallback + 22 country presets |
 | ⚙️ **Modes** | 4-state operating machine | AI Auto / Manual Override / Lockdown / Predictive |
 | 📈 **Analytics** | Production telemetry suite | 7 Plotly chart types: area · bar · scatter · pie · box · histogram |
 | 📂 **Data Upload** | Custom dataset analyzer | CSV / Excel / JSON + 7 chart types + AI insights |
@@ -167,12 +168,13 @@
 - Every simulation now writes a **normalized `IncidentLog` + linked `ViolationRecord`** rows
 - **`session_blacklist`** table enables instant token revocation on logout
 
-### 📡 New API Endpoints (15 endpoints added)
+### 📡 New API Endpoints (16 endpoints added)
 
 | Group | New Endpoints |
 |:---|:---|
 | **Auth** | `POST /login` · `POST /refresh` · `POST /logout` · `GET /me` · `PATCH /me` · `POST /register` · `GET /users` · `PATCH /users/{id}` |
-| **Data** | `GET /incidents` · `GET /incidents/stats` · `GET /incidents/{id}` · `GET /violations` · `GET /violations/stats` · `GET /audit-log` |
+| **Data & Telemetry** | `GET /incidents` · `GET /incidents/stats` · `GET /incidents/{id}` · `GET /violations` · `GET /violations/stats` · `GET /audit-log` |
+| **Map Intelligence** | `GET /api/v1/map/vehicles` *(Geo-located vehicle tracking markers, compass bearings & watchlist hits)* |
 
 ### 🔬 UCF Crime Dataset Integration
 
@@ -180,6 +182,18 @@
 - **75.75% validation accuracy** across 13 crime categories
 - Every simulation scan now includes `crime_score`, `crime_type`, `crime_severity`, `crime_is_anomaly` fields
 - Stored in normalized `incident_logs` and returned in API response
+
+### 🌐 Global Geo-Currency & Multi-Jurisdiction Traffic Engine
+
+- **22 Jurisdictions Supported**: Automatic country detection (via OpenStreetMap Nominatim reverse geocoding or location keywords) for India 🇮🇳, USA 🇺🇸, UK 🇬🇧, Japan 🇯🇵, Germany 🇩🇪, UAE 🇦🇪, China 🇨🇳, Singapore 🇸🇬, France 🇫🇷, Italy 🇮🇹, Spain 🇪🇸, Brazil 🇧🇷, Canada 🇨🇦, Australia 🇦🇺, Russia 🇷🇺, South Africa 🇿🇦, Nigeria 🇳🇬, Pakistan 🇵🇰, Saudi Arabia 🇸🇦, South Korea 🇰🇷, Malaysia 🇲🇾.
+- **Dynamic Local Fine Schedule**: Traffic violation fines are dynamically formatted in local currency (`₹`, `$`, `£`, `€`, `¥`, `د.إ`, `R$`, `A$`, `Rs`, `₩`, etc.) alongside approximate USD equivalents.
+- **Jurisdiction-Aware Rules**: Speed limits (urban vs highway), driving side (left vs right), and country-specific license plate formats (`AB12 CDE` for UK, `MH12 AA1234` for India, `ABC 1234` for US, `品川 300 あ 1234` for Japan).
+
+### 🗺️ Interactive Folium Multi-Layer Map Intelligence
+
+- **Token-Free Mapping**: Replaced API-key-dependent maps with an interactive **Folium / Leaflet** solution.
+- **Multi-Layer Map Tiles**: Seamlessly toggle between **🗺️ Street Map** (OpenStreetMap), **🛰️ Satellite** (Esri World Imagery), and **🌑 Dark Mode** (CartoDB Dark).
+- **Live Vehicle Markers & Routing**: Real-time vehicle location pins synced with ANPR watchlist status and **OSRM-powered directional routing** from control nodes to flagged vehicles.
 
 ---
 
@@ -900,24 +914,47 @@ TEST 9: Revoked token → /me             → 401 ✅  TOKEN_REVOKED
 
 ---
 
-## 🌍 Geographic Registry
+## 🌍 Geographic Registry & Global Geo-Currency Engine
 
-AEGIS-Traffic can initialize **any intersection on Earth** as an active smart-city node:
+AEGIS-Traffic can initialize **any intersection on Earth** as an active smart-city node with full local jurisdiction awareness:
 
 ```
 Sidebar → Type any location → Click "📡 Initialize Site Node"
 ```
 
-**Supported examples:**
-- `Times Square, New York`
-- `Shibuya Crossing, Tokyo`
-- `Arc de Triomphe, Paris`
-- `Sheikh Zayed Road, Dubai`
-- `Trafalgar Square, London`
-- `Connaught Place, New Delhi`
-- Any GPS coordinates or address worldwide
+### 🗺️ Multi-Layer Folium Interactive Map
+- **Token-Free Mapping**: Powered by Folium / Leaflet (no Mapbox API key required).
+- **Layer Toggle**: 🗺️ **Street Map** (OpenStreetMap), 🛰️ **Satellite Imagery** (Esri World), 🌑 **Dark Mode** (CartoDB Dark).
+- **ANPR Live Vehicle Pins**: Interactive vehicle markers showing plate text, vehicle category, speed (km/h), and flagged status.
+- **OSRM Directions Routing**: Calculates live routing from intersection control node to nearest flagged/tracked vehicle.
 
-Uses **OpenStreetMap Nominatim** for geocoding with a deterministic hash-based fallback if rate-limited.
+### 🌐 Supported Country Jurisdictions (22+ Countries)
+
+| Flag | Jurisdiction | Currency | Speed Limit (Urban) | Drive Side | Plate Format Example |
+|:---:|:---|:---:|:---:|:---:|:---|
+| 🇮🇳 | **India** | INR (`₹`) | 50 km/h | Left | `MH12 AA1234` |
+| 🇺🇸 | **United States** | USD (`$`) | 40 km/h | Right | `ABC 1234` |
+| 🇬🇧 | **United Kingdom** | GBP (`£`) | 48 km/h | Left | `AB12 CDE` |
+| 🇯🇵 | **Japan** | JPY (`¥`) | 40 km/h | Left | `品川 300 あ 1234` |
+| 🇩🇪 | **Germany** | EUR (`€`) | 50 km/h | Right | `B AB 1234` |
+| 🇦🇪 | **United Arab Emirates** | AED (`د.إ`) | 60 km/h | Right | `Dubai A 12345` |
+| 🇨🇳 | **China** | CNY (`¥`) | 60 km/h | Right | `京 A12345` |
+| 🇸🇬 | **Singapore** | SGD (`S$`) | 50 km/h | Left | `SBA 1234 A` |
+| 🇫🇷 | **France** | EUR (`€`) | 50 km/h | Right | `AB-123-CD` |
+| 🇮🇹 | **Italy** | EUR (`€`) | 50 km/h | Right | `AB 123 CD` |
+| 🇪🇸 | **Spain** | EUR (`€`) | 50 km/h | Right | `1234 ABC` |
+| 🇧🇷 | **Brazil** | BRL (`R$`) | 60 km/h | Right | `ABC-1234` |
+| 🇨🇦 | **Canada** | CAD (`C$`) | 50 km/h | Right | `ABC 123` |
+| 🇦🇺 | **Australia** | AUD (`A$`) | 50 km/h | Left | `ABC 123` |
+| 🇷🇺 | **Russia** | RUB (`₽`) | 60 km/h | Right | `А 123 ВС 77` |
+| 🇿🇦 | **South Africa** | ZAR (`R`) | 60 km/h | Left | `CAA 123 GP` |
+| 🇳🇬 | **Nigeria** | NGN (`₦`) | 50 km/h | Right | `ABC-123DE` |
+| 🇵🇰 | **Pakistan** | PKR (`Rs`) | 50 km/h | Left | `LEA-1234` |
+| 🇸🇦 | **Saudi Arabia** | SAR (`﷼`) | 60 km/h | Right | `A 123 BCD` |
+| 🇰🇷 | **South Korea** | KRW (`₩`) | 50 km/h | Right | `12가 3456` |
+| 🇲🇾 | **Malaysia** | MYR (`RM`) | 50 km/h | Left | `WXY 1234` |
+
+*Location detection utilizes **OpenStreetMap Nominatim** reverse geocoding with a keyword fallback mechanism.*
 
 ---
 

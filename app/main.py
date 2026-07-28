@@ -50,6 +50,10 @@ from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
 from app.core.audio_module import AudioAnalyzer as AudioEngine
 from app.core.anpr_module import ANPREngine
 from app.core.violation_module import ViolationDetector
+from app.core.geo_currency import (
+    detect_country, get_country_config, get_fine,
+    format_fine_with_usd, get_plate_pool,
+)
 
 # ── UCF Crime Dataset ───────────────────────────────────────────────────────────────
 try:
@@ -1599,7 +1603,8 @@ def admin_update_user(
 
 @app.post("/api/v1/analyze")
 def analyze_environment(
-    payload: SimulationRequest, 
+    payload: SimulationRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user)
 ):
     """Orchestrates telemetry streams under zero-trust multi-role authorization context models."""
@@ -1666,14 +1671,28 @@ def analyze_environment(
 
     execution_latency = (time.time() - start_time) * 1000
 
+    # ── Detect country / currency from location ────────────────────────────
+    country_code = detect_country(
+        location_name = payload.location_name,
+        lat           = payload.latitude,
+        lon           = payload.longitude,
+        try_nominatim = True,
+    )
+    country_cfg  = get_country_config(country_code)
+    _plate_pool  = get_plate_pool(country_code)
+
     # ── Write to new normalized DB (incident + violations) ─────────────────────────
     try:
         _db = next(get_db())
         user_id = int(current_user.get("sub", 0)) or None
         # Build violations list from detector
-        _detector_v = ViolationDetector(speed_limit_kmh=50.0)
+        _detector_v = ViolationDetector(
+            speed_limit_kmh = float(country_cfg.get("speed_limit_urban", 50)),
+            country_code    = country_code,
+        )
         _viols_raw  = _detector_v.detect_violations(
-            visual_data, scenario, active_phase, avg_speed_kmh
+            visual_data, scenario, active_phase, avg_speed_kmh,
+            plate_pool = _plate_pool,
         ).get("violations", [])
         req_id = getattr(request.state, 'request_id', None) if hasattr(request, 'state') else None
         crud.create_incident(
@@ -1725,21 +1744,22 @@ def analyze_environment(
         DISPATCH_REGISTRY = {"status": "STABLE", "last_broadcast": "None"}
         
     return {
-        "latency_ms": round(execution_latency, 2),
-        "risk_score": risk_score,
+        "scenario":      scenario,
+        "latency_ms":    round(execution_latency, 2),
+        "risk_score":    risk_score,
         "fused_context": fused_context,
         "telemetry": {
-            "visual_detections": visual_data, 
-            "visual_image_b64": visual_image_b64,
-            "acoustic_profile": audio_data
+            "visual_detections": visual_data,
+            "visual_image_b64":  visual_image_b64,
+            "acoustic_profile":  audio_data,
         },
         "fusion_layer": {
-            "alert_status": priority, 
+            "alert_status":              priority,
             "automated_incident_report": report,
-            "rerouting_advisory": advisory,
-            "signal_timing_seconds": signal_timing,
-            "active_phase": active_phase,
-            "vehicle_count": vehicle_count
+            "rerouting_advisory":        advisory,
+            "signal_timing_seconds":     signal_timing,
+            "active_phase":              active_phase,
+            "vehicle_count":             vehicle_count,
         },
         "traffic_analytics": {
             "traffic_density_percent": traffic_density_percent,
@@ -1748,8 +1768,24 @@ def analyze_environment(
             "avg_speed_kmh":           avg_speed_kmh,
             "lane_counts":             lane_counts,
         },
-        "dispatch_network": DISPATCH_REGISTRY,
-        "system_telemetry_metrics": SYSTEM_METRICS
+        "location": {
+            "name":      payload.location_name,
+            "latitude":  payload.latitude,
+            "longitude": payload.longitude,
+        },
+        "geo_context": {
+            "country_code":    country_code,
+            "country_name":    country_cfg["name"],
+            "country_flag":    country_cfg["flag"],
+            "currency_code":   country_cfg["currency_code"],
+            "currency_symbol": country_cfg["currency_symbol"],
+            "speed_limit_kmh": country_cfg["speed_limit_urban"],
+            "drive_side":      country_cfg.get("drive_side", "right"),
+            "plate_format":    country_cfg.get("plate_format", ""),
+            "plate_example":   country_cfg.get("plate_example", ""),
+        },
+        "dispatch_network":          DISPATCH_REGISTRY,
+        "system_telemetry_metrics": SYSTEM_METRICS,
     }
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -1879,8 +1915,12 @@ def get_audit_log(
 
 
 @app.get("/api/v1/history", tags=["Data"])
-def get_historical_metrics(current_user: dict = Depends(require_role("Admin", "Auditor"))):
-    """Legacy encrypted telemetry ledger. Admin and Auditor only."""
+def get_historical_metrics(current_user: dict = Depends(get_current_user)):
+    """
+    Legacy encrypted telemetry ledger.
+    All authenticated roles can read their own site history for Map Intelligence.
+    Admin/Auditor see all records; Operators see all scan locations for map pins.
+    """
     return {"history": fetch_incident_history(), "role": current_user["role"]}
 
 
@@ -1935,27 +1975,71 @@ def get_anpr_records(
     Runs the ANPR pipeline for a given scenario.
 
     Returns synthetic license plate records for every detected vehicle.
+    Response keys are normalized for the dashboard:
+      - `plate`          → plate text (was plate_text)
+      - `vehicle_type`   → vehicle category
+      - `flagged`        → True if plate is on the watchlist
     Real-world deployment: pass actual bounding-box crops from live CCTV frames.
     """
     scenario = scenario.lower()
     if scenario not in ["normal", "accident", "congested", "emergency", "tamper"]:
-        raise HTTPException(status_code=400, detail="Invalid scenario. Choose: normal, accident, congested, emergency, tamper")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid scenario. Choose: normal, accident, congested, emergency, tamper"
+        )
 
     try:
         vision_result = VisionEngine().process_traffic_scene(scenario)
         detections    = vision_result["detections"]
-    except Exception as e:
+    except Exception:
         detections = [{"label": "car", "confidence": 0.85, "box": [100, 100, 200, 180]}]
 
     engine  = ANPREngine()
-    records = engine.process_detections(detections, scenario)
-    summary = engine.get_summary(records)
+    raw_records = engine.process_detections(detections, scenario)
+
+    # ── Normalize records for dashboard consumption ──────────────────────────
+    # Flagged plates are those in high-risk scenarios or with suspicious patterns.
+    # In a real system this would query a stolen-vehicle / watch-list DB.
+    import hashlib as _hl
+    _flagged_scenarios = {"accident", "emergency"}
+    normalized_records = []
+    flagged_count = 0
+    for rec in raw_records:
+        # Deterministic "watchlist hit" simulation based on plate hash
+        _plate_hash = int(_hl.md5(rec.get("plate_text", "").encode()).hexdigest(), 16)
+        is_flagged = (
+            scenario in _flagged_scenarios
+            and _plate_hash % 5 == 0      # ~20% of plates flagged in risky scenarios
+        )
+        if is_flagged:
+            flagged_count += 1
+        normalized_records.append({
+            "vehicle_id":    rec["vehicle_id"],
+            "plate":         rec["plate_text"],          # dashboard-expected key
+            "vehicle_type":  rec["vehicle_type"],
+            "ocr_confidence": rec["ocr_confidence"],
+            "flagged":       is_flagged,
+            "watchlist_hit": is_flagged,
+            "timestamp":     rec["timestamp"],
+            "scenario":      rec["scenario"],
+            "status":        "FLAGGED" if is_flagged else "CLEAR",
+        })
+
+    # ── Summary with keys matching the dashboard UI ──────────────────────────
+    summary = {
+        "total_plates":  len(normalized_records),
+        "registered":    len(normalized_records) - flagged_count,
+        "flagged":       flagged_count,
+        "avg_ocr_confidence": round(
+            sum(r["ocr_confidence"] for r in normalized_records) / max(len(normalized_records), 1), 3
+        ),
+    }
 
     return {
-        "scenario":          scenario.upper(),
-        "anpr_records":      records,
-        "summary":           summary,
-        "pipeline_version":  "AEGIS-ANPR-v1.0",
+        "scenario":         scenario.upper(),
+        "anpr_records":     normalized_records,
+        "summary":          summary,
+        "pipeline_version": "AEGIS-ANPR-v2.0",
     }
 
 
@@ -1966,17 +2050,39 @@ def get_anpr_records(
 @app.get("/api/v1/violations/{scenario}")
 def get_violations(
     scenario: str,
+    latitude:  float = 40.7580,
+    longitude: float = -73.9855,
+    location_name: str = "",
     current_user: dict = Depends(get_current_user)
 ):
     """
     Detects traffic violations for a given scenario.
 
-    Checks: red-light jump, wrong lane, overspeeding, no helmet.
-    Returns structured violation records with fine amounts.
+    Global edition: fine amounts are automatically converted to the
+    local currency of the detected country (via lat/lon + location_name).
+
+    Each violation includes:
+      - fine_amount      → fine in local currency units
+      - fine_local       → formatted string e.g. "\u20b92,000" / "$250" / "£100"
+      - fine_usd         → approximate USD equivalent
+      - currency_code    → ISO 4217 code e.g. "INR", "USD", "GBP"
+      - country_flag     → emoji flag
     """
     scenario = scenario.lower()
     if scenario not in ["normal", "accident", "congested", "emergency", "tamper"]:
-        raise HTTPException(status_code=400, detail="Invalid scenario. Choose: normal, accident, congested, emergency, tamper")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid scenario. Choose: normal, accident, congested, emergency, tamper"
+        )
+
+    # Detect country from caller-supplied location
+    country_code = detect_country(
+        location_name = location_name,
+        lat = latitude, lon = longitude,
+        try_nominatim = True,
+    )
+    country_cfg  = get_country_config(country_code)
+    plate_pool   = get_plate_pool(country_code)
 
     # Get vision detections
     try:
@@ -1986,27 +2092,226 @@ def get_violations(
         detections = [{"label": "car", "confidence": 0.85, "box": [100, 100, 200, 180]}]
 
     # Get fusion results for signal phase and speed
-    fusion_core   = MultimodalFusionCore()
-    audio_engine  = AudioEngine()
+    fusion_core  = MultimodalFusionCore()
+    audio_engine = AudioEngine()
     try:
-        audio_data = audio_engine.check_anomaly(f"dataset/Audio_Samples/{scenario}_sound.wav")
+        audio_data = audio_engine.check_anomaly(
+            f"dataset/Audio_Samples/{scenario}_sound.wav"
+        )
     except Exception:
-        audio_data = {"status": "Normal", "db_level": 42.0, "type": "Ambient",
-                      "waveform": [], "fft_frequencies": [], "fft_amplitudes": [], "peak_frequency": 0.0}
+        audio_data = {
+            "status": "Normal", "db_level": 42.0, "type": "Ambient",
+            "waveform": [], "fft_frequencies": [], "fft_amplitudes": [],
+            "peak_frequency": 0.0,
+        }
 
-    fused = fusion_core.fuse_and_classify(detections, audio_data, scenario)
+    fused         = fusion_core.fuse_and_classify(detections, audio_data, scenario)
     signal_phase  = fused["active_phase"]
     avg_speed_kmh = fused["avg_speed_kmh"]
 
-    detector = ViolationDetector(speed_limit_kmh=50.0)
-    result   = detector.detect_violations(detections, scenario, signal_phase, avg_speed_kmh)
+    detector = ViolationDetector(
+        speed_limit_kmh = float(country_cfg.get("speed_limit_urban", 50)),
+        country_code    = country_code,
+    )
+    result   = detector.detect_violations(
+        detections, scenario, signal_phase, avg_speed_kmh,
+        plate_pool = plate_pool,
+    )
 
-    return result
+    # ── Normalize violation records for dashboard ────────────────────────────
+    normalized_violations = []
+    total_fine = 0
+    for v in result.get("violations", []):
+        fine_val = v.get("fine_amount", 0)
+        total_fine += fine_val
+        normalized_violations.append({
+            "violation_id":  v.get("violation_id", ""),
+            "type":          v.get("type", ""),
+            "type_code":     v.get("type_code", ""),
+            "vehicle_id":    v.get("vehicle_id", ""),
+            "plate":         v.get("plate", "—"),
+            # ── Global currency fields ──────────────────────────────────
+            "fine_amount":   fine_val,
+            "fine_local":    v.get("fine_local", f"{country_cfg['currency_symbol']}{fine_val:,}"),
+            "fine_usd":      v.get("fine_usd", ""),
+            "currency_code": v.get("currency_code", country_cfg["currency_code"]),
+            "currency_symbol": v.get("currency_symbol", country_cfg["currency_symbol"]),
+            "usd_equivalent": v.get("usd_equivalent", 0.0),
+            # ── Jurisdiction ────────────────────────────────────────
+            "country_code":  v.get("country_code", country_code),
+            "country_name":  v.get("country_name", country_cfg["name"]),
+            "country_flag":  v.get("country_flag", country_cfg["flag"]),
+            "jurisdiction":  v.get("jurisdiction", f"{country_cfg['flag']} {country_cfg['name']}"),
+            # ── Metadata ──────────────────────────────────────────
+            "severity":      v.get("severity", "MEDIUM"),
+            "timestamp":     v.get("timestamp", ""),
+            "evidence_note": v.get("evidence_note", ""),
+        })
+
+    total_usd = round(sum(v.get("usd_equivalent", 0) for v in normalized_violations), 2)
+
+    normalized_summary = {
+        "total_violations":  len(normalized_violations),
+        "total_fine_amount": total_fine,
+        "total_fine_local":  f"{country_cfg['currency_symbol']}{total_fine:,}",
+        "total_fine_usd":    f"≈ ${total_usd:,.2f}",
+        "currency_code":     country_cfg["currency_code"],
+        "currency_symbol":   country_cfg["currency_symbol"],
+        "country_code":      country_code,
+        "country_name":      country_cfg["name"],
+        "country_flag":      country_cfg["flag"],
+        "jurisdiction":      f"{country_cfg['flag']} {country_cfg['name']}",
+        "speed_limit_kmh":   country_cfg["speed_limit_urban"],
+        "drive_side":        country_cfg.get("drive_side", "right"),
+        "by_type":           result.get("summary", {}),
+        "scenario":          scenario.upper(),
+        "signal_phase":      signal_phase,
+    }
+
+    return {
+        "violations": normalized_violations,
+        "summary":    normalized_summary,
+        "checked_at": result.get("checked_at", ""),
+        "scenario":   scenario.upper(),
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Pipeline Status — public health + module info endpoint
 # ─────────────────────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Map Intelligence — Live Vehicle Tracking Endpoint
+# ─────────────────────────────────────────────────────────────────────────────
+
+class MapVehiclesRequest(BaseModel):
+    scenario:   str   = "normal"
+    latitude:   float = 40.7580
+    longitude:  float = -73.9855
+
+
+@app.get("/api/v1/map/vehicles")
+def get_map_vehicles(
+    scenario:      str   = "normal",
+    latitude:      float = 40.7580,
+    longitude:     float = -73.9855,
+    location_name: str   = "",
+    current_user:  dict  = Depends(get_current_user),
+):
+    """
+    Returns geo-located vehicle markers for the Map Intelligence tab.
+
+    Each marker includes:
+      - plate, vehicle_type, speed_kmh
+      - lat/lon offset from the provided base coordinate
+      - flagged status (ANPR watchlist hit)
+      - heading (compass bearing in degrees)
+      - country_flag, currency_symbol (from jurisdiction)
+
+    Speed simulation is calibrated to the country's speed limits:
+      congested → very slow, normal → urban speed limit, emergency → fast.
+    """
+    import hashlib as _hl
+    import math as _math
+
+    scenario = scenario.lower()
+    if scenario not in ["normal", "accident", "congested", "emergency", "tamper"]:
+        scenario = "normal"
+
+    # Detect country
+    country_code = detect_country(
+        location_name = location_name,
+        lat = latitude, lon = longitude,
+        try_nominatim = True,
+    )
+    country_cfg  = get_country_config(country_code)
+    speed_limit  = float(country_cfg.get("speed_limit_urban", 50))
+
+    # Get ANPR records with country-specific plates
+    try:
+        vision_result = VisionEngine().process_traffic_scene(scenario)
+        detections    = vision_result["detections"]
+    except Exception:
+        detections = [{"label": "car", "confidence": 0.85, "box": [100, 100, 200, 180]}] * 6
+
+    engine      = ANPREngine(country_code=country_code)
+    raw_records = engine.process_detections(detections, scenario, country_code=country_code)
+
+    # Build geo-located markers
+    _flagged_scenarios = {"accident", "emergency"}
+    markers = []
+
+    # Speed tiers as fraction of urban speed limit
+    _speed_mult = {"normal": 0.7, "congested": 0.25, "accident": 1.4, "emergency": 1.8, "tamper": 0.6}
+    _base_speed = speed_limit * _speed_mult.get(scenario, 0.7)
+
+    for rec in raw_records:
+        _seed_str   = f"{rec.get('plate_text','')}{latitude:.3f}{longitude:.3f}"
+        _h          = int(_hl.md5(_seed_str.encode()).hexdigest(), 16)
+
+        _angle  = (_h % 360) * (_math.pi / 180)
+        _radius = 0.0005 + (_h % 100) / 100 * 0.003
+        _dlat   = _radius * _math.cos(_angle)
+        _dlon   = _radius * _math.sin(_angle)
+
+        _plate_hash = int(_hl.md5(rec.get("plate_text", "").encode()).hexdigest(), 16)
+        is_flagged  = scenario in _flagged_scenarios and _plate_hash % 5 == 0
+        _speed      = max(0, int(_base_speed + (_h % 20) - 10))
+
+        markers.append({
+            "vehicle_id":    rec["vehicle_id"],
+            "plate":         rec["plate_text"],
+            "vehicle_type":  rec["vehicle_type"],
+            "latitude":      round(latitude  + _dlat, 6),
+            "longitude":     round(longitude + _dlon, 6),
+            "speed_kmh":     _speed,
+            "heading":       _h % 360,
+            "flagged":       is_flagged,
+            "status":        "FLAGGED" if is_flagged else "CLEAR",
+            "ocr_confidence": rec["ocr_confidence"],
+            "scenario":      scenario.upper(),
+            "timestamp":     rec["timestamp"],
+            # jurisdiction
+            "country_code":  country_code,
+            "country_flag":  country_cfg["flag"],
+            "country_name":  country_cfg["name"],
+        })
+
+    node_info = {
+        "vehicle_id":   "AEGIS-NODE",
+        "plate":        "AEGIS-CTRL",
+        "vehicle_type": "Control Node",
+        "latitude":     latitude,
+        "longitude":    longitude,
+        "speed_kmh":    0,
+        "heading":      0,
+        "flagged":      False,
+        "status":       "ACTIVE NODE",
+        "ocr_confidence": 1.0,
+        "scenario":     scenario.upper(),
+        "timestamp":    "",
+        "is_node":      True,
+        "country_code": country_code,
+        "country_flag": country_cfg["flag"],
+    }
+
+    return {
+        "scenario":          scenario.upper(),
+        "base_lat":          latitude,
+        "base_lon":          longitude,
+        "vehicle_count":     len(markers),
+        "markers":           markers,
+        "node":              node_info,
+        "country_code":      country_code,
+        "country_name":      country_cfg["name"],
+        "country_flag":      country_cfg["flag"],
+        "currency_code":     country_cfg["currency_code"],
+        "currency_symbol":   country_cfg["currency_symbol"],
+        "speed_limit_urban": speed_limit,
+        "drive_side":        country_cfg.get("drive_side", "right"),
+        "plate_format":      country_cfg.get("plate_format", ""),
+    }
+
 
 @app.get("/api/v1/pipeline/status")
 def pipeline_status():
@@ -2027,6 +2332,8 @@ def pipeline_status():
         "accident_detection":       {"module": "fusion_core.py",   "status": "ACTIVE"},
         "violation_detection":      {"module": "violation_module", "status": "ACTIVE"},
         "anpr_ocr":                 {"module": "anpr_module",      "status": "ACTIVE (sim)"},
+        "map_intelligence_api":     {"module": "/api/v1/map/vehicles", "status": "ACTIVE"},
+
         "audio_anomaly":            {"module": "audio_module",     "status": "ACTIVE"},
         "database_logging":         {"module": "history_logger",   "status": "ACTIVE"},
         "nlp_classifier":           {"module": "DistilBERT MNLI",  "status": "ONLINE" if TRANSFORMERS_AVAILABLE else "OFFLINE (fallback)"},

@@ -36,6 +36,15 @@ for key, default in [
     ("active_data", None),
     ("sb_results", None),
     ("tutorial_step", 0),
+    # ── Global / geo context (updated after each analyze call) ────────────────────────────
+    ("country_code",    "US"),
+    ("country_flag",    "🇺🇸"),
+    ("country_name",    "United States"),
+    ("currency_code",   "USD"),
+    ("currency_symbol", "$"),
+    ("speed_limit_kmh", 40),
+    ("drive_side",      "right"),
+    ("plate_format",    "XXX 0000"),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -49,9 +58,10 @@ HISTORY_URL      = f"{BACKEND}/api/v1/history"
 CHAT_URL         = f"{BACKEND}/api/v1/chat"
 LOGIN_URL        = f"{BACKEND}/api/v1/auth/login"
 REGISTER_URL     = f"{BACKEND}/api/v1/auth/register"
-ANPR_URL         = f"{BACKEND}/api/v1/anpr"        # §16  NEW
-VIOLATIONS_URL   = f"{BACKEND}/api/v1/violations"  # §15  NEW
-PIPELINE_URL     = f"{BACKEND}/api/v1/pipeline/status"  # NEW
+ANPR_URL         = f"{BACKEND}/api/v1/anpr"              # §16
+VIOLATIONS_URL   = f"{BACKEND}/api/v1/violations"         # §15
+PIPELINE_URL     = f"{BACKEND}/api/v1/pipeline/status"
+MAP_VEHICLES_URL = f"{BACKEND}/api/v1/map/vehicles"       # Map Intelligence live tracking
 
 SCENARIO_MAP = {
     "🟢 Normal Flowing Traffic":      "normal",
@@ -606,8 +616,9 @@ with st.sidebar:
 
     st.markdown(f"""
     <div class="sb-block" style="font-size:.7rem;">
-        📍 <strong style="color:white;">{st.session_state.location_name}</strong><br>
-        <span style="color:#10b981;">LAT {st.session_state.latitude:.4f}  LON {st.session_state.longitude:.4f}</span>
+        {st.session_state.country_flag} <strong style="color:white;">{st.session_state.location_name}</strong><br>
+        <span style="color:#10b981;">LAT {st.session_state.latitude:.4f} &nbsp; LON {st.session_state.longitude:.4f}</span><br>
+        <span style="color:#00f0ff;">{st.session_state.currency_symbol} {st.session_state.currency_code} &nbsp;·&nbsp; Speed Limit: {st.session_state.speed_limit_kmh} km/h &nbsp;·&nbsp; Drive: {st.session_state.drive_side.upper()}</span>
     </div>
     """, unsafe_allow_html=True)
 
@@ -661,7 +672,19 @@ if scan_btn:
             
             res = requests.post(ANALYZE_URL, json=payload, headers=auth_header(), timeout=30)
             if res.status_code == 200:
-                st.session_state.active_data = res.json()
+                _rd = res.json()
+                st.session_state.active_data = _rd
+                # ── Persist geo context from analyze response ────────────────────────────
+                _geo = _rd.get("geo_context", {})
+                if _geo:
+                    st.session_state.country_code    = _geo.get("country_code",    st.session_state.country_code)
+                    st.session_state.country_flag    = _geo.get("country_flag",    st.session_state.country_flag)
+                    st.session_state.country_name    = _geo.get("country_name",    st.session_state.country_name)
+                    st.session_state.currency_code   = _geo.get("currency_code",   st.session_state.currency_code)
+                    st.session_state.currency_symbol = _geo.get("currency_symbol", st.session_state.currency_symbol)
+                    st.session_state.speed_limit_kmh = _geo.get("speed_limit_kmh", st.session_state.speed_limit_kmh)
+                    st.session_state.drive_side      = _geo.get("drive_side",      st.session_state.drive_side)
+                    st.session_state.plate_format    = _geo.get("plate_format",    st.session_state.plate_format)
                 st.toast(f"✅ Scan complete — {st.session_state.location_name}", icon="🚦")
             else:
                 st.error(f"❌ Core Disconnect: {res.text}")
@@ -888,33 +911,48 @@ with tab_hud:
         _scen_raw = data.get("scenario", "normal")
         with anpr_col:
             try:
-                _anpr = requests.get(f"{ANPR_URL}/{_scen_raw}", headers=auth_header(), timeout=10).json()
+                _anpr = requests.get(
+                    f"{ANPR_URL}/{_scen_raw}",
+                    params={"latitude": st.session_state.latitude,
+                            "longitude": st.session_state.longitude,
+                            "location_name": st.session_state.location_name},
+                    headers=auth_header(), timeout=10
+                ).json()
                 _plates = _anpr.get("anpr_records", [])
+                _cc     = _anpr.get("summary", {}).get("country_flag", st.session_state.country_flag)
                 if _plates:
                     for _p in _plates[:5]:
                         st.markdown(
                             f'<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:6px 10px;margin-bottom:4px;">'
-                            f'<span style="background:#fff;color:#000;font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:.78rem;padding:2px 6px;border-radius:3px;border:2px solid #000;">{_p.get("plate","—")}</span>'
-                            f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.7rem;color:#00f0ff;">{_p.get("vehicle_type","Vehicle")}</span>'
+                            f'<span style="background:#fff;color:#000;font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:.78rem;padding:2px 6px;border-radius:3px;border:2px solid #000;">{_p.get("plate","\u2014")}</span>'
+                            f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.7rem;color:#00f0ff;">{_cc} {_p.get("vehicle_type","Vehicle")}</span>'
                             f'</div>', unsafe_allow_html=True)
                 else:
                     st.info("No plates detected for this scenario.")
             except:
-                st.warning("ANPR offline — check backend.")
+                st.warning("ANPR offline \u2014 check backend.")
         with viol_col:
             try:
-                _viols = requests.get(f"{VIOLATIONS_URL}/{_scen_raw}", headers=auth_header(), timeout=10).json()
+                _viols = requests.get(
+                    f"{VIOLATIONS_URL}/{_scen_raw}",
+                    params={"latitude": st.session_state.latitude,
+                            "longitude": st.session_state.longitude,
+                            "location_name": st.session_state.location_name},
+                    headers=auth_header(), timeout=10
+                ).json()
                 _vlist = _viols.get("violations", [])
                 if _vlist:
                     for _v in _vlist[:5]:
+                        _fine_disp = _v.get("fine_local", f"{st.session_state.currency_symbol}{_v.get('fine_amount','\u2014')}")
+                        _flag_v    = _v.get("country_flag", st.session_state.country_flag)
                         st.markdown(
                             f'<div style="font-family:\'JetBrains Mono\',monospace;font-size:.75rem;color:#f59e0b;margin-bottom:6px;">'
-                            f'⚠️ <strong>{_v.get("type","—")}</strong> — {_v.get("vehicle_id","Unknown")}'
+                            f'⚠️ <strong>{_v.get("type","\u2014")}</strong> \u2014 {_v.get("vehicle_id","Unknown")} | {_flag_v} {_fine_disp}'
                             f'</div>', unsafe_allow_html=True)
                 else:
                     st.success("✅ No violations detected for this scenario.")
             except:
-                st.warning("Violations module offline — check backend.")
+                st.warning("Violations module offline \u2014 check backend.")
 
 
 # ─────────────────────────────────────────────────
@@ -1254,68 +1292,398 @@ with tab_analytics:
 # TAB 3 — MAP INTELLIGENCE
 # ─────────────────────────────────────────────────
 with tab_map_intel:
+    import folium
+    import streamlit.components.v1 as _components
+    import hashlib as _hashlib
+
     sec_div("🌍 GEOGRAPHIC SMART-CITY NODE INTELLIGENCE")
 
-    mc1, mc2 = st.columns([2, 1])
-    with mc1:
-        # Pull all locations from history to plot
-        h_res2 = requests.get(HISTORY_URL, headers=auth_header(), timeout=8) if backend_alive() else None
-        if h_res2 and h_res2.status_code == 200:
-            hd = pd.DataFrame(h_res2.json()["history"])
-            if not hd.empty and "latitude" in hd.columns:
-                hd = hd.dropna(subset=["latitude","longitude"])
-                fig_map = px.scatter_mapbox(
-                    hd,
-                    lat="latitude", lon="longitude",
-                    color="risk_score",
-                    size="vehicle_count",
-                    hover_name="location_name",
-                    hover_data=["scenario","priority","operational_mode"],
-                    color_continuous_scale=["#10b981","#f59e0b","#ef4444"],
-                    zoom=3,
-                    title="Global Traffic Incident Registry",
-                    mapbox_style="carto-darkmatter",
-                    height=480
+    # ── Location search bar inside the tab ──────────────────────
+    mi_search_col, mi_btn_col = st.columns([3, 1])
+    with mi_search_col:
+        mi_loc_query = st.text_input(
+            "🔍 Search any location worldwide",
+            value=st.session_state.location_name,
+            key="map_intel_search",
+            label_visibility="collapsed",
+            placeholder="e.g. Connaught Place, Delhi | Shibuya Crossing, Tokyo | Arc de Triomphe, Paris"
+        )
+    with mi_btn_col:
+        mi_search_btn = st.button("📡 Locate & Track", type="primary", use_container_width=True, key="mi_locate_btn")
+
+    if mi_search_btn and mi_loc_query.strip():
+        with st.spinner(f"🛰️ Geolocating {mi_loc_query}..."):
+            try:
+                _osm = requests.get(
+                    f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(mi_loc_query)}&format=json&limit=1&addressdetails=1",
+                    headers={"User-Agent": "AegisMHR/7.0"}, timeout=6
                 )
-                fig_map.update_layout(
-                    margin=dict(l=0,r=0,t=30,b=0),
-                    paper_bgcolor="rgba(0,0,0,0)"
-                )
-                st.plotly_chart(fig_map, use_container_width=True, key="global_map")
+                if _osm.ok and _osm.json():
+                    _d = _osm.json()[0]
+                    st.session_state.latitude      = float(_d["lat"])
+                    st.session_state.longitude     = float(_d["lon"])
+                    _raw = _d.get("display_name", mi_loc_query)
+                    st.session_state.location_name = ", ".join(_raw.split(",")[:2]).strip()
+                    st.session_state["map_bbox"]   = _d.get("boundingbox", None)
+                    st.toast(f"📍 Locked onto {st.session_state.location_name}", icon="🌍")
+                else:
+                    st.toast("⚠️ Geocoder returned no result — using cached coords")
+            except Exception:
+                st.toast("⚠️ Geocoder offline — using cached coords")
+        st.rerun()
+
+    lat  = st.session_state.latitude
+    lon  = st.session_state.longitude
+    loc  = st.session_state.location_name
+
+    # ── Load live vehicle markers (backend → ANPR fallback → simulation) ──
+    _VEHICLE_ICONS = {"car": "🚗", "truck": "🚛", "motorcycle": "🏍️", "bus": "🚌",
+                      "emergency": "🚑", "control node": "📡"}
+    _vehicle_markers = []
+    _data_source = "simulation"
+
+    # Priority 1: Backend /api/v1/map/vehicles (most accurate — geo-located by backend)
+    _scen_for_map = "normal"
+    if st.session_state.active_data:
+        _scen_for_map = st.session_state.active_data.get("scenario", "normal")
+    if backend_alive():
+        try:
+            _mv_res = requests.get(
+                MAP_VEHICLES_URL,
+                params={"scenario": _scen_for_map, "latitude": lat, "longitude": lon},
+                headers=auth_header(), timeout=8
+            )
+            if _mv_res.status_code == 200:
+                _mv_data = _mv_res.json()
+                for _m in _mv_data.get("markers", []):
+                    _vehicle_markers.append({
+                        "lat":     _m["latitude"],
+                        "lon":     _m["longitude"],
+                        "plate":   _m["plate"],
+                        "type":    _m["vehicle_type"].lower(),
+                        "flagged": _m["flagged"],
+                        "speed":   _m["speed_kmh"],
+                    })
+                _data_source = "backend"
+        except Exception:
+            pass
+
+    # Priority 2: ANPR endpoint + client-side jitter (backend is alive but map/vehicles failed)
+    if not _vehicle_markers and backend_alive():
+        try:
+            _ar = requests.get(f"{ANPR_URL}/{_scen_for_map}", headers=auth_header(), timeout=6)
+            if _ar.status_code == 200:
+                _anpr_plates = _ar.json().get("anpr_records", [])
+                _rng_seed = int(_hashlib.md5(loc.encode()).hexdigest(), 16) % (2**31)
+                import random as _rnd
+                _rnd.seed(_rng_seed)
+                for _idx, _plate in enumerate(_anpr_plates[:12]):
+                    _dlat = _rnd.uniform(-0.003, 0.003)
+                    _dlon = _rnd.uniform(-0.003, 0.003)
+                    _vehicle_markers.append({
+                        "lat":     lat + _dlat,
+                        "lon":     lon + _dlon,
+                        "plate":   _plate.get("plate", f"VH-{_idx+1:04d}"),
+                        "type":    _plate.get("vehicle_type", "car").lower(),
+                        "flagged": _plate.get("flagged", False),
+                        "speed":   _rnd.randint(20, 80),
+                    })
+                _data_source = "anpr"
+        except Exception:
+            pass
+
+    # Priority 3: Pure client-side simulation (no backend)
+    if not _vehicle_markers:
+        import random as _rnd
+        _rng_seed = int(_hashlib.md5(loc.encode()).hexdigest(), 16) % (2**31)
+        _rnd.seed(_rng_seed)
+        _dummy_types  = ["car", "car", "car", "truck", "bus", "motorcycle", "car", "car"]
+        _dummy_plates = [f"AB-{_rnd.randint(10,99)}-{_rnd.randint(1000,9999)}" for _ in _dummy_types]
+        for _t, _p in zip(_dummy_types, _dummy_plates):
+            _vehicle_markers.append({
+                "lat":     lat + _rnd.uniform(-0.003, 0.003),
+                "lon":     lon + _rnd.uniform(-0.003, 0.003),
+                "plate":   _p, "type": _t,
+                "flagged": False,
+                "speed":   _rnd.randint(15, 75),
+            })
+        _data_source = "simulation"
+
+
+    # ── Build Folium Map ─────────────────────────────────────────
+    _fmap = folium.Map(
+        location=[lat, lon],
+        zoom_start=15,
+        tiles=None,          # we add tiles manually for dark + satellite toggle
+        prefer_canvas=True
+    )
+
+    # Layer 1: OpenStreetMap (default)
+    folium.TileLayer(
+        tiles="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        attr='© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+        name="🗺️ Street Map",
+        max_zoom=19,
+    ).add_to(_fmap)
+
+    # Layer 2: Esri Satellite imagery (free, no key)
+    folium.TileLayer(
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        attr="Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP",
+        name="🛰️ Satellite",
+        max_zoom=19,
+    ).add_to(_fmap)
+
+    # Layer 3: CartoDB Dark (for traffic overlay feel)
+    folium.TileLayer(
+        tiles="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        attr='© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+        name="🌑 Dark Mode",
+        max_zoom=19,
+    ).add_to(_fmap)
+
+    # ── Primary location pin ─────────────────────────────────────
+    _loc_popup_html = f"""
+    <div style="font-family:Arial,sans-serif;font-size:13px;min-width:220px;">
+      <div style="background:#0d1117;color:#00f0ff;font-weight:700;padding:8px 12px;border-radius:6px 6px 0 0;font-size:14px;">
+        📍 {loc}
+      </div>
+      <div style="background:#1a1f2e;color:#e2e8f0;padding:10px 12px;border-radius:0 0 6px 6px;">
+        <b>Coordinates:</b><br>
+        <span style="color:#10b981;">LAT {lat:.5f} &nbsp;|&nbsp; LON {lon:.5f}</span><br><br>
+        <b>AEGIS Node Status:</b> <span style="color:#10b981;">🟢 ACTIVE</span><br>
+        <b>Vehicles on Road:</b> <span style="color:#eab308;">{len(_vehicle_markers)}</span><br>
+        <b>Monitoring Radius:</b> <span style="color:#a855f7;">500 m</span>
+      </div>
+    </div>
+    """
+    folium.Marker(
+        location=[lat, lon],
+        popup=folium.Popup(_loc_popup_html, max_width=280),
+        tooltip=f"📍 {loc} — AEGIS Node",
+        icon=folium.Icon(color="red", icon="map-marker", prefix="fa"),
+    ).add_to(_fmap)
+
+    # Pulsing radius circle around node
+    folium.Circle(
+        location=[lat, lon],
+        radius=300,
+        color="#00f0ff",
+        fill=True,
+        fill_color="#00f0ff",
+        fill_opacity=0.06,
+        weight=1.5,
+        tooltip="300m AEGIS surveillance radius",
+    ).add_to(_fmap)
+    folium.Circle(
+        location=[lat, lon],
+        radius=600,
+        color="#a855f7",
+        fill=True,
+        fill_color="#a855f7",
+        fill_opacity=0.03,
+        weight=1,
+        tooltip="600m extended monitoring zone",
+    ).add_to(_fmap)
+
+    # ── Vehicle / ANPR markers ───────────────────────────────────
+    _veh_group = folium.FeatureGroup(name="🚗 Live Vehicle Tracking")
+    for _v in _vehicle_markers:
+        _vtype   = _v["type"]
+        _emoji   = _VEHICLE_ICONS.get(_vtype, "🚗")
+        _flag_c  = "#ef4444" if _v["flagged"] else "#10b981"
+        _flag_lbl = "🚩 FLAGGED" if _v["flagged"] else "✅ CLEAR"
+        _veh_html = f"""
+        <div style="font-family:'Courier New',monospace;font-size:12px;min-width:190px;">
+          <div style="background:#0d1117;color:{_flag_c};font-weight:700;padding:6px 10px;border-radius:5px 5px 0 0;">
+            {_emoji} {_v['plate']}  &nbsp; {_flag_lbl}
+          </div>
+          <div style="background:#1a1f2e;color:#e2e8f0;padding:8px 10px;border-radius:0 0 5px 5px;line-height:1.8;">
+            <b>Type:</b> {_vtype.title()}<br>
+            <b>Speed:</b> {_v['speed']} km/h<br>
+            <b>Lat:</b> {_v['lat']:.5f} &nbsp; <b>Lon:</b> {_v['lon']:.5f}
+          </div>
+        </div>
+        """
+        _icon_color = "red" if _v["flagged"] else "blue"
+        folium.Marker(
+            location=[_v["lat"], _v["lon"]],
+            popup=folium.Popup(_veh_html, max_width=240),
+            tooltip=f"{_emoji} {_v['plate']} — {_v['speed']} km/h",
+            icon=folium.Icon(color=_icon_color, icon="car", prefix="fa"),
+        ).add_to(_veh_group)
+    _veh_group.add_to(_fmap)
+
+    # ── Directions panel — OSRM route from node to nearest flagged or first vehicle ──
+    _dir_group = folium.FeatureGroup(name="🗺️ Route / Direction")
+    if _vehicle_markers:
+        _flagged_vehs = [v for v in _vehicle_markers if v["flagged"]]
+        _target_veh   = _flagged_vehs[0] if _flagged_vehs else _vehicle_markers[0]
+        _t_lat, _t_lon = _target_veh["lat"], _target_veh["lon"]
+        try:
+            _osrm_url = (
+                f"https://router.project-osrm.org/route/v1/driving/"
+                f"{lon},{lat};{_t_lon},{_t_lat}"
+                f"?overview=full&geometries=geojson&steps=true"
+            )
+            _route_res = requests.get(_osrm_url, timeout=6)
+            if _route_res.ok:
+                _route_data = _route_res.json()
+                _route      = _route_data["routes"][0]
+                _geom       = _route["geometry"]["coordinates"]  # [[lon,lat],...]
+                _coords     = [[c[1], c[0]] for c in _geom]
+                _dist_km    = round(_route["distance"] / 1000, 2)
+                _dur_min    = round(_route["duration"] / 60, 1)
+                folium.PolyLine(
+                    _coords,
+                    color="#00f0ff",
+                    weight=4,
+                    opacity=0.75,
+                    tooltip=f"Route to {_target_veh['plate']} — {_dist_km} km / {_dur_min} min",
+                    dash_array="8 4",
+                ).add_to(_dir_group)
+                st.session_state["map_route_dist"] = _dist_km
+                st.session_state["map_route_dur"]  = _dur_min
+                st.session_state["map_route_target"] = _target_veh["plate"]
             else:
-                # Fallback: single node
-                map_df = pd.DataFrame([{"lat": st.session_state.latitude, "lon": st.session_state.longitude}])
-                st.map(map_df, zoom=13, use_container_width=True)
-        else:
-            map_df = pd.DataFrame([{"lat": st.session_state.latitude, "lon": st.session_state.longitude}])
-            st.map(map_df, zoom=13, use_container_width=True)
+                # Straight-line fallback
+                folium.PolyLine(
+                    [[lat, lon], [_t_lat, _t_lon]],
+                    color="#f59e0b", weight=3, opacity=0.6, dash_array="6 4",
+                    tooltip=f"Direct bearing to {_target_veh['plate']}",
+                ).add_to(_dir_group)
+                st.session_state["map_route_dist"]   = None
+                st.session_state["map_route_dur"]    = None
+                st.session_state["map_route_target"] = _target_veh["plate"]
+        except Exception:
+            folium.PolyLine(
+                [[lat, lon], [_t_lat, _t_lon]],
+                color="#f59e0b", weight=3, opacity=0.6, dash_array="6 4",
+                tooltip=f"Direct bearing to {_target_veh['plate']}",
+            ).add_to(_dir_group)
+    _dir_group.add_to(_fmap)
+
+    # ── Historical scan location pins ────────────────────────────
+    _hist_group = folium.FeatureGroup(name="📜 Scan History")
+    try:
+        _h_res = requests.get(HISTORY_URL, headers=auth_header(), timeout=5) if backend_alive() else None
+        if _h_res and _h_res.status_code == 200:
+            _hd = _h_res.json().get("history", [])
+            for _hr in _hd[-20:]:   # Last 20 scans
+                _hlat = _hr.get("latitude")
+                _hlon = _hr.get("longitude")
+                if _hlat and _hlon and (_hlat != lat or _hlon != lon):
+                    _hrisk = _hr.get("risk_score", 0)
+                    _hc = "red" if _hrisk >= 70 else ("orange" if _hrisk >= 40 else "green")
+                    folium.CircleMarker(
+                        location=[_hlat, _hlon],
+                        radius=6,
+                        color=_hc,
+                        fill=True,
+                        fill_color=_hc,
+                        fill_opacity=0.7,
+                        tooltip=f"📊 {_hr.get('location_name','?')} — Risk {_hrisk}%",
+                        popup=folium.Popup(
+                            f"<b>{_hr.get('location_name','?')}</b><br>"
+                            f"Risk: {_hrisk}% | Vehicles: {_hr.get('vehicle_count','—')}<br>"
+                            f"Scenario: {_hr.get('scenario','—')}",
+                            max_width=200
+                        )
+                    ).add_to(_hist_group)
+    except Exception:
+        pass
+    _hist_group.add_to(_fmap)
+
+    folium.LayerControl(position="topright", collapsed=False).add_to(_fmap)
+
+    # ── Render map + info layout ─────────────────────────────────
+    mc1, mc2 = st.columns([2.2, 0.8])
+    with mc1:
+        # Embed the Folium map via components
+        _map_html = _fmap._repr_html_()
+        _components.html(_map_html, height=530, scrolling=False)
+
+        # Quick search tips + data source badge below the map
+        _src_badge = {
+            "backend":    ("🟢 LIVE BACKEND", "#10b981"),
+            "anpr":       ("🟡 ANPR DATA",    "#f59e0b"),
+            "simulation": ("🔵 SIMULATION",   "#00f0ff"),
+        }.get(_data_source, ("⚪ UNKNOWN", "#64748b"))
+        st.markdown(f"""
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:#4b6584;margin-top:6px;padding:8px 12px;background:rgba(0,0,0,.2);border-radius:6px;">
+        <span style="color:{_src_badge[1]};font-weight:700;">⬤ Vehicle Data: {_src_badge[0]}</span>
+        &nbsp;|&nbsp; {len(_vehicle_markers)} vehicles tracked
+        &nbsp;|&nbsp; {sum(1 for v in _vehicle_markers if v['flagged'])} flagged<br>
+        💡&nbsp; Use the <strong style="color:#00f0ff;">layer control ↗</strong> to toggle: Street Map · Satellite · Dark Mode · Vehicles · Route · History<br>
+        🚗&nbsp; <strong style="color:#10b981;">Blue</strong> = active &nbsp;|&nbsp;
+        🚩&nbsp; <strong style="color:#ef4444;">Red</strong> = ANPR flagged &nbsp;|&nbsp;
+        🔵&nbsp; Cyan line = OSRM route &nbsp;|&nbsp;
+        🟡&nbsp; Orange = direct bearing
+        </div>
+        """, unsafe_allow_html=True)
+
 
     with mc2:
+        # Active node card
         st.markdown(f"""
-        <div class="card" style="margin-bottom:12px;">
-            <div class="t-section" style="margin-bottom:10px;">📍 Active Node</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:2;">
+        <div class="card" style="margin-bottom:10px;">
+            <div class="t-section" style="margin-bottom:8px;font-size:.75rem;">📍 ACTIVE NODE</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:1.9;">
                 <span style="color:#4b6584;">LOCATION</span><br>
-                <strong style="color:white;">{st.session_state.location_name}</strong><br><br>
+                <strong style="color:#00f0ff;">{loc}</strong><br><br>
                 <span style="color:#4b6584;">COORDINATES</span><br>
-                <span style="color:#10b981;">{st.session_state.latitude:.5f}° N</span><br>
-                <span style="color:#10b981;">{st.session_state.longitude:.5f}° W</span>
+                <span style="color:#10b981;">LAT {lat:.5f}</span><br>
+                <span style="color:#10b981;">LON {lon:.5f}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
+        # Live vehicles card
+        _flagged_cnt = sum(1 for v in _vehicle_markers if v["flagged"])
+        st.markdown(f"""
+        <div class="card" style="margin-bottom:10px;">
+            <div class="t-section" style="margin-bottom:8px;font-size:.75rem;">🚗 LIVE VEHICLES</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:2;">
+                <span style="color:#4b6584;">ON ROAD</span><br>
+                <strong style="color:#eab308;font-size:1.2rem;">{len(_vehicle_markers)}</strong><br>
+                <span style="color:#4b6584;">ANPR FLAGGED</span><br>
+                <strong style="color:#ef4444;font-size:1rem;">{_flagged_cnt}</strong><br>
+                <span style="color:#4b6584;">AVG SPEED</span><br>
+                <span style="color:#a855f7;">{round(sum(v['speed'] for v in _vehicle_markers)/max(len(_vehicle_markers),1))} km/h</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Directions / route card
+        _rdist = st.session_state.get("map_route_dist")
+        _rdur  = st.session_state.get("map_route_dur")
+        _rtgt  = st.session_state.get("map_route_target", "—")
+        st.markdown(f"""
+        <div class="card" style="margin-bottom:10px;">
+            <div class="t-section" style="margin-bottom:8px;font-size:.75rem;">🗺️ DIRECTION / ROUTE</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:2;">
+                <span style="color:#4b6584;">TARGET VEHICLE</span><br>
+                <strong style="color:#00f0ff;">{_rtgt}</strong><br>
+                <span style="color:#4b6584;">DISTANCE</span><br>
+                <span style="color:#10b981;">{f"{_rdist} km" if _rdist else "< 1 km (direct)"}</span><br>
+                <span style="color:#4b6584;">ETA</span><br>
+                <span style="color:#a855f7;">{f"{_rdur} min" if _rdur else "Calculating..."}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Global node coverage hints
         st.markdown("""
         <div class="card">
-            <div class="t-section" style="margin-bottom:10px;">🌐 Global Coverage</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:2;color:#64748b;">
-                Initialize any location on Earth:<br><br>
+            <div class="t-section" style="margin-bottom:8px;font-size:.75rem;">🌐 GLOBAL NODES</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.68rem;line-height:2;color:#64748b;">
                 • Tokyo, Japan<br>
                 • Times Square, NY<br>
                 • Shibuya Crossing<br>
-                • Arc de Triomphe, Paris<br>
-                • Mumbai Junction, India<br>
-                • Trafalgar Square, London<br>
-                • Sheikh Zayed Rd, Dubai
+                • Arc de Triomphe<br>
+                • Mumbai Junction<br>
+                • Trafalgar Square<br>
+                • Sheikh Zayed Rd
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1816,11 +2184,31 @@ with tab_anpr:
         with col_anpr:
             sec_div("📷 ANPR OCR — Number Plate Registry")
             try:
-                anpr_res = requests.get(f"{ANPR_URL}/{anpr_scenario}", headers=auth_header(), timeout=15)
+                anpr_res = requests.get(
+                    f"{ANPR_URL}/{anpr_scenario}",
+                    params={"latitude":  st.session_state.latitude,
+                            "longitude": st.session_state.longitude,
+                            "location_name": st.session_state.location_name},
+                    headers=auth_header(), timeout=15
+                )
                 if anpr_res.status_code == 200:
                     anpr_data = anpr_res.json()
                     plates    = anpr_data.get("anpr_records", [])
                     summary   = anpr_data.get("summary", {})
+
+                    # Jurisdiction banner
+                    _cf_a = summary.get("country_flag", st.session_state.country_flag)
+                    _cn_a = summary.get("country_name", st.session_state.country_name)
+                    _pf_a = summary.get("plate_format",  st.session_state.plate_format)
+                    _pe_a = summary.get("plate_example", "")
+                    st.markdown(f"""
+                    <div style="background:rgba(0,240,255,.05);border:1px solid rgba(0,240,255,.15);
+                    border-radius:8px;padding:8px 14px;margin-bottom:12px;
+                    font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#94a3b8;">
+                    {_cf_a} <strong style="color:#00f0ff;">{_cn_a}</strong>
+                    &nbsp;&middot;&nbsp; Format: <code style="color:#e2e8f0;">{_pf_a}</code>
+                    {f'&nbsp;&middot;&nbsp; e.g. <code style="color:#f59e0b;">{_pe_a}</code>' if _pe_a else ''}
+                    </div>""", unsafe_allow_html=True)
 
                     # Summary metrics
                     sm1, sm2, sm3 = st.columns(3)
@@ -1831,13 +2219,14 @@ with tab_anpr:
                     st.markdown("<br>", unsafe_allow_html=True)
                     for p in plates:
                         flag_color = "#ef4444" if p.get("flagged") else "#e2e8f0"
+                        _p_flag    = p.get("country_flag", _cf_a)
                         st.markdown(
                             f'<div style="display:flex;justify-content:space-between;align-items:center;'
                             f'background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.05);'
                             f'border-radius:8px;padding:8px 14px;margin-bottom:6px;">'
                             f'<span style="background:#fff;color:#000;font-family:\'JetBrains Mono\',monospace;'
                             f'font-weight:700;padding:3px 8px;border-radius:3px;border:2px solid #000;font-size:.82rem;">'
-                            f'{p.get("plate","—")}</span>'
+                            f'{_p_flag} {p.get("plate","—")}</span>'
                             f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.72rem;color:#00f0ff;">{p.get("vehicle_type","—")}</span>'
                             f'<span style="font-size:.72rem;color:{flag_color};">{"🚩 FLAGGED" if p.get("flagged") else "✅ CLEAR"}</span>'
                             f'</div>', unsafe_allow_html=True)
@@ -1853,28 +2242,61 @@ with tab_anpr:
         with col_viol:
             sec_div("⚠️ TRAFFIC VIOLATION DETECTION")
             try:
-                viol_res = requests.get(f"{VIOLATIONS_URL}/{anpr_scenario}", headers=auth_header(), timeout=15)
+                viol_res = requests.get(
+                    f"{VIOLATIONS_URL}/{anpr_scenario}",
+                    params={"latitude":  st.session_state.latitude,
+                            "longitude": st.session_state.longitude,
+                            "location_name": st.session_state.location_name},
+                    headers=auth_header(), timeout=15
+                )
                 if viol_res.status_code == 200:
-                    viol_data = viol_res.json()
+                    viol_data  = viol_res.json()
                     violations = viol_data.get("violations", [])
                     vsummary   = viol_data.get("summary", {})
 
-                    vm1, vm2 = st.columns(2)
-                    vm1.markdown(metric_tile("Total Violations", len(violations), "", "#ef4444", "⚠️"), unsafe_allow_html=True)
-                    vm2.markdown(metric_tile("Fine Total",       vsummary.get("total_fine_amount", "—"), "₹", "#f59e0b", "💰"), unsafe_allow_html=True)
+                    # Jurisdiction banner
+                    _cf_v  = vsummary.get("country_flag", st.session_state.country_flag)
+                    _cn_v  = vsummary.get("country_name", st.session_state.country_name)
+                    _sym_v = vsummary.get("currency_symbol", st.session_state.currency_symbol)
+                    _cod_v = vsummary.get("currency_code",   st.session_state.currency_code)
+                    _spd_v = vsummary.get("speed_limit_kmh", st.session_state.speed_limit_kmh)
+                    _drv_v = vsummary.get("drive_side",      st.session_state.drive_side)
+                    st.markdown(f"""
+                    <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);
+                    border-radius:8px;padding:8px 14px;margin-bottom:12px;
+                    font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#94a3b8;">
+                    {_cf_v} <strong style="color:#f59e0b;">{_cn_v}</strong>
+                    &nbsp;&middot;&nbsp; Currency: <strong style="color:#e2e8f0;">{_sym_v} {_cod_v}</strong>
+                    &nbsp;&middot;&nbsp; Speed: <strong style="color:#e2e8f0;">{_spd_v} km/h</strong>
+                    &nbsp;&middot;&nbsp; Drive: <strong style="color:#e2e8f0;">{_drv_v.upper()}</strong>
+                    </div>""", unsafe_allow_html=True)
+
+                    vm1, vm2, vm3 = st.columns(3)
+                    vm1.markdown(metric_tile("Total Violations", len(violations),                                  "",  "#ef4444", "⚠️"), unsafe_allow_html=True)
+                    vm2.markdown(metric_tile("Fine (Local)",     vsummary.get("total_fine_local",  f"{_sym_v}0"), "",  "#f59e0b", "💰"), unsafe_allow_html=True)
+                    vm3.markdown(metric_tile("Fine (USD)",       vsummary.get("total_fine_usd",    "≈ $0"),        "",  "#a855f7", "💵"), unsafe_allow_html=True)
 
                     st.markdown("<br>", unsafe_allow_html=True)
                     if violations:
                         for v in violations:
-                            vtype  = v.get("type", "—")
-                            vid    = v.get("vehicle_id", "Unknown")
-                            fine   = v.get("fine_amount", "—")
+                            vtype     = v.get("type", "—")
+                            vid       = v.get("vehicle_id", "Unknown")
+                            fine_loc  = v.get("fine_local",  f"{_sym_v}{v.get('fine_amount','—')}")
+                            fine_usd  = v.get("fine_usd",   "")
+                            plate     = v.get("plate", "")
+                            flag_v    = v.get("country_flag", _cf_v)
+                            plate_str = f" | 🪪 {flag_v} {plate}" if plate and plate != "—" else ""
+                            sev_color = {"CRITICAL": "#ef4444", "HIGH": "#f59e0b", "MEDIUM": "#3b82f6"}.get(v.get("severity","MEDIUM"), "#94a3b8")
                             st.markdown(
                                 f'<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);'
-                                f'border-radius:8px;padding:8px 14px;margin-bottom:6px;font-family:\'JetBrains Mono\',monospace;font-size:.78rem;">'
-                                f'<span style="color:#ef4444;font-weight:700;">⚠️ {vtype}</span> &nbsp;|&nbsp; '
-                                f'<span style="color:#e2e8f0;">{vid}</span> &nbsp;|&nbsp; '
-                                f'<span style="color:#f59e0b;">Fine: ₹{fine}</span>'
+                                f'border-left:3px solid {sev_color};'
+                                f'border-radius:8px;padding:10px 14px;margin-bottom:8px;font-family:\'JetBrains Mono\',monospace;font-size:.75rem;">'
+                                f'<div style="color:#ef4444;font-weight:700;margin-bottom:4px;">⚠️ {vtype}</div>'
+                                f'<div style="color:#94a3b8;">{vid}{plate_str}</div>'
+                                f'<div style="margin-top:4px;">'
+                                f'<span style="color:#f59e0b;font-weight:700;">{fine_loc}</span>'
+                                f'{f" &nbsp;<span style=\"color:#6b7280;font-size:.7rem;\">{fine_usd}</span>" if fine_usd else ""}'
+                                f'</div>'
                                 f'</div>', unsafe_allow_html=True)
                     else:
                         st.success("✅ No traffic violations detected for this scenario.")
