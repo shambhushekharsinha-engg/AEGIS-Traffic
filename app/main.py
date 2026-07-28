@@ -190,9 +190,9 @@ class SimulationRequest(BaseModel):
     scenario: str
     vision_threshold: float
     model_tier: str
-    location_name: str = "Times Square, NY"
-    latitude: float = 40.7580
-    longitude: float = -73.9855
+    location_name: str = "Connaught Place, New Delhi"
+    latitude: float = 28.6315
+    longitude: float = 77.2167
     operational_mode: str = "AI Automated Fusion"
     manual_active_phase: Optional[str] = None
     manual_signal_timing: Optional[int] = None
@@ -1969,17 +1969,13 @@ def system_assistant_chat(payload: ChatbotRequest, current_user: dict = Depends(
 @app.get("/api/v1/anpr/{scenario}")
 def get_anpr_records(
     scenario: str,
+    latitude:  float = 28.6315,
+    longitude: float = 77.2167,
+    location_name: str = "",
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Runs the ANPR pipeline for a given scenario.
-
-    Returns synthetic license plate records for every detected vehicle.
-    Response keys are normalized for the dashboard:
-      - `plate`          → plate text (was plate_text)
-      - `vehicle_type`   → vehicle category
-      - `flagged`        → True if plate is on the watchlist
-    Real-world deployment: pass actual bounding-box crops from live CCTV frames.
+    Runs the ANPR pipeline for a given scenario with location-aware country plates.
     """
     scenario = scenario.lower()
     if scenario not in ["normal", "accident", "congested", "emergency", "tamper"]:
@@ -1988,34 +1984,38 @@ def get_anpr_records(
             detail="Invalid scenario. Choose: normal, accident, congested, emergency, tamper"
         )
 
+    # Detect country from location parameters
+    country_code = detect_country(
+        location_name = location_name,
+        lat = latitude, lon = longitude,
+        try_nominatim = True,
+    )
+    country_cfg = get_country_config(country_code)
+
     try:
         vision_result = VisionEngine().process_traffic_scene(scenario)
         detections    = vision_result["detections"]
     except Exception:
         detections = [{"label": "car", "confidence": 0.85, "box": [100, 100, 200, 180]}]
 
-    engine  = ANPREngine()
-    raw_records = engine.process_detections(detections, scenario)
+    engine  = ANPREngine(country_code=country_code)
+    raw_records = engine.process_detections(detections, scenario, country_code=country_code)
 
-    # ── Normalize records for dashboard consumption ──────────────────────────
-    # Flagged plates are those in high-risk scenarios or with suspicious patterns.
-    # In a real system this would query a stolen-vehicle / watch-list DB.
     import hashlib as _hl
     _flagged_scenarios = {"accident", "emergency"}
     normalized_records = []
     flagged_count = 0
     for rec in raw_records:
-        # Deterministic "watchlist hit" simulation based on plate hash
         _plate_hash = int(_hl.md5(rec.get("plate_text", "").encode()).hexdigest(), 16)
         is_flagged = (
             scenario in _flagged_scenarios
-            and _plate_hash % 5 == 0      # ~20% of plates flagged in risky scenarios
+            and _plate_hash % 5 == 0
         )
         if is_flagged:
             flagged_count += 1
         normalized_records.append({
             "vehicle_id":    rec["vehicle_id"],
-            "plate":         rec["plate_text"],          # dashboard-expected key
+            "plate":         rec["plate_text"],
             "vehicle_type":  rec["vehicle_type"],
             "ocr_confidence": rec["ocr_confidence"],
             "flagged":       is_flagged,
@@ -2023,9 +2023,11 @@ def get_anpr_records(
             "timestamp":     rec["timestamp"],
             "scenario":      rec["scenario"],
             "status":        "FLAGGED" if is_flagged else "CLEAR",
+            "country_code":  country_code,
+            "country_name":  country_cfg["name"],
+            "country_flag":  country_cfg["flag"],
         })
 
-    # ── Summary with keys matching the dashboard UI ──────────────────────────
     summary = {
         "total_plates":  len(normalized_records),
         "registered":    len(normalized_records) - flagged_count,
@@ -2033,13 +2035,18 @@ def get_anpr_records(
         "avg_ocr_confidence": round(
             sum(r["ocr_confidence"] for r in normalized_records) / max(len(normalized_records), 1), 3
         ),
+        "country_code":  country_code,
+        "country_name":  country_cfg["name"],
+        "country_flag":  country_cfg["flag"],
+        "plate_format":  country_cfg.get("plate_format", ""),
+        "plate_example": country_cfg.get("plate_example", ""),
     }
 
     return {
         "scenario":         scenario.upper(),
         "anpr_records":     normalized_records,
         "summary":          summary,
-        "pipeline_version": "AEGIS-ANPR-v2.0",
+        "pipeline_version": "AEGIS-ANPR-v8.0",
     }
 
 
@@ -2050,8 +2057,8 @@ def get_anpr_records(
 @app.get("/api/v1/violations/{scenario}")
 def get_violations(
     scenario: str,
-    latitude:  float = 40.7580,
-    longitude: float = -73.9855,
+    latitude:  float = 28.6315,
+    longitude: float = 77.2167,
     location_name: str = "",
     current_user: dict = Depends(get_current_user)
 ):
@@ -2193,8 +2200,8 @@ class MapVehiclesRequest(BaseModel):
 @app.get("/api/v1/map/vehicles")
 def get_map_vehicles(
     scenario:      str   = "normal",
-    latitude:      float = 40.7580,
-    longitude:     float = -73.9855,
+    latitude:      float = 28.6315,
+    longitude:     float = 77.2167,
     location_name: str   = "",
     current_user:  dict  = Depends(get_current_user),
 ):
