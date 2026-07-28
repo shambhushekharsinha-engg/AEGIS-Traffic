@@ -2366,7 +2366,7 @@ def pipeline_status():
 
     return {
         "system":           "AEGIS-Traffic Secure Smart Intersection Engine",
-        "version":          "7.0.0",
+        "version":          "8.0.0",
         "overall_status":   "OPERATIONAL",
         "modules":          modules,
         "pipeline_stages":  pipeline_stages,

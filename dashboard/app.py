@@ -30,21 +30,21 @@ for key, default in [
     ("user_token", f"AEGIS-{uuid.uuid4().hex[:8].upper()}"),
     ("chat_history", []),
     ("copilot_history", []),
-    ("latitude", 40.7580),
-    ("longitude", -73.9855),
-    ("location_name", "Times Square, New York"),
+    ("latitude", 28.6315),
+    ("longitude", 77.2167),
+    ("location_name", "Connaught Place, New Delhi"),
     ("active_data", None),
     ("sb_results", None),
     ("tutorial_step", 0),
-    # ── Global / geo context (updated after each analyze call) ────────────────────────────
-    ("country_code",    "US"),
-    ("country_flag",    "🇺🇸"),
-    ("country_name",    "United States"),
-    ("currency_code",   "USD"),
-    ("currency_symbol", "$"),
-    ("speed_limit_kmh", 40),
-    ("drive_side",      "right"),
-    ("plate_format",    "XXX 0000"),
+    # ── Global / geo context ───────────────────────────────────────────────────
+    ("country_code",    "IN"),
+    ("country_flag",    "🇮🇳"),
+    ("country_name",    "India"),
+    ("currency_code",   "INR"),
+    ("currency_symbol", "₹"),
+    ("speed_limit_kmh", 50),
+    ("drive_side",      "left"),
+    ("plate_format",    "XX00 XX0000"),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -62,6 +62,27 @@ ANPR_URL         = f"{BACKEND}/api/v1/anpr"              # §16
 VIOLATIONS_URL   = f"{BACKEND}/api/v1/violations"         # §15
 PIPELINE_URL     = f"{BACKEND}/api/v1/pipeline/status"
 MAP_VEHICLES_URL = f"{BACKEND}/api/v1/map/vehicles"       # Map Intelligence live tracking
+
+
+def sync_geo_context(location_name: str = "", lat: float = 0.0, lon: float = 0.0):
+    """Dynamically syncs country flag, currency, speed limit, and drive side in session state."""
+    try:
+        from app.core.geo_currency import detect_country, get_country_config
+        cc  = detect_country(location_name=location_name, lat=lat, lon=lon, try_nominatim=False)
+        cfg = get_country_config(cc)
+        st.session_state.country_code    = cc
+        st.session_state.country_flag    = cfg["flag"]
+        st.session_state.country_name    = cfg["name"]
+        st.session_state.currency_code   = cfg["currency_code"]
+        st.session_state.currency_symbol = cfg["currency_symbol"]
+        st.session_state.speed_limit_kmh = cfg.get("speed_limit_urban", 50)
+        st.session_state.drive_side      = cfg.get("drive_side", "right")
+        st.session_state.plate_format    = cfg.get("plate_format", "")
+    except Exception:
+        pass
+
+# Always sync geo context on script run
+sync_geo_context(st.session_state.location_name, st.session_state.latitude, st.session_state.longitude)
 
 SCENARIO_MAP = {
     "🟢 Normal Flowing Traffic":      "normal",
@@ -424,7 +445,7 @@ if "jwt_token" not in st.session_state:
                 <div class="t-hero" style="font-size:1.4rem;letter-spacing:4px;">AEGIS-TRAFFIC</div>
                 <div style="font-family:'JetBrains Mono',monospace;color:#4b6584;font-size:.68rem;letter-spacing:3px;margin-top:4px;">MUNICIPAL AI OPERATIONS PLATFORM</div>
                 <div style="margin-top:12px;">
-                    <span class="badge-pill">v7.0 SECURE</span>
+                    <span class="badge-pill">v8.0 SECURE</span>
                     &nbsp;
                     <span class="badge-pill" style="border-color:rgba(168,85,247,.4);color:#a855f7;background:rgba(168,85,247,.08);">PRODUCTION</span>
                 </div>
@@ -589,29 +610,32 @@ with st.sidebar:
         st.rerun()
 
     st.markdown('<div class="sec-div">🌍 Geographic Registry</div>', unsafe_allow_html=True)
-    location_query = st.text_input("Target Location", "Times Square, New York", label_visibility="collapsed")
+    location_query = st.text_input("Target Location", st.session_state.location_name, label_visibility="collapsed")
     if st.button("📡 Initialize Site Node", use_container_width=True):
         with st.spinner("Geolocating..."):
             try:
                 osm = requests.get(
                     f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(location_query)}&format=json&limit=1",
-                    headers={"User-Agent": "AegisMHR/7.0"}, timeout=5
+                    headers={"User-Agent": "AegisMHR/8.0"}, timeout=5
                 )
                 if osm.ok and osm.json():
                     d = osm.json()[0]
-                    st.session_state.latitude = float(d["lat"])
+                    st.session_state.latitude  = float(d["lat"])
                     st.session_state.longitude = float(d["lon"])
                     raw_name = d.get("display_name", location_query)
-                    parts = raw_name.split(",")
+                    parts    = raw_name.split(",")
                     st.session_state.location_name = ", ".join(parts[:2]).strip()
+                    sync_geo_context(st.session_state.location_name, st.session_state.latitude, st.session_state.longitude)
                     st.toast(f"📍 {st.session_state.location_name}", icon="🌍")
                 else:
                     h = sum(ord(c) for c in location_query)
-                    st.session_state.latitude  = round(40.758 + (h % 100) / 600 - 0.08, 5)
-                    st.session_state.longitude = round(-73.985 + (h % 150) / 600 - 0.12, 5)
+                    st.session_state.latitude  = round(28.631 + (h % 100) / 600 - 0.08, 5)
+                    st.session_state.longitude = round(77.216 + (h % 150) / 600 - 0.12, 5)
                     st.session_state.location_name = f"{location_query} (Sim)"
+                    sync_geo_context(st.session_state.location_name, st.session_state.latitude, st.session_state.longitude)
                     st.toast("⚠️ Geocoder busy — using simulated coords")
             except:
+                sync_geo_context(st.session_state.location_name, st.session_state.latitude, st.session_state.longitude)
                 st.toast("⚠️ Geocoder offline — using cached coords")
 
     st.markdown(f"""
@@ -1316,7 +1340,7 @@ with tab_map_intel:
             try:
                 _osm = requests.get(
                     f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(mi_loc_query)}&format=json&limit=1&addressdetails=1",
-                    headers={"User-Agent": "AegisMHR/7.0"}, timeout=6
+                    headers={"User-Agent": "AegisMHR/8.0"}, timeout=6
                 )
                 if _osm.ok and _osm.json():
                     _d = _osm.json()[0]
@@ -1325,10 +1349,13 @@ with tab_map_intel:
                     _raw = _d.get("display_name", mi_loc_query)
                     st.session_state.location_name = ", ".join(_raw.split(",")[:2]).strip()
                     st.session_state["map_bbox"]   = _d.get("boundingbox", None)
+                    sync_geo_context(st.session_state.location_name, st.session_state.latitude, st.session_state.longitude)
                     st.toast(f"📍 Locked onto {st.session_state.location_name}", icon="🌍")
                 else:
+                    sync_geo_context(st.session_state.location_name, st.session_state.latitude, st.session_state.longitude)
                     st.toast("⚠️ Geocoder returned no result — using cached coords")
             except Exception:
+                sync_geo_context(st.session_state.location_name, st.session_state.latitude, st.session_state.longitude)
                 st.toast("⚠️ Geocoder offline — using cached coords")
         st.rerun()
 
@@ -1350,7 +1377,7 @@ with tab_map_intel:
         try:
             _mv_res = requests.get(
                 MAP_VEHICLES_URL,
-                params={"scenario": _scen_for_map, "latitude": lat, "longitude": lon},
+                params={"scenario": _scen_for_map, "latitude": lat, "longitude": lon, "location_name": loc},
                 headers=auth_header(), timeout=8
             )
             if _mv_res.status_code == 200:
@@ -1371,7 +1398,11 @@ with tab_map_intel:
     # Priority 2: ANPR endpoint + client-side jitter (backend is alive but map/vehicles failed)
     if not _vehicle_markers and backend_alive():
         try:
-            _ar = requests.get(f"{ANPR_URL}/{_scen_for_map}", headers=auth_header(), timeout=6)
+            _ar = requests.get(
+                f"{ANPR_URL}/{_scen_for_map}",
+                params={"latitude": lat, "longitude": lon, "location_name": loc},
+                headers=auth_header(), timeout=6
+            )
             if _ar.status_code == 200:
                 _anpr_plates = _ar.json().get("anpr_records", [])
                 _rng_seed = int(_hashlib.md5(loc.encode()).hexdigest(), 16) % (2**31)
@@ -2385,7 +2416,7 @@ with tab_pipeline:
 mini_separator()
 sm_foot = st.session_state.active_data["system_telemetry_metrics"] if st.session_state.active_data else {}
 st.code(
-    f"// AEGIS-TRAFFIC v7.0 // Operations Node System Logs\n"
+    f"// AEGIS-TRAFFIC v8.0 // Operations Node System Logs\n"
     f"[USER] {st.session_state.username.upper()} [{st.session_state.user_role.upper()}]  "
     f"[SCANS] {sm_foot.get('total_requests',0)}  "
     f"[CRITICAL] {sm_foot.get('critical_incidents',0)}  "

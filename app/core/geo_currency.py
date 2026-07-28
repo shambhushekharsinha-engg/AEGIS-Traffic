@@ -39,7 +39,16 @@ COUNTRY_CONFIG: dict[str, dict] = {
         "drive_side": "left",
         "plate_format": "XX00 XX0000",   # State-District-Series-Number
         "plate_example": "MH12 AA1234",
-        "plate_keywords": ["MH", "DL", "KA", "TN", "GJ", "UP", "RJ", "WB", "AP", "TS"],
+        "plate_keywords": [
+            "India", "Bharat", "Delhi", "New Delhi", "Mumbai", "Bombay",
+            "Bangalore", "Bengaluru", "Chennai", "Madras", "Kolkata", "Calcutta",
+            "Hyderabad", "Ahmedabad", "Pune", "Jaipur", "Lucknow", "Chandigarh",
+            "Noida", "Gurgaon", "Gurugram", "Indore", "Surat", "Bhopal", "Patna",
+            "Varanasi", "Goa", "Connaught Place", "MG Road", "Maharashtra",
+            "Karnataka", "Tamil Nadu", "Gujarat", "Uttar Pradesh", "Rajasthan",
+            "West Bengal", "Andhra", "Telangana", "Kerala", "Punjab", "Haryana",
+            "MH", "DL", "KA", "TN", "GJ", "UP", "RJ", "WB", "AP", "TS",
+        ],
         "fines": {
             "RED_LIGHT_JUMP":  2000,
             "WRONG_LANE":       500,
@@ -410,19 +419,55 @@ COUNTRY_CONFIG: dict[str, dict] = {
 _DEFAULT_COUNTRY = "IN"
 
 
+# Bounding box fallback for offline / fast coordinate matching (lat_min, lat_max, lon_min, lon_max)
+COUNTRY_BOUNDS: dict[str, tuple[float, float, float, float]] = {
+    "IN": (6.0, 36.0, 68.0, 97.5),       # India
+    "US": (24.0, 50.0, -125.0, -66.0),   # USA mainland
+    "GB": (49.5, 61.0, -10.5, 2.0),      # UK
+    "JP": (24.0, 46.0, 123.0, 154.0),    # Japan
+    "DE": (47.0, 55.5, 5.5, 15.5),       # Germany
+    "FR": (41.0, 51.5, -5.5, 10.0),      # France
+    "IT": (36.0, 47.5, 6.5, 18.5),       # Italy
+    "ES": (36.0, 44.0, -9.5, 4.5),       # Spain
+    "AE": (22.5, 26.5, 51.0, 56.5),      # UAE
+    "SG": (1.15, 1.48, 103.5, 104.1),    # Singapore
+    "CN": (18.0, 53.5, 73.0, 135.0),     # China
+    "KR": (33.0, 38.8, 124.5, 131.0),    # South Korea
+    "PK": (23.5, 37.0, 60.5, 77.5),      # Pakistan
+    "CA": (42.0, 70.0, -141.0, -52.0),   # Canada
+    "AU": (-44.0, -10.0, 112.0, 154.0),  # Australia
+    "BR": (-34.0, 5.5, -74.0, -34.5),    # Brazil
+    "ZA": (-35.0, -22.0, 16.5, 33.0),    # South Africa
+    "NG": (4.0, 14.0, 2.5, 14.5),        # Nigeria
+    "SA": (16.0, 32.5, 34.5, 55.5),      # Saudi Arabia
+    "MY": (1.0, 7.5, 99.5, 119.5),       # Malaysia
+    "RU": (41.0, 77.0, 19.5, 180.0),     # Russia
+}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # DETECTION HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _keyword_detect(location_name: str) -> Optional[str]:
     """Scan location_name string against each country's keyword list."""
+    if not location_name:
+        return None
     loc_lower = location_name.lower()
-    # Sort by keyword length descending so more specific keywords win
     candidates = []
     for cc, cfg in COUNTRY_CONFIG.items():
-        for kw in cfg.get("plate_keywords", []) + [cfg["name"]]:
-            if kw.lower() in loc_lower:
-                candidates.append((len(kw), cc))
+        all_kws = cfg.get("plate_keywords", []) + [cfg["name"]]
+        for kw in all_kws:
+            kw_lower = kw.lower()
+            if len(kw_lower) <= 3:
+                # Require word boundary for short codes e.g. "DL", "IN", "UK", "US"
+                pattern = r"\b" + re.escape(kw_lower) + r"\b"
+                if re.search(pattern, loc_lower):
+                    candidates.append((len(kw), cc))
+            else:
+                if kw_lower in loc_lower:
+                    candidates.append((len(kw), cc))
+
     if candidates:
         candidates.sort(reverse=True)
         return candidates[0][1]
@@ -439,7 +484,7 @@ def _nominatim_detect(lat: float, lon: float, timeout: int = 4) -> Optional[str]
         r = _req.get(
             "https://nominatim.openstreetmap.org/reverse",
             params={"lat": lat, "lon": lon, "format": "json", "zoom": 5},
-            headers={"User-Agent": "AegisMHR/7.0"},
+            headers={"User-Agent": "AegisMHR/8.0"},
             timeout=timeout,
         )
         if r.ok:
@@ -465,21 +510,31 @@ def detect_country(
     Detect ISO country code from location context.
 
     Priority:
-      1. Reverse-geocode via Nominatim  (accurate, needs network)
-      2. Keyword scan of location_name  (offline, fast)
-      3. Default → 'IN'
+      1. Keyword scan of location_name (fast, zero network latency)
+      2. Coordinate bounding box lookup (fast, offline)
+      3. Reverse-geocode via Nominatim (network call)
+      4. Default → 'IN' (India)
 
     Returns:
         2-letter ISO country code (always a key in COUNTRY_CONFIG).
     """
+    # Priority 1: Keyword scan of location string
+    if location_name:
+        cc = _keyword_detect(location_name)
+        if cc:
+            return cc
+
+    # Priority 2: Lat/Lon bounding box check
+    if lat != 0.0 or lon != 0.0:
+        for code, (lat_min, lat_max, lon_min, lon_max) in COUNTRY_BOUNDS.items():
+            if lat_min <= lat <= lat_max and lon_min <= lon <= lon_max:
+                return code
+
+    # Priority 3: Reverse-geocode via Nominatim
     if try_nominatim and (lat != 0.0 or lon != 0.0):
         cc = _nominatim_detect(lat, lon)
         if cc:
             return cc
-
-    cc = _keyword_detect(location_name)
-    if cc:
-        return cc
 
     return _DEFAULT_COUNTRY
 
