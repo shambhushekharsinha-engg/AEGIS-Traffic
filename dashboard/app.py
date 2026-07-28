@@ -386,6 +386,31 @@ hr.divider{ border:none; border-top:1px solid rgba(0,240,255,.1); margin:16px 0;
     font-size:.82rem !important;
 }
 .stSlider>div>div>div{ background:rgba(0,240,255,.3) !important; }
+
+/* ── DARK CHAT INPUT STYLING ── */
+div[data-testid="stChatInput"] { 
+    background:rgba(4,8,20,.95) !important; 
+    border:1px solid rgba(0,240,255,.35) !important;
+    border-radius:10px !important;
+    box-shadow:0 0 20px rgba(0,240,255,.08) !important;
+    padding:4px !important;
+}
+div[data-testid="stChatInput"] textarea, div[data-testid="stChatInput"] input, .stChatInputContainer textarea { 
+    background:rgba(4,8,20,.95) !important; 
+    color:#f8fafc !important; 
+    font-family:'JetBrains Mono',monospace !important; 
+    font-size:.85rem !important; 
+    caret-color:#00f0ff !important;
+}
+div[data-testid="stChatInput"] textarea::placeholder {
+    color:#64748b !important;
+}
+div[data-testid="stChatInput"] button {
+    background:rgba(0,240,255,.15) !important;
+    border:1px solid rgba(0,240,255,.4) !important;
+    color:#00f0ff !important;
+    border-radius:6px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -1872,12 +1897,15 @@ with tab_ai_chat:
         st.markdown("</div>", unsafe_allow_html=True)
 
         # Chat display
-        chat_container = st.container(height=400)
-        for msg in st.session_state.copilot_history:
-            css_cls = "chat-msg-user" if msg["role"] == "user" else "chat-msg-ai"
-            icon = "👤" if msg["role"] == "user" else "🤖"
-            with chat_container:
-                st.markdown(f'<div class="{css_cls}">{icon} {msg["text"]}</div>', unsafe_allow_html=True)
+        chat_container = st.container(height=480)
+        with chat_container:
+            for msg in st.session_state.copilot_history:
+                if msg["role"] == "user":
+                    st.markdown(f'<div class="chat-msg-user">👤 <strong>User:</strong> {msg["text"]}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="chat-msg-ai">🤖 <strong>AI Operations Copilot:</strong></div>', unsafe_allow_html=True)
+                    st.markdown(msg["text"])
+                    st.markdown("<hr style='border:none;border-top:1px dashed rgba(0,240,255,.15);margin:12px 0;'>", unsafe_allow_html=True)
 
         chat_input = st.chat_input("Ask the AI copilot about traffic operations, signals, or incidents...")
         if chat_input:
