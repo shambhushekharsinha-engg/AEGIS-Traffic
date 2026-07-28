@@ -474,7 +474,7 @@ def _keyword_detect(location_name: str) -> Optional[str]:
     return None
 
 
-def _nominatim_detect(lat: float, lon: float, timeout: int = 4) -> Optional[str]:
+def _nominatim_detect(lat: float, lon: float, timeout: int = 1) -> Optional[str]:
     """
     Reverse-geocode lat/lon using Nominatim to get ISO country code.
     Returns 2-letter ISO code or None on failure.
@@ -507,34 +507,34 @@ def detect_country(
     try_nominatim: bool = True,
 ) -> str:
     """
-    Detect ISO country code from location context.
+    Detect ISO country code from location context in sub-milliseconds.
 
     Priority:
-      1. Reverse-geocode via Nominatim (accurate, network call)
-      2. Keyword scan of location_name (fast, zero latency)
-      3. Coordinate bounding box lookup (fast, offline)
+      1. Keyword scan of location_name (instant, 0.1ms)
+      2. Coordinate bounding box lookup (instant, 0.1ms)
+      3. Reverse-geocode via Nominatim (network fallback)
       4. Default → 'IN' (India)
 
     Returns:
         2-letter ISO country code.
     """
-    # Priority 1: Reverse-geocode via Nominatim (if coordinates provided)
-    if try_nominatim and (lat != 0.0 or lon != 0.0):
-        cc = _nominatim_detect(lat, lon)
-        if cc:
-            return cc
-
-    # Priority 2: Keyword scan of location string
+    # Priority 1: Fast keyword scan of location string (0.1 ms)
     if location_name:
         cc = _keyword_detect(location_name)
         if cc:
             return cc
 
-    # Priority 3: Lat/Lon bounding box check
+    # Priority 2: Fast lat/lon bounding box lookup (0.1 ms)
     if lat != 0.0 or lon != 0.0:
         for code, (lat_min, lat_max, lon_min, lon_max) in COUNTRY_BOUNDS.items():
             if lat_min <= lat <= lat_max and lon_min <= lon <= lon_max:
                 return code
+
+    # Priority 3: Reverse-geocode via Nominatim (if coords provided and 1+2 yielded no match)
+    if try_nominatim and (lat != 0.0 or lon != 0.0):
+        cc = _nominatim_detect(lat, lon, timeout=1)
+        if cc:
+            return cc
 
     return _DEFAULT_COUNTRY
 

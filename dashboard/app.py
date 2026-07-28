@@ -677,42 +677,46 @@ with st.sidebar:
         st.rerun()
 
 
-# ── TRIGGER BACKEND SCAN ──
-if scan_btn:
-    with st.spinner("🔄 Synchronising multimodal sensory streams..."):
-        try:
-            payload = {
-                "scenario": active_scenario,
-                "vision_threshold": float(vision_thresh),
-                "model_tier": str(model_tier),
-                "location_name": st.session_state.location_name,
-                "latitude": st.session_state.latitude,
-                "longitude": st.session_state.longitude,
-                "operational_mode": op_mode,
-            }
-            if op_mode == "Manual Override":
-                payload["manual_active_phase"]  = manual_phase
-                payload["manual_signal_timing"] = manual_timing
-            
-            res = requests.post(ANALYZE_URL, json=payload, headers=auth_header(), timeout=30)
-            if res.status_code == 200:
-                _rd = res.json()
-                st.session_state.active_data = _rd
-                # ── Persist geo context from analyze response ────────────────────────────
-                _geo = _rd.get("geo_context", {})
-                if _geo:
-                    st.session_state.country_code    = _geo.get("country_code",    st.session_state.country_code)
-                    st.session_state.country_flag    = _geo.get("country_flag",    st.session_state.country_flag)
-                    st.session_state.country_name    = _geo.get("country_name",    st.session_state.country_name)
-                    st.session_state.currency_code   = _geo.get("currency_code",   st.session_state.currency_code)
-                    st.session_state.currency_symbol = _geo.get("currency_symbol", st.session_state.currency_symbol)
-                    st.session_state.speed_limit_kmh = _geo.get("speed_limit_kmh", st.session_state.speed_limit_kmh)
-                    st.session_state.drive_side      = _geo.get("drive_side",      st.session_state.drive_side)
-                    st.session_state.plate_format    = _geo.get("plate_format",    st.session_state.plate_format)
+# ── TRIGGER BACKEND SCAN (AUTO ON LOCATION CHANGE OR MANUAL BUTTON) ──
+_curr_loc_sig = f"{st.session_state.location_name}_{st.session_state.latitude:.4f}_{st.session_state.longitude:.4f}_{active_scenario}_{op_mode}"
+if (st.session_state.get("last_scanned_sig") != _curr_loc_sig or scan_btn or st.session_state.active_data is None) and backend_alive():
+    try:
+        payload = {
+            "scenario": active_scenario,
+            "vision_threshold": float(vision_thresh),
+            "model_tier": str(model_tier),
+            "location_name": st.session_state.location_name,
+            "latitude": st.session_state.latitude,
+            "longitude": st.session_state.longitude,
+            "operational_mode": op_mode,
+        }
+        if op_mode == "Manual Override":
+            payload["manual_active_phase"]  = manual_phase
+            payload["manual_signal_timing"] = manual_timing
+
+        res = requests.post(ANALYZE_URL, json=payload, headers=auth_header(), timeout=15)
+        if res.status_code == 200:
+            _rd = res.json()
+            st.session_state.active_data = _rd
+            st.session_state["last_scanned_sig"] = _curr_loc_sig
+            # ── Persist geo context from analyze response ────────────────────────────
+            _geo = _rd.get("geo_context", {})
+            if _geo:
+                st.session_state.country_code    = _geo.get("country_code",    st.session_state.country_code)
+                st.session_state.country_flag    = _geo.get("country_flag",    st.session_state.country_flag)
+                st.session_state.country_name    = _geo.get("country_name",    st.session_state.country_name)
+                st.session_state.currency_code   = _geo.get("currency_code",   st.session_state.currency_code)
+                st.session_state.currency_symbol = _geo.get("currency_symbol", st.session_state.currency_symbol)
+                st.session_state.speed_limit_kmh = _geo.get("speed_limit_kmh", st.session_state.speed_limit_kmh)
+                st.session_state.drive_side      = _geo.get("drive_side",      st.session_state.drive_side)
+                st.session_state.plate_format    = _geo.get("plate_format",    st.session_state.plate_format)
+            if scan_btn:
                 st.toast(f"✅ Scan complete — {st.session_state.location_name}", icon="🚦")
-            else:
+        else:
+            if scan_btn:
                 st.error(f"❌ Core Disconnect: {res.text}")
-        except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError:
+        if scan_btn:
             st.error("❌ FastAPI backend offline on port 8000. Start server first.")
 
 
