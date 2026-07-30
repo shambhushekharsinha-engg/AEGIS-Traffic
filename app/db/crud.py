@@ -314,3 +314,55 @@ def get_incident_stats(db: Session) -> dict:
         "by_scenario":      {s: c for s, c in by_scenario},
         "by_priority":      {p: c for p, c in by_priority},
     }
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  CITIZEN HAZARD REPORT CRUD
+# ──────────────────────────────────────────────────────────────────────
+
+from app.db.models import CitizenHazardReport
+import uuid
+
+def create_citizen_hazard_report(
+    db: Session,
+    hazard_type: str,
+    location_name: str,
+    latitude: float,
+    longitude: float,
+    description: Optional[str] = None,
+    citizen_name: str = "Anonymous Citizen",
+    contact_info: Optional[str] = None
+) -> CitizenHazardReport:
+    """Create a new public citizen hazard report."""
+    report_id = f"HZ-{uuid.uuid4().hex[:8].upper()}"
+    report = CitizenHazardReport(
+        report_id=report_id,
+        citizen_name=citizen_name,
+        contact_info=contact_info,
+        hazard_type=hazard_type,
+        description=description,
+        location_name=location_name,
+        latitude=latitude,
+        longitude=longitude,
+        status="SUBMITTED"
+    )
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+    return report
+
+
+def get_citizen_hazard_reports(
+    db: Session,
+    skip: int = 0,
+    limit: int = 50,
+    status: Optional[str] = None
+) -> tuple[List[CitizenHazardReport], int]:
+    """Retrieve public citizen hazard reports."""
+    q = db.query(CitizenHazardReport)
+    if status:
+        q = q.filter(CitizenHazardReport.status == status)
+    total = q.count()
+    items = q.order_by(desc(CitizenHazardReport.created_at)).offset(skip).limit(limit).all()
+    return items, total
+

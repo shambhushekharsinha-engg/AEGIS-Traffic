@@ -192,3 +192,21 @@ class EncryptedTelemetryLedger(Base):
     latitude         = Column(Float, nullable=True)
     longitude        = Column(Float, nullable=True)
     operational_mode = Column(String, nullable=True)
+
+
+class CitizenHazardReport(Base):
+    """Public citizen hazard reports (potholes, accidents, outages)."""
+    __tablename__ = "citizen_hazard_reports"
+
+    id            = Column(Integer, primary_key=True, autoincrement=True)
+    report_id     = Column(String(64), unique=True, nullable=False, index=True)
+    citizen_name  = Column(String(64), nullable=False, default="Anonymous Citizen")
+    contact_info  = Column(String(128), nullable=True)
+    hazard_type   = Column(String(64), nullable=False)  # Pothole | Accident | Signal Outage | Flooding | Debris
+    description   = Column(Text, nullable=True)
+    location_name = Column(String(128), nullable=False)
+    latitude      = Column(Float, nullable=False)
+    longitude     = Column(Float, nullable=False)
+    status        = Column(String(32), nullable=False, default="SUBMITTED")  # SUBMITTED | IN_REVIEW | DISPATCHED | RESOLVED
+    created_at    = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+

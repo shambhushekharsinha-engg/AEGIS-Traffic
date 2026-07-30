@@ -112,6 +112,13 @@
 
 | Category | Feature | Implementation |
 |:---|:---|:---|
+| 👥 **Public Citizen Portal** | Unauthenticated Public Access | Live traffic heatmaps, eco-speed advice, active detours, fine payment search & hazard reporting |
+| 🍃 **Environmental AI** | Idle Exhaust & Carbon Tracking | Real-time CO2 (g/min), NOx, PM2.5 emissions calculation & ATSC carbon offset tracking |
+| 📡 **Cellular V2X (C-V2X)** | DSRC / V2X Safety Broadcast | SAE J2735 / IEEE 802.11p Basic Safety Message (BSM) packet generator for autonomous vehicles |
+| 📄 **Official PDF Citations** | Printable Legal Ticket Generator | Court-admissible traffic citation documents with ANPR crops, GPS stamps & SHA-256 hashes |
+| 🚶 **VRU Safety Guardian** | Crosswalk Pedestrian Protection | Pedestrian & wheelchair crosswalk occupancy detection + dynamic WALK timer extension |
+| 💳 **Fine Dispute Portal** | Citizen Registration Plate Lookup | Search vehicle plates, inspect active ticket history, and submit electronic appeals |
+| 🚨 **Citizen Hazard Reporting**| Public Road Hazard Dispatch | Report potholes, accidents, and outages with GPS pin & live community hazard status feed |
 | 🤖 **AI Vision** | Real-time vehicle detection | YOLOv8-Nano COCO detection + synthetic frame synthesis |
 | 🔊 **Acoustics** | Sound anomaly detection | RMS dB measurement + FFT frequency spectrum analysis |
 | 🧠 **NLP Fusion** | Multimodal context classification | DistilBERT zero-shot MNLI (Hugging Face Transformers) |

@@ -485,15 +485,15 @@ if "jwt_token" not in st.session_state:
 
             # Quick Fill Action Buttons
             col_q1, col_q2, col_q3 = st.columns(3)
-            if col_q1.button("🔑 Admin Quick Entry", use_container_width=True):
+            if col_q1.button("🔑 Admin Quick Entry", use_container_width=True, key="btn_quick_admin"):
                 st.session_state.quick_user = "admin"
                 st.session_state.quick_pass = "Admin@AEGIS2024!"
                 st.rerun()
-            if col_q2.button("🔑 Operator Quick Entry", use_container_width=True):
+            if col_q2.button("🔑 Operator Quick Entry", use_container_width=True, key="btn_quick_operator"):
                 st.session_state.quick_user = "operator"
                 st.session_state.quick_pass = "Operator@AEGIS2024!"
                 st.rerun()
-            if col_q3.button("🔑 Auditor Quick Entry", use_container_width=True):
+            if col_q3.button("🔑 Auditor Quick Entry", use_container_width=True, key="btn_quick_auditor"):
                 st.session_state.quick_user = "auditor"
                 st.session_state.quick_pass = "Auditor@AEGIS2024!"
                 st.rerun()
@@ -503,9 +503,9 @@ if "jwt_token" not in st.session_state:
 
             with st.form("login_form", clear_on_submit=False):
                 st.markdown('<div class="t-section" style="margin-bottom:14px;">Operator Credentials</div>', unsafe_allow_html=True)
-                username = st.text_input("Username", value=default_u, placeholder="e.g. admin", label_visibility="collapsed")
+                username = st.text_input("Username", value=default_u, placeholder="e.g. admin", label_visibility="collapsed", key="login_username_input")
                 st.caption("Username")
-                password = st.text_input("Password", value=default_p, type="password", placeholder="••••••••", label_visibility="collapsed")
+                password = st.text_input("Password", value=default_p, type="password", placeholder="••••••••", label_visibility="collapsed", key="login_password_input")
                 st.caption("Password")
                 st.markdown("<br>", unsafe_allow_html=True)
                 submitted = st.form_submit_button("🔐  AUTHENTICATE & CONNECT", use_container_width=True)
@@ -543,11 +543,11 @@ if "jwt_token" not in st.session_state:
             st.markdown("<br>", unsafe_allow_html=True)
             with st.form("register_form", clear_on_submit=True):
                 st.markdown('<div class="t-section" style="margin-bottom:14px;">New Operator Registration</div>', unsafe_allow_html=True)
-                reg_user = st.text_input("Desired Username", placeholder="new_operator", label_visibility="collapsed")
+                reg_user = st.text_input("Desired Username", placeholder="new_operator", label_visibility="collapsed", key="reg_username_input")
                 st.caption("Username")
-                reg_pass = st.text_input("Desired Password", type="password", placeholder="••••••••", label_visibility="collapsed")
+                reg_pass = st.text_input("Desired Password", type="password", placeholder="••••••••", label_visibility="collapsed", key="reg_password_input")
                 st.caption("Password (min 6 characters)")
-                reg_role = st.selectbox("Clearance Level", ["Operator", "Auditor", "Admin"], label_visibility="collapsed")
+                reg_role = st.selectbox("Clearance Level", ["Operator", "Auditor", "Admin"], label_visibility="collapsed", key="reg_role_select")
                 st.caption("Clearance Level")
                 st.markdown("<br>", unsafe_allow_html=True)
                 reg_btn = st.form_submit_button("📋  REGISTER CREDENTIALS", use_container_width=True)
@@ -629,14 +629,14 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    if st.button("🔓 Disconnect Session", use_container_width=True):
+    if st.button("🔓 Disconnect Session", use_container_width=True, key="btn_disconnect_session"):
         for k in ["jwt_token", "user_role", "username", "active_data"]:
             st.session_state.pop(k, None)
         st.rerun()
 
     st.markdown('<div class="sec-div">🌍 Geographic Registry</div>', unsafe_allow_html=True)
-    location_query = st.text_input("Target Location", st.session_state.location_name, label_visibility="collapsed")
-    if st.button("📡 Initialize Site Node", use_container_width=True):
+    location_query = st.text_input("Target Location", st.session_state.location_name, label_visibility="collapsed", key="sb_target_location_input")
+    if st.button("📡 Initialize Site Node", use_container_width=True, key="btn_init_site_node"):
         with st.spinner("Geolocating..."):
             try:
                 osm = requests.get(
@@ -672,18 +672,18 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     st.markdown('<div class="sec-div">🎬 Scenario Engine</div>', unsafe_allow_html=True)
-    scenario_sel = st.selectbox("Scenario", list(SCENARIO_MAP.keys()), label_visibility="collapsed")
+    scenario_sel = st.selectbox("Scenario", list(SCENARIO_MAP.keys()), label_visibility="collapsed", key="sb_scenario_select")
     active_scenario = SCENARIO_MAP[scenario_sel]
 
     model_tier = st.selectbox("YOLOv8 Profile",
         ["YOLOv8-Nano (Speed Edge)", "YOLOv8-XLarge (Precision High-Load)"],
-        label_visibility="collapsed")
-    vision_thresh = st.slider("Detection Confidence", 0.0, 1.0, 0.40, 0.05)
+        label_visibility="collapsed", key="sb_model_tier_select")
+    vision_thresh = st.slider("Detection Confidence", 0.0, 1.0, 0.40, 0.05, key="sb_vision_thresh_slider")
 
     st.markdown('<div class="sec-div">⚙️ Operating Mode</div>', unsafe_allow_html=True)
     op_mode = st.selectbox("Mode",
         ["AI Automated Fusion", "Manual Override", "Security Lockdown", "Predictive Optimization"],
-        label_visibility="collapsed")
+        label_visibility="collapsed", key="sb_op_mode_select")
     st.session_state["operational_mode"] = op_mode
 
     manual_phase = None
@@ -691,12 +691,12 @@ with st.sidebar:
     if op_mode == "Manual Override":
         manual_phase  = st.selectbox("Signal Phase",
             ["North-South Green", "East-West Green", "ALL RED (CONTAINMENT)", "ALL FLASHING YELLOW"],
-            label_visibility="collapsed")
-        manual_timing = st.slider("Green Timer (sec)", 5, 60, 20)
+            label_visibility="collapsed", key="sb_manual_phase_select")
+        manual_timing = st.slider("Green Timer (sec)", 5, 60, 20, key="sb_manual_timing_slider")
 
     st.markdown("<br>", unsafe_allow_html=True)
-    scan_btn = st.button("⚡ EXECUTE SCENARIO SCAN", type="primary", use_container_width=True)
-    if st.button("♻️ Clear Active Data", use_container_width=True):
+    scan_btn = st.button("⚡ EXECUTE SCENARIO SCAN", type="primary", use_container_width=True, key="btn_execute_scenario_scan")
+    if st.button("♻️ Clear Active Data", use_container_width=True, key="btn_clear_active_data"):
         st.session_state.active_data = None
         st.session_state.sb_results = None
         st.rerun()
@@ -750,7 +750,7 @@ if (st.session_state.get("last_scanned_sig") != _curr_loc_sig or scan_btn or st.
 # ══════════════════════════════════════════════════════════════
 (tab_hud, tab_analytics, tab_map_intel,
  tab_sandbox, tab_ai_chat, tab_guide, tab_manual, tab_security,
- tab_anpr, tab_pipeline) = st.tabs([
+ tab_anpr, tab_pipeline, tab_citizen) = st.tabs([
     "📊 Operations HUD",
     "📈 Analytics",
     "🌍 Map Intelligence",
@@ -759,8 +759,9 @@ if (st.session_state.get("last_scanned_sig") != _curr_loc_sig or scan_btn or st.
     "📚 Learning Guide",
     "📖 Diagnostics",
     "🔒 Security Ledger",
-    "🚘 ANPR & Violations",    # NEW §15/§16
-    "⚙️ Pipeline Status",      # NEW
+    "🚘 ANPR & Violations",
+    "⚙️ Pipeline Status",
+    "👥 Public Citizen Portal",
 ])
 
 
@@ -934,7 +935,7 @@ with tab_hud:
                 st.markdown("**Full Response Payload**")
                 st.json(data, expanded=False)
 
-        # ── TRAFFIC ANALYTICS (new today) ─────────────────────────
+        # ── TRAFFIC ANALYTICS ─────────────────────────────────────
         mini_separator()
         sec_div("📊 TRAFFIC ANALYTICS — DENSITY · QUEUE · SPEED · LANES")
         ta = data.get("traffic_analytics", {})
@@ -951,6 +952,55 @@ with tab_hud:
                 lc_cols = st.columns(len(lc))
                 for col, (lane, cnt) in zip(lc_cols, lc.items()):
                     col.markdown(metric_tile(lane, cnt, " veh", "#06b6d4", "🛣️"), unsafe_allow_html=True)
+
+        # ── ENVIRONMENTAL EXHAUST & VRU PEDESTRIAN SAFETY ─────────
+        mini_separator()
+        sec_div("🌱 ENVIRONMENTAL EXHAUST TELEMETRY · 🚶 VRU PEDESTRIAN SAFETY")
+        env_col, vru_col = st.columns(2)
+        with env_col:
+            try:
+                _env_res = requests.get(
+                    f"{BACKEND_URL}/api/v1/environmental/telemetry",
+                    params={"vehicle_count": count, "signal_timing_seconds": timing or 30},
+                    timeout=5
+                )
+                if _env_res.ok:
+                    _env = _env_res.json()
+                    st.markdown(f"""
+                    <div class="card" style="border-color:rgba(16,185,129,.2);">
+                        <div style="font-family:'Orbitron',sans-serif;font-size:.78rem;font-weight:700;color:#10b981;margin-bottom:8px;">
+                            🍃 IDLE EXHAUST EMISSIONS
+                        </div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:1.9;">
+                            CO₂ Output: <strong style="color:#00f0ff;">{_env['co2_grams']} g</strong> &nbsp;|&nbsp;
+                            NOx: <strong style="color:#a855f7;">{_env['nox_grams']} g</strong><br>
+                            PM2.5 Rate: <strong style="color:#f59e0b;">{_env['pm25_grams']} g</strong> &nbsp;|&nbsp;
+                            ATSC Saved: <strong style="color:#10b981;">{_env['atsc_carbon_saved_grams']} g CO₂</strong><br>
+                            LEZ Status: <strong style="color:{'#10b981' if 'COMPLIANT' in _env['lez_status'] else '#ef4444'};">{_env['lez_status']}</strong>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            except:
+                st.warning("Environmental module offline.")
+        with vru_col:
+            try:
+                _vru_res = requests.get(f"{BACKEND_URL}/api/v1/vru/crosswalk", params={"pedestrians": 3}, timeout=5)
+                if _vru_res.ok:
+                    _vru = _vru_res.json()
+                    st.markdown(f"""
+                    <div class="card" style="border-color:rgba(0,240,255,.2);">
+                        <div style="font-family:'Orbitron',sans-serif;font-size:.78rem;font-weight:700;color:#00f0ff;margin-bottom:8px;">
+                            🚶 VULNERABLE ROAD USER (VRU) GUARDIAN
+                        </div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:1.9;">
+                            Pedestrians: <strong style="color:#eab308;">{_vru['pedestrians_detected']} in crosswalk</strong><br>
+                            Status: <strong style="color:#10b981;">{_vru['crosswalk_status']}</strong><br>
+                            WALK Timer: <strong style="color:#a855f7;">{_vru['recommended_walk_seconds']}s (Ext: +{_vru['walk_extension_seconds']}s)</strong>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            except:
+                st.warning("VRU safety module offline.")
 
         # ── ANPR + VIOLATIONS PREVIEW (new today) ─────────────────
         mini_separator()
@@ -1189,7 +1239,8 @@ with tab_analytics:
                     "📥 EXPORT DECRYPTED AUDIT LEDGER (CSV)",
                     data=h_df.to_csv(index=False),
                     file_name=f"aegis_ledger_{uuid.uuid4().hex[:6]}.csv",
-                    mime="text/csv", type="primary", use_container_width=True
+                    mime="text/csv", type="primary", use_container_width=True,
+                    key="btn_download_audit_ledger_csv"
                 )
             else:
                 st.info("ℹ️ CSV export is restricted to Admin and Auditor clearance levels.")
@@ -1203,7 +1254,7 @@ with tab_analytics:
         with up_left:
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown('<div class="t-section" style="margin-bottom:12px;">📤 Upload Dataset</div>', unsafe_allow_html=True)
-            uploaded = st.file_uploader("Drop a file", type=["csv","xlsx","xls","json"], label_visibility="collapsed")
+            uploaded = st.file_uploader("Drop a file", type=["csv","xlsx","xls","json"], label_visibility="collapsed", key="analyzer_file_uploader")
             if uploaded:
                 try:
                     fname = uploaded.name.lower()
@@ -1223,15 +1274,15 @@ with tab_analytics:
                 num_cols = udf.select_dtypes(include="number").columns.tolist()
                 cat_cols = udf.select_dtypes(exclude="number").columns.tolist()
                 st.markdown('<div class="sec-div" style="font-size:.65rem;">Chart Settings</div>', unsafe_allow_html=True)
-                chart_type = st.selectbox("Chart Type", ["📉 Line Chart","📊 Bar Chart","🔵 Scatter Plot","🥧 Pie / Donut","📦 Box Plot","🌡️ Correlation Heatmap","📈 Histogram"], label_visibility="collapsed")
+                chart_type = st.selectbox("Chart Type", ["📉 Line Chart","📊 Bar Chart","🔵 Scatter Plot","🥧 Pie / Donut","📦 Box Plot","🌡️ Correlation Heatmap","📈 Histogram"], label_visibility="collapsed", key="analyzer_chart_type_select")
                 x_col = st.selectbox("X Axis", udf.columns.tolist(), label_visibility="collapsed", key="up_x")
                 y_col = st.selectbox("Y Axis", num_cols if num_cols else udf.columns.tolist(), label_visibility="collapsed", key="up_y")
                 cc_raw = st.selectbox("Color By", ["— None —"] + cat_cols, label_visibility="collapsed", key="up_col")
                 color_col = None if cc_raw == "— None —" else cc_raw
-                render_btn = st.button("📊 Render Analysis", type="primary", use_container_width=True)
+                render_btn = st.button("📊 Render Analysis", type="primary", use_container_width=True, key="btn_render_analysis")
                 if st.session_state.user_role.upper() in ["ADMIN","AUDITOR"]:
                     st.download_button("📥 Download Processed CSV", udf.to_csv(index=False),
-                        file_name=f"processed_{uuid.uuid4().hex[:6]}.csv", mime="text/csv", use_container_width=True)
+                        file_name=f"processed_{uuid.uuid4().hex[:6]}.csv", mime="text/csv", use_container_width=True, key="btn_download_processed_csv")
             st.markdown('</div>', unsafe_allow_html=True)
 
         with up_right:
@@ -1305,8 +1356,8 @@ with tab_analytics:
                 mini_separator()
                 sec_div("🤖 AI DATASET INSIGHTS")
                 ai_col_sel = st.multiselect("Columns to analyse", udf.columns.tolist(),
-                    default=num_cols[:4] if len(num_cols)>=4 else num_cols, label_visibility="collapsed")
-                if st.button("🤖 Generate AI Insights from Dataset", type="primary", use_container_width=True):
+                    default=num_cols[:4] if len(num_cols)>=4 else num_cols, label_visibility="collapsed", key="analyzer_ai_col_multiselect")
+                if st.button("🤖 Generate AI Insights from Dataset", type="primary", use_container_width=True, key="btn_gen_ai_insights"):
                     if ai_col_sel and backend_alive():
                         sample = udf[ai_col_sel].describe().to_string() if num_cols else udf[ai_col_sel].head(5).to_string()
                         prompt = (f"You are a traffic data analyst AI. Analyse the following dataset statistics "
@@ -1768,7 +1819,7 @@ with tab_sandbox:
         sb_mode     = st.selectbox("Fusion Mode", ["AI Automated Fusion","Predictive Optimization"], key="sb_mode")
         sb_weather  = st.selectbox("Weather Condition", ["Clear","Rain","Fog","Snow"], key="sb_weather")
         st.markdown("</div>", unsafe_allow_html=True)
-        run_sb = st.button("🧪 RUN SANDBOX ANALYSIS", type="primary", use_container_width=True)
+        run_sb = st.button("🧪 RUN SANDBOX ANALYSIS", type="primary", use_container_width=True, key="btn_run_sandbox_analysis")
 
     with sb_right:
         if run_sb or st.session_state.sb_results:
@@ -1882,8 +1933,8 @@ with tab_ai_chat:
             "How does camera tamper detection work?",
             "What is the optimal signal timing strategy?"
         ]
-        for qc, qp in zip(qcols, quick_prompts):
-            if qc.button(qp[:28]+"...", use_container_width=True, key=f"qp_{qp[:10]}"):
+        for idx, (qc, qp) in enumerate(zip(qcols, quick_prompts)):
+            if qc.button(qp[:28]+"...", use_container_width=True, key=f"btn_copilot_qp_{idx}"):
                 st.session_state.copilot_history.append({"role":"user","text":qp})
                 try:
                     cr = requests.post(CHAT_URL, json={
@@ -1922,7 +1973,7 @@ with tab_ai_chat:
                     st.session_state.copilot_history.append({"role":"assistant","text":"⚠️ Copilot offline."})
             st.rerun()
 
-        if st.button("🗑️ Clear Chat History", use_container_width=True):
+        if st.button("🗑️ Clear Chat History", use_container_width=True, key="btn_copilot_clear_chat"):
             st.session_state.copilot_history = []
             st.rerun()
 
@@ -1972,7 +2023,7 @@ with tab_guide:
         "🔮 Predictive ARIMA Optimization",
         "🧪 Sandbox Analyzer — Custom Testing",
         "🚦 Adaptive Signal Control (ATSC) Theory",
-    ], label_visibility="collapsed")
+    ], label_visibility="collapsed", key="guide_topic_select")
 
     topics = {
         "🚀 Getting Started — Platform Overview": {
@@ -2068,7 +2119,7 @@ with tab_manual:
         "🔑 5. API Breach / SQL Injection / JWT Forgery",
         "🌧️ 6. Adverse Weather Conditions (Rain / Fog / Snow)",
         "📡 7. Model Drift / False Positive Anomalies",
-    ], label_visibility="collapsed")
+    ], label_visibility="collapsed", key="diag_problem_select")
 
     PROBLEMS = {
         "1": {
@@ -2166,7 +2217,7 @@ with tab_manual:
                 st.markdown(f"<div style='font-family:Inter,sans-serif;font-size:.85rem;color:#94a3b8;line-height:1.8;'>{desc_s}</div>", unsafe_allow_html=True)
 
         if pd_data.get("action_label"):
-            if st.button(pd_data["action_label"], use_container_width=True, type="primary"):
+            if st.button(pd_data["action_label"], use_container_width=True, type="primary", key=f"btn_diag_action_{prob_num}"):
                 st.success(pd_data["action_msg"])
 
 
@@ -2341,7 +2392,7 @@ with tab_anpr:
 
                     st.markdown("<br>", unsafe_allow_html=True)
                     if violations:
-                        for v in violations:
+                        for idx_v, v in enumerate(violations):
                             vtype     = v.get("type", "—")
                             vid       = v.get("vehicle_id", "Unknown")
                             fine_loc  = v.get("fine_local",  f"{_sym_v}{v.get('fine_amount','—')}")
@@ -2361,6 +2412,9 @@ with tab_anpr:
                                 f'{f" &nbsp;<span style=\"color:#6b7280;font-size:.7rem;\">{fine_usd}</span>" if fine_usd else ""}'
                                 f'</div>'
                                 f'</div>', unsafe_allow_html=True)
+                            
+                            pdf_url = f"{BACKEND_URL}/api/v1/violations/citation-pdf/{v.get('id', f'TKT-{idx_v+1:04d}')}?plate={requests.utils.quote(plate or 'DL-01-AB-1234')}&fine_amount={v.get('fine_amount', 1500)}"
+                            st.markdown(f'<a href="{pdf_url}" target="_blank" style="display:inline-block;padding:4px 10px;background:rgba(0,240,255,.1);border:1px solid #00f0ff;color:#00f0ff;border-radius:4px;font-family:\'JetBrains Mono\',monospace;font-size:.68rem;text-decoration:none;margin-bottom:10px;">📄 View / Print Official Citation PDF</a>', unsafe_allow_html=True)
                     else:
                         st.success("✅ No traffic violations detected for this scenario.")
                 else:
@@ -2440,6 +2494,117 @@ with tab_pipeline:
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────
+# TAB 11 — PUBLIC CITIZEN PORTAL
+# ─────────────────────────────────────────────────
+with tab_citizen:
+    sec_div("👥 MUNICIPAL PUBLIC CITIZEN PORTAL — REAL-TIME TRAFFIC & SAFETY SERVICES")
+    st.markdown("<p style='color:#64748b;font-family:JetBrains Mono;font-size:.78rem;'>Public access portal for city residents and drivers to view live congestion, check/appeal traffic fines, and report road hazards.</p>", unsafe_allow_html=True)
+
+    cit_tab1, cit_tab2, cit_tab3 = st.tabs([
+        "🗺️ Live Congestion & Detours",
+        "💳 Fine Lookup & Challenger",
+        "🚨 Report Road Hazard"
+    ])
+
+    with cit_tab1:
+        sec_div("🌍 PUBLIC LIVE TRAFFIC MAP & ECO-DRIVING ADVISORY")
+        pc1, pc2, pc3, pc4 = st.columns(4)
+        pc1.markdown(metric_tile("Target City", st.session_state.location_name, "", "#00f0ff", "📍"), unsafe_allow_html=True)
+        pc2.markdown(metric_tile("Traffic Flow", "MODERATE", "", "#10b981", "🚦"), unsafe_allow_html=True)
+        pc3.markdown(metric_tile("Eco Speed", "45 km/h", "", "#a855f7", "🌱"), unsafe_allow_html=True)
+        pc4.markdown(metric_tile("Air Quality", "AQI 42 (Good)", "", "#06b6d4", "🍃"), unsafe_allow_html=True)
+
+        st.markdown("""
+        <div class="card" style="margin-top:14px;">
+            <div class="t-section" style="margin-bottom:8px;">📢 ACTIVE MUNICIPAL DETOUR ADVISORIES</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#e2e8f0;line-height:1.8;">
+                • <strong style="color:#00f0ff;">Bypass Route A:</strong> Utility maintenance on Outer Ring Rd. Detour saves ~8 minutes.<br>
+                • <strong style="color:#f59e0b;">Emergency Green Wave Active:</strong> Central Expressway lane 2 restricted for emergency convoy.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with cit_tab2:
+        sec_div("💳 CITIZEN REGISTRATION PLATE FINE LOOKUP & DISPUTE PORTAL")
+        lookup_col, result_col = st.columns([1, 1.5])
+        with lookup_col:
+            search_plate = st.text_input("Enter Vehicle Registration Plate", placeholder="e.g. DL-01-AB-1234", key="citizen_plate_lookup_input")
+            search_btn = st.button("🔍 Search Active Fines", type="primary", use_container_width=True, key="btn_citizen_search_fines")
+
+        with result_col:
+            if search_btn and search_plate.strip():
+                try:
+                    c_res = requests.get(f"{BACKEND_URL}/api/v1/public/citations/search", params={"plate": search_plate}, timeout=8)
+                    if c_res.ok:
+                        c_data = c_res.json()
+                        st.markdown(f"#### 🪪 Vehicle: `{c_data['plate']}`")
+                        st.markdown(f"**Total Outstanding Fine:** `{st.session_state.currency_symbol}{c_data['total_outstanding_fine']}`")
+                        for tkt in c_data.get("tickets", []):
+                            st.markdown(f"""
+                            <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px;margin-bottom:8px;font-family:'JetBrains Mono',monospace;font-size:.78rem;">
+                                <div style="color:#ef4444;font-weight:700;">⚠️ {tkt['type']}</div>
+                                <div style="color:#94a3b8;">Ticket ID: {tkt['ticket_id']} | Date: {tkt['date']}</div>
+                                <div style="color:#f59e0b;font-weight:700;margin-top:4px;">Fine Amount: {st.session_state.currency_symbol}{tkt['fine_amount_inr']}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            if st.button(f"⚖️ Contest Ticket {tkt['ticket_id']}", key=f"btn_appeal_{tkt['ticket_id']}"):
+                                st.success(f"✅ Dispute claim registered for Ticket {tkt['ticket_id']}. Reference ID: APP-{uuid.uuid4().hex[:6].upper()}")
+                    else:
+                        st.error("Error connecting to citation lookup service.")
+                except Exception as ex:
+                    st.error(f"Lookup service offline: {ex}")
+            else:
+                st.info("Enter your vehicle plate number on the left to check for active citations.")
+
+    with cit_tab3:
+        sec_div("🚨 PUBLIC ROAD HAZARD REPORTING FORM")
+        h_col1, h_col2 = st.columns(2)
+        with h_col1:
+            hz_name = st.text_input("Your Name / Alias", value="Citizen Reporter", key="hz_citizen_name")
+            hz_type = st.selectbox("Hazard Type", ["Pothole", "Vehicle Accident", "Traffic Light Outage", "Road Flooding", "Debris on Road"], key="hz_type_select")
+            hz_loc  = st.text_input("Hazard Location", value=st.session_state.location_name, key="hz_location_input")
+            hz_desc = st.text_area("Description / Details", placeholder="Describe the road condition or danger...", key="hz_description_textarea")
+            sub_hz  = st.button("📋 Submit Hazard Report to City Dispatch", type="primary", use_container_width=True, key="btn_submit_hazard_report")
+
+            if sub_hz:
+                try:
+                    payload_hz = {
+                        "citizen_name": hz_name,
+                        "hazard_type": hz_type,
+                        "location_name": hz_loc,
+                        "latitude": st.session_state.latitude,
+                        "longitude": st.session_state.longitude,
+                        "description": hz_desc
+                    }
+                    hr = requests.post(f"{BACKEND_URL}/api/v1/public/hazards/report", json=payload_hz, timeout=8)
+                    if hr.ok:
+                        st.success(f"✅ Report submitted! Ticket ID: {hr.json().get('report_id')}")
+                    else:
+                        st.error("Error submitting report.")
+                except Exception as ex:
+                    st.error(f"Dispatch server offline: {ex}")
+
+        with h_col2:
+            st.markdown("#### 📋 Community Hazard Feed")
+            try:
+                hl = requests.get(f"{BACKEND_URL}/api/v1/public/hazards/list", timeout=6)
+                if hl.ok:
+                    h_list = hl.json().get("hazards", [])
+                    if h_list:
+                        for hz in h_list[:6]:
+                            st.markdown(f"""
+                            <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:8px 12px;margin-bottom:6px;font-family:'JetBrains Mono',monospace;font-size:.75rem;">
+                                <span style="color:#f59e0b;font-weight:700;">🚨 {hz['hazard_type']}</span> &nbsp;|&nbsp; <span style="color:#00f0ff;">{hz['location_name']}</span><br>
+                                <span style="color:#94a3b8;">Status: <strong style="color:#10b981;">{hz['status']}</strong> &nbsp;|&nbsp; Reported: {hz['date']}</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.info("No hazards reported yet.")
+            except:
+                st.warning("Hazard feed offline.")
 
 
 # ──────────────────────────────────────────────
