@@ -642,10 +642,11 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    if st.button("🔓 Disconnect Session", use_container_width=True, key="btn_disconnect_session"):
-        for k in ["jwt_token", "user_role", "username", "active_data"]:
+    def _disconnect_user_session():
+        for k in ["jwt_token", "user_role", "username", "active_data", "quick_user", "quick_pass"]:
             st.session_state.pop(k, None)
-        st.rerun()
+
+    st.button("🔓 Disconnect Session", use_container_width=True, key="btn_disconnect_session_auth", on_click=_disconnect_user_session)
 
     st.markdown('<div class="sec-div">🌍 Geographic Registry</div>', unsafe_allow_html=True)
     location_query = st.text_input("Target Location", st.session_state.location_name, label_visibility="collapsed", key="sb_target_location_input")
