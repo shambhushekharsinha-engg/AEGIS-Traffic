@@ -1,0 +1,17 @@
+name: 24/7 Streamlit Keep-Alive Heartbeat
+
+on:
+  schedule:
+    # Trigger every 5 minutes to keep Streamlit Cloud awake 24/7
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-streamlit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit Dashboard
+        run: |
+          echo "🌐 Sending keep-alive heartbeat to Streamlit Cloud..."
+          curl -s -o /dev/null -w "%{http_code}" https://aegis-traffic.streamlit.app/ || true
+          echo "✅ Heartbeat sent successfully."
