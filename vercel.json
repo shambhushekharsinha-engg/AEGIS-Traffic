@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "app/main.py",
+      "src": "api/index.py",
       "use": "@vercel/python"
     },
     {
@@ -12,16 +12,20 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "app/main.py"
+      "src": "/docs",
+      "dest": "api/index.py"
     },
     {
-      "src": "/docs",
-      "dest": "app/main.py"
+      "src": "/redoc",
+      "dest": "api/index.py"
     },
     {
       "src": "/openapi.json",
-      "dest": "app/main.py"
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
     },
     {
       "src": "/(.*)",

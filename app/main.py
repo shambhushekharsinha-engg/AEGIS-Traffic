@@ -84,9 +84,26 @@ app = FastAPI(
     title       = settings.app_name,
     version     = settings.app_version,
     description = "Production-grade multimodal traffic intelligence and crime detection system.",
-    docs_url    = "/api/docs",
-    redoc_url   = "/api/redoc",
+    docs_url    = "/docs",
+    redoc_url   = "/redoc",
+    openapi_url = "/openapi.json",
 )
+
+@app.get("/api/docs", include_in_schema=False)
+@app.get("/api/v1/docs", include_in_schema=False)
+def redirect_api_docs():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/docs")
+
+@app.get("/api/redoc", include_in_schema=False)
+def redirect_api_redoc():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/redoc")
+
+@app.get("/api/openapi.json", include_in_schema=False)
+def redirect_api_openapi():
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content=app.openapi())
 
 # ── Middleware ────────────────────────────────────────────────────────────────────
 app.state.limiter = limiter
