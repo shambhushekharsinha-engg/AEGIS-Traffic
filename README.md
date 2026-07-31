@@ -17,9 +17,9 @@
 
 | Platform | Link | Description |
 |:---:|:---:|:---|
-| 🖥️ **Frontend** | [![Streamlit](https://img.shields.io/badge/STREAMLIT%20DASHBOARD-Live%20Frontend-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white&labelColor=010308)](https://aegis-traffic.streamlit.app/) | Full 10-tab Streamlit dashboard — all original tabs + new features |
-| ⚙️ **Backend API** | [![Vercel](https://img.shields.io/badge/FASTAPI%20BACKEND-aegis--traffic.vercel.app-00f0ff?style=for-the-badge&logo=vercel&logoColor=white&labelColor=010308)](https://aegis-traffic.vercel.app) | FastAPI REST microservice — all AI inference & data endpoints |
-| 📖 **API Docs** | [![Swagger](https://img.shields.io/badge/SWAGGER%20UI-/api/docs-009688?style=for-the-badge&logo=swagger&logoColor=white&labelColor=010308)](https://aegis-traffic.vercel.app/api/docs) | Interactive Swagger / OpenAPI documentation |
+| ⚡ **Vercel Web Dashboard & API** | [![Vercel](https://img.shields.io/badge/VERCEL%20DASHBOARD-aegis--traffic.vercel.app-00f0ff?style=for-the-badge&logo=vercel&logoColor=white&labelColor=010308)](https://aegis-traffic.vercel.app) | Standalone Cyberpunk Web Dashboard with Dynamic Location Switcher & REST API |
+| 🎈 **Streamlit Operations Hub** | [![Streamlit](https://img.shields.io/badge/STREAMLIT%20HUB-Live%20Operations-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white&labelColor=010308)](https://aegis-traffic.streamlit.app/) | 11-Tab Officer Command Hub & Public Citizen Portal (24/7 Heartbeat Active) |
+| 📖 **API Docs** | [![Swagger](https://img.shields.io/badge/SWAGGER%20UI-/api/docs-009688?style=for-the-badge&logo=swagger&logoColor=white&labelColor=010308)](https://aegis-traffic.vercel.app/docs) | Interactive Swagger / OpenAPI documentation |
 
 <br/>
 
@@ -112,12 +112,16 @@
 
 | Category | Feature | Implementation |
 |:---|:---|:---|
+| 🌐 **Vercel Web Dashboard** | Unauthenticated Direct Index Access | Instant access to live map, signal controller, environmental metrics & optional Officer Login modal |
+| 📍 **Dynamic Location Switcher** | Global Site Node Selection | Instant switching between Connaught Place, Times Square, Piccadilly, Shibuya, Paris, Dubai, or custom geocoding |
 | 👥 **Public Citizen Portal** | Unauthenticated Public Access | Live traffic heatmaps, eco-speed advice, active detours, fine payment search & hazard reporting |
 | 🍃 **Environmental AI** | Idle Exhaust & Carbon Tracking | Real-time CO2 (g/min), NOx, PM2.5 emissions calculation & ATSC carbon offset tracking |
 | 📡 **Cellular V2X (C-V2X)** | DSRC / V2X Safety Broadcast | SAE J2735 / IEEE 802.11p Basic Safety Message (BSM) packet generator for autonomous vehicles |
 | 📄 **Official PDF Citations** | Printable Legal Ticket Generator | Court-admissible traffic citation documents with ANPR crops, GPS stamps & SHA-256 hashes |
 | 🚶 **VRU Safety Guardian** | Crosswalk Pedestrian Protection | Pedestrian & wheelchair crosswalk occupancy detection + dynamic WALK timer extension |
 | 💳 **Fine Dispute Portal** | Citizen Registration Plate Lookup | Search vehicle plates, inspect active ticket history, and submit electronic appeals |
+| 🐘 **PHP Session Engine** | Native PHP Auth Bridge (`index.php`) | Full cURL-based PHP login & session handling against FastAPI backend |
+| 🤖 **24/7 Streamlit Heartbeat** | Automated GitHub Actions Pinger | Scheduled workflow (`.github/workflows/keep_alive.yml`) keeping Streamlit Cloud awake 24/7 |
 | 🚨 **Citizen Hazard Reporting**| Public Road Hazard Dispatch | Report potholes, accidents, and outages with GPS pin & live community hazard status feed |
 | 🤖 **AI Vision** | Real-time vehicle detection | YOLOv8-Nano COCO detection + synthetic frame synthesis |
 | 🔊 **Acoustics** | Sound anomaly detection | RMS dB measurement + FFT frequency spectrum analysis |
