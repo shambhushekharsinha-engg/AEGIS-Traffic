@@ -486,14 +486,20 @@ if "jwt_token" not in st.session_state:
             # Quick Fill Action Buttons
             col_q1, col_q2, col_q3 = st.columns(3)
             if col_q1.button("🔑 Admin Quick Entry", use_container_width=True, key="btn_quick_admin"):
+                st.session_state["login_username_input"] = "admin"
+                st.session_state["login_password_input"] = "Admin@AEGIS2024!"
                 st.session_state.quick_user = "admin"
                 st.session_state.quick_pass = "Admin@AEGIS2024!"
                 st.rerun()
             if col_q2.button("🔑 Operator Quick Entry", use_container_width=True, key="btn_quick_operator"):
+                st.session_state["login_username_input"] = "operator"
+                st.session_state["login_password_input"] = "Operator@AEGIS2024!"
                 st.session_state.quick_user = "operator"
                 st.session_state.quick_pass = "Operator@AEGIS2024!"
                 st.rerun()
             if col_q3.button("🔑 Auditor Quick Entry", use_container_width=True, key="btn_quick_auditor"):
+                st.session_state["login_username_input"] = "auditor"
+                st.session_state["login_password_input"] = "Auditor@AEGIS2024!"
                 st.session_state.quick_user = "auditor"
                 st.session_state.quick_pass = "Auditor@AEGIS2024!"
                 st.rerun()
@@ -526,7 +532,14 @@ if "jwt_token" not in st.session_state:
                                     time.sleep(0.6)
                                     st.rerun()
                                 else:
-                                    st.error(f"🚫 {res.json().get('detail', 'Access denied.')}")
+                                    err_detail = res.json().get("detail", "Access denied.")
+                                    if isinstance(err_detail, dict):
+                                        err_msg = err_detail.get("detail", err_detail.get("error", str(err_detail)))
+                                    elif isinstance(err_detail, list):
+                                        err_msg = err_detail[0].get("msg", str(err_detail[0])) if err_detail else "Invalid credentials."
+                                    else:
+                                        err_msg = str(err_detail)
+                                    st.error(f"🚫 {err_msg}")
                             except requests.exceptions.ConnectionError:
                                 st.error("❌ Backend microservice offline on port 8000. Please start the FastAPI server first.")
 
