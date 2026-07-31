@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AEGIS-TRAFFIC // Smart City AI Operations Hub (Vercel Production)</title>
+    <title>AEGIS-TRAFFIC // Smart City AI Operations Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-dark: #020617;
-            --panel-bg: rgba(13, 17, 23, 0.9);
-            --card-border: rgba(0, 240, 255, 0.2);
+            --panel-bg: rgba(13, 17, 23, 0.88);
+            --panel-border: rgba(0, 240, 255, 0.2);
             --cyan: #00f0ff;
             --purple: #a855f7;
             --emerald: #10b981;
@@ -20,6 +20,7 @@
             --blue: #3b82f6;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
+            --glass-glow: 0 0 20px rgba(0, 240, 255, 0.15);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,8 +31,9 @@
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
             background-image: 
-                radial-gradient(circle at 10% 10%, rgba(0, 240, 255, 0.04) 0%, transparent 40%),
-                radial-gradient(circle at 90% 90%, rgba(168, 85, 247, 0.04) 0%, transparent 40%);
+                radial-gradient(circle at 12% 12%, rgba(0, 240, 255, 0.05) 0%, transparent 45%),
+                radial-gradient(circle at 88% 88%, rgba(168, 85, 247, 0.05) 0%, transparent 45%);
+            background-attachment: fixed;
         }
 
         /* HEADER */
@@ -41,8 +43,8 @@
             align-items: center;
             padding: 14px 28px;
             background: rgba(2, 6, 23, 0.95);
-            border-bottom: 1px solid var(--card-border);
-            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--panel-border);
+            backdrop-filter: blur(14px);
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -50,19 +52,20 @@
 
         .logo-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.3rem;
+            font-size: 1.35rem;
             font-weight: 800;
             color: var(--cyan);
             letter-spacing: 3px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            text-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
         }
 
         .status-badge {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.72rem;
-            padding: 5px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid var(--emerald);
@@ -78,21 +81,22 @@
             animation: pulse 2s infinite;
         }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.15); } 100% { opacity: 1; transform: scale(1); } }
 
-        /* TABS NAVIGATION BAR */
+        /* TAB BAR NAVIGATION */
         nav.tab-bar {
             display: flex;
             gap: 6px;
-            padding: 12px 28px;
-            background: rgba(15, 23, 42, 0.8);
+            padding: 10px 28px;
+            background: rgba(15, 23, 42, 0.85);
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             overflow-x: auto;
             white-space: nowrap;
+            scrollbar-width: thin;
         }
 
         .tab-btn {
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.08);
             color: var(--text-muted);
             font-family: 'JetBrains Mono', monospace;
@@ -106,30 +110,27 @@
             gap: 6px;
         }
 
-        .tab-btn:hover { color: var(--text-main); border-color: var(--cyan); background: rgba(0, 240, 255, 0.05); }
-        .tab-btn.active { color: var(--cyan); border-color: var(--cyan); background: rgba(0, 240, 255, 0.12); font-weight: 700; box-shadow: 0 0 12px rgba(0, 240, 255, 0.2); }
+        .tab-btn:hover { color: var(--text-main); border-color: var(--cyan); background: rgba(0, 240, 255, 0.06); }
+        .tab-btn.active { color: var(--cyan); border-color: var(--cyan); background: rgba(0, 240, 255, 0.14); font-weight: 700; box-shadow: 0 0 12px rgba(0, 240, 255, 0.25); }
 
-        /* CONTAINER & TAB PANELS */
-        .container { padding: 24px 28px; max-width: 1650px; margin: 0 auto; }
+        /* MAIN CONTAINER & PANELS */
+        .container { padding: 22px 28px; max-width: 1700px; margin: 0 auto; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* GRID LAYOUTS */
-        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-
         .card {
             background: var(--panel-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 10px;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
         }
 
-        .card-title {
+        .card-header {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.82rem;
+            font-size: 0.84rem;
             font-weight: 700;
             color: var(--cyan);
             letter-spacing: 1.5px;
@@ -137,26 +138,24 @@
             display: flex; justify-content: space-between; align-items: center;
         }
 
+        /* GRID SYSTEM */
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+
         .kpi-tile {
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(15, 23, 42, 0.65);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px; padding: 14px;
+            border-radius: 10px; padding: 14px 16px;
         }
         .kpi-lbl { font-family: 'JetBrains Mono'; font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
         .kpi-val { font-family: 'Orbitron'; font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
 
-        /* SIGNAL CONTROLLER */
-        .signal-grid { display: flex; justify-content: space-around; background: rgba(0,0,0,0.5); padding: 16px; border-radius: 8px; }
-        .sig-box { text-align: center; }
-        .sig-dot { width: 34px; height: 34px; border-radius: 50%; margin: 0 auto 6px; background: #1e293b; }
-        .sig-dot.green { background: var(--emerald); box-shadow: 0 0 18px var(--emerald); }
-        .sig-dot.red { background: var(--rose); box-shadow: 0 0 18px var(--rose); }
-
-        /* FORM INPUTS & BUTTONS */
-        input, select, textarea {
-            width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--card-border);
+        /* FORM CONTROLS & BUTTONS */
+        input[type="text"], input[type="password"], select, textarea {
+            width: 100%; background: rgba(15, 23, 42, 0.85); border: 1px solid var(--panel-border);
             color: #fff; padding: 9px 12px; border-radius: 6px; font-family: 'JetBrains Mono'; font-size: 0.8rem;
-            margin-bottom: 10px; outline: none;
+            margin-bottom: 10px; outline: none; transition: border-color 0.2s;
         }
         input:focus, select:focus, textarea:focus { border-color: var(--cyan); }
 
@@ -165,25 +164,42 @@
             font-family: 'Orbitron'; font-weight: 700; font-size: 0.75rem; padding: 10px 18px;
             border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; width: 100%;
         }
-        button.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
+        button.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 18px rgba(0, 240, 255, 0.4); }
+
+        button.btn-secondary {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--panel-border); color: var(--text-main);
+            font-family: 'JetBrains Mono'; font-size: 0.72rem; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+        }
+        button.btn-secondary:hover { border-color: var(--cyan); color: var(--cyan); }
+
+        /* SIGNAL CONTROLLER */
+        .signal-grid { display: flex; justify-content: space-around; background: rgba(0,0,0,0.5); padding: 16px; border-radius: 8px; }
+        .sig-box { text-align: center; }
+        .sig-dot { width: 36px; height: 36px; border-radius: 50%; margin: 0 auto 6px; background: #1e293b; }
+        .sig-dot.green { background: var(--emerald); box-shadow: 0 0 20px var(--emerald); }
+        .sig-dot.red { background: var(--rose); box-shadow: 0 0 20px var(--rose); }
 
         /* TABLE */
         table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono'; font-size: 0.76rem; }
-        th { text-align: left; padding: 8px 10px; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.1); }
-        td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { text-align: left; padding: 10px 12px; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
         #map { height: 380px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .tag-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; }
+        .tag-red { background: rgba(239, 68, 68, 0.15); color: var(--rose); border: 1px solid var(--rose); }
+        .tag-green { background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
     </style>
 </head>
 <body>
 
     <header>
         <div class="logo-title">
-            <span>🚦</span> AEGIS-TRAFFIC // VERCEL ENTERPRISE PLATFORM
+            <span>🚦</span> AEGIS-TRAFFIC // SMART CITY OPERATIONS
         </div>
         <div class="status-badge">
             <div class="pulse-dot"></div>
-            <span>VERCEL HOSTED // 11-TAB COMPLETE DASHBOARD</span>
+            <span>NODE ACTIVE // VERIFIED ZERO-TRUST</span>
         </div>
     </header>
 
@@ -208,21 +224,27 @@
         <div id="tab-hud" class="tab-content active">
             <div class="grid-4">
                 <div class="kpi-tile"><div class="kpi-lbl">API Latency</div><div class="kpi-val" style="color:var(--cyan);">14 ms</div></div>
-                <div class="kpi-tile"><div class="kpi-lbl">Hazard Index</div><div class="kpi-val" style="color:var(--amber);">28%</div></div>
-                <div class="kpi-tile"><div class="kpi-lbl">Vehicle Count</div><div class="kpi-val" style="color:var(--emerald);">14 units</div></div>
-                <div class="kpi-tile"><div class="kpi-lbl">Green Timer</div><div class="kpi-val" style="color:var(--purple);">30s</div></div>
+                <div class="kpi-tile"><div class="kpi-lbl">Hazard Risk</div><div class="kpi-val" style="color:var(--amber);">28%</div></div>
+                <div class="kpi-tile"><div class="kpi-lbl">Vehicles Tracked</div><div class="kpi-val" style="color:var(--emerald);">14 units</div></div>
+                <div class="kpi-tile"><div class="kpi-lbl">Green Phase</div><div class="kpi-val" style="color:var(--purple);">30s</div></div>
             </div>
 
             <div class="grid-3">
                 <div class="card">
-                    <div class="card-title">👁️ LIVE CAMERA STREAM — YOLOv8</div>
+                    <div class="card-header">
+                        <span>👁️ LIVE YOLOv8 CAMERA STREAM</span>
+                        <span style="color:var(--emerald);font-size:0.7rem;">60 FPS</span>
+                    </div>
                     <div style="background:#090d16;height:210px;border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px dashed rgba(0,240,255,0.3);">
-                        <span style="font-family:'JetBrains Mono';font-size:0.8rem;color:var(--cyan);">📷 Synthetic YOLOv8 Stream Active (Connaught Place)</span>
+                        <span style="font-family:'JetBrains Mono';font-size:0.8rem;color:var(--cyan);">📷 Synthetic YOLOv8 Feed Active (Connaught Place)</span>
                     </div>
                 </div>
 
                 <div class="card">
-                    <div class="card-title">🚥 ADAPTIVE SIGNAL CONTROLLER</div>
+                    <div class="card-header">
+                        <span>🚥 ADAPTIVE SIGNAL CONTROLLER</span>
+                        <span style="color:var(--emerald);font-size:0.7rem;">ATSC AUTO</span>
+                    </div>
                     <div class="signal-grid">
                         <div class="sig-box"><div class="sig-dot green"></div><div style="font-family:'Orbitron';font-size:0.75rem;color:var(--emerald);">NORTH-SOUTH</div><div style="font-family:'JetBrains Mono';font-size:0.7rem;">GO (30s)</div></div>
                         <div class="sig-box"><div class="sig-dot red"></div><div style="font-family:'Orbitron';font-size:0.75rem;color:var(--rose);">EAST-WEST</div><div style="font-family:'JetBrains Mono';font-size:0.7rem;">STOP</div></div>
@@ -230,32 +252,42 @@
                 </div>
 
                 <div class="card">
-                    <div class="card-title">🌱 ENVIRONMENTAL TELEMETRY</div>
+                    <div class="card-header">
+                        <span>🌱 ENVIRONMENTAL TELEMETRY</span>
+                        <span style="color:var(--cyan);font-size:0.7rem;">AQI METRICS</span>
+                    </div>
                     <div style="font-family:'JetBrains Mono';font-size:0.75rem;line-height:1.9;color:var(--text-muted);">
                         CO₂ Emissions: <strong style="color:var(--cyan);">18.4 g/min</strong><br>
                         NOx Emissions: <strong style="color:var(--purple);">0.06 g/min</strong><br>
                         PM2.5 Rate: <strong style="color:var(--amber);">0.003 g/min</strong><br>
                         ATSC Carbon Saved: <strong style="color:var(--emerald);">28.5% CO₂</strong><br>
-                        LEZ Status: <strong style="color:var(--emerald);">COMPLIANT</strong>
+                        LEZ Compliance: <strong style="color:var(--emerald);">PASS</strong>
                     </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><span>🚶 VRU CROSSWALK GUARDIAN</span></div>
+                <div style="font-family:'JetBrains Mono';font-size:0.75rem;line-height:1.8;color:var(--text-muted);">
+                    Occupancy Status: <span style="color:var(--emerald);font-weight:700;">PEDESTRIAN_DETECTED (+6s WALK Extension)</span> | Active Crosswalk Sensors: 4
                 </div>
             </div>
         </div>
 
-        <!-- TAB 2: ANALYTICS -->
+        <!-- TAB 2: ANALYTICS & DATASET ANALYZER -->
         <div id="tab-analytics" class="tab-content">
             <div class="grid-2">
                 <div class="card">
-                    <div class="card-title">📈 TRAFFIC RISK SCORE DISTRIBUTION</div>
+                    <div class="card-header"><span>📈 RISK SCORE DISTRIBUTION</span></div>
                     <canvas id="chartRisk" height="180"></canvas>
                 </div>
                 <div class="card">
-                    <div class="card-title">📂 DATASET FILE ANALYZER</div>
+                    <div class="card-header"><span>📂 CUSTOM DATASET ANALYZER</span></div>
                     <input type="file" id="datasetUpload">
                     <select id="chartTypeSel">
-                        <option>Line Chart</option><option>Bar Chart</option><option>Scatter Plot</option>
+                        <option>Line Chart</option><option>Bar Chart</option><option>Scatter Plot</option><option>Pie Chart</option>
                     </select>
-                    <button class="btn-primary" onclick="alert('Dataset loaded & profiled successfully.')">📊 Render Analysis</button>
+                    <button class="btn-primary" onclick="alert('Dataset loaded and profiled cleanly.')">📊 RENDER ANALYSIS</button>
                 </div>
             </div>
         </div>
@@ -263,7 +295,10 @@
         <!-- TAB 3: MAP INTELLIGENCE -->
         <div id="tab-map" class="tab-content">
             <div class="card">
-                <div class="card-title">🌍 GEOGRAPHIC SMART-CITY NODE INTELLIGENCE</div>
+                <div class="card-header">
+                    <span>🌍 GEOGRAPHIC MAP INTELLIGENCE</span>
+                    <span style="color:var(--cyan);font-size:0.7rem;">CONN PL / DELI</span>
+                </div>
                 <div id="map"></div>
             </div>
         </div>
@@ -272,22 +307,22 @@
         <div id="tab-sandbox" class="tab-content">
             <div class="grid-2">
                 <div class="card">
-                    <div class="card-title">🎛️ CUSTOM SENSOR PARAMETERS</div>
+                    <div class="card-header"><span>🧪 SENSOR PARAMETER SIMULATOR</span></div>
                     <label style="font-size:0.7rem;color:var(--text-muted);">Vehicles in frame</label>
                     <input type="range" min="0" max="25" value="8">
                     <label style="font-size:0.7rem;color:var(--text-muted);">Sound Level (dB SPL)</label>
                     <input type="range" min="30" max="120" value="58">
                     <label style="font-size:0.7rem;color:var(--text-muted);">Audio Signature</label>
                     <select><option>Ambient</option><option>Horn</option><option>Siren</option><option>Collision</option></select>
-                    <button class="btn-primary" onclick="alert('Sandbox analysis executed. Risk Score: 34%')">🧪 RUN SANDBOX ANALYSIS</button>
+                    <button class="btn-primary" onclick="alert('Simulation executed. Risk Score: 34%')">⚡ EXECUTE SIMULATION</button>
                 </div>
                 <div class="card">
-                    <div class="card-title">🔮 FUSION PREDICTION RESULT</div>
-                    <div style="font-family:'JetBrains Mono';font-size:0.8rem;color:var(--emerald);">
-                        ALERT LEVEL: NOMINAL_FLOW<br>
-                        RISK SCORE: 34%<br>
-                        SIGNAL TIMING: 30s Green Phase<br>
-                        REPORT: Custom telemetry sandbox simulation executed cleanly.
+                    <div class="card-header"><span>🔮 FUSION RESULT</span></div>
+                    <div style="font-family:'JetBrains Mono';font-size:0.8rem;color:var(--emerald);line-height:1.8;">
+                        STATUS: NOMINAL_FLOW<br>
+                        CALCULATED RISK: 34%<br>
+                        SIGNAL RECOMMENDATION: 30s Green Phase<br>
+                        REPORT: Multimodal telemetry sandbox simulation executed cleanly.
                     </div>
                 </div>
             </div>
@@ -296,11 +331,11 @@
         <!-- TAB 5: AI COPILOT -->
         <div id="tab-copilot" class="tab-content">
             <div class="card">
-                <div class="card-title">🤖 AI TRAFFIC OPERATIONS COPILOT (QWEN 2.5)</div>
-                <div id="chatLog" style="height:250px;overflow-y:auto;background:rgba(0,0,0,0.4);padding:12px;border-radius:6px;margin-bottom:12px;font-family:'JetBrains Mono';font-size:0.8rem;">
-                    <div style="color:var(--cyan);">🤖 <strong>Copilot:</strong> Hello Operator! How can I assist with intersection signals or congestion advice today?</div>
+                <div class="card-header"><span>🤖 AI COPILOT ASSISTANT (QWEN 2.5)</span></div>
+                <div id="chatLog" style="height:240px;overflow-y:auto;background:rgba(0,0,0,0.4);padding:12px;border-radius:6px;margin-bottom:12px;font-family:'JetBrains Mono';font-size:0.8rem;">
+                    <div style="color:var(--cyan);">🤖 <strong>Copilot:</strong> Hello Operator! How can I assist with traffic operations or signal timing today?</div>
                 </div>
-                <input type="text" id="chatInput" placeholder="Ask copilot about traffic operations or signal timing...">
+                <input type="text" id="chatInput" placeholder="Ask copilot about traffic operations...">
                 <button class="btn-primary" onclick="sendChat()">SEND MESSAGE</button>
             </div>
         </div>
@@ -308,14 +343,14 @@
         <!-- TAB 6: LEARNING GUIDE -->
         <div id="tab-guide" class="tab-content">
             <div class="card">
-                <div class="card-title">📚 INTERACTIVE LEARNING GUIDE</div>
-                <select id="guideSel">
-                    <option>🚀 Getting Started — Platform Overview</option>
-                    <option>🤖 How AI Fusion Works (YOLOv8 + DistilBERT)</option>
-                    <option>🔒 Security Architecture (JWT, PBKDF2, AES-256)</option>
+                <div class="card-header"><span>📚 INTERACTIVE LEARNING GUIDE</span></div>
+                <select>
+                    <option>🚀 Getting Started — Platform Architecture</option>
+                    <option>🤖 Multimodal AI Fusion (YOLOv8 + FFT + DistilBERT)</option>
+                    <option>🔒 Security Architecture (PyJWT + PBKDF2 + AES-256)</option>
                 </select>
                 <div style="font-family:'Inter';font-size:0.85rem;color:var(--text-muted);margin-top:12px;line-height:1.8;">
-                    AEGIS-TRAFFIC is an industry-grade smart-city AI platform fusing computer vision, acoustic analysis, and zero-shot NLP to manage municipal traffic in real time.
+                    AEGIS-TRAFFIC is an industry-grade smart-city platform designed for real-time traffic signal optimization and emergency response.
                 </div>
             </div>
         </div>
@@ -323,26 +358,24 @@
         <!-- TAB 7: DIAGNOSTICS -->
         <div id="tab-diagnostics" class="tab-content">
             <div class="card">
-                <div class="card-title">📖 OPERATIONAL DIAGNOSTICS & MITIGATION MANUAL</div>
-                <select id="probSel">
-                    <option>🚦 1. Extreme Intersection Congestion & Grid-lock Cascades</option>
-                    <option>💥 2. Vehicle Accident / Multi-car Collision</option>
-                    <option>🚒 3. Emergency Vehicle Preemption Failure</option>
+                <div class="card-header"><span>📖 DIAGNOSTICS & MITIGATION MANUAL</span></div>
+                <select>
+                    <option>🚦 1. Extreme Gridlock Congestion</option>
+                    <option>💥 2. Vehicle Accident Collision</option>
+                    <option>🚒 3. Emergency Vehicle Priority Failure</option>
                 </select>
-                <div style="margin-top:12px;">
-                    <button class="btn-primary" onclick="alert('Detour Bypass Alpha route activated on municipal electronic road signs.')">🔧 Trigger Detour Bypass Alpha</button>
-                </div>
+                <button class="btn-primary" style="margin-top:12px;" onclick="alert('Bypass Route Alpha activated.')">🔧 Trigger Detour Bypass Alpha</button>
             </div>
         </div>
 
         <!-- TAB 8: SECURITY LEDGER -->
         <div id="tab-security" class="tab-content">
             <div class="card">
-                <div class="card-title">🔒 ZERO-TRUST SECURITY AUDIT & ENCRYPTED LEDGER</div>
+                <div class="card-header"><span>🔒 SECURITY AUDIT LEDGER</span></div>
                 <table>
-                    <thead><tr><th>TIMESTAMP</th><th>OPERATOR</th><th>SCENARIO</th><th>LOCATION</th><th>MODE</th><th>RISK</th></tr></thead>
+                    <thead><tr><th>TIMESTAMP</th><th>USER</th><th>SCENARIO</th><th>LOCATION</th><th>MODE</th><th>RISK</th></tr></thead>
                     <tbody>
-                        <tr><td>2026-07-31 16:45</td><td>ADMIN</td><td>NORMAL</td><td>Connaught Place</td><td>AI Fusion</td><td style="color:var(--emerald);">28%</td></tr>
+                        <tr><td>2026-07-31 17:00</td><td>ADMIN</td><td>NORMAL</td><td>Connaught Place</td><td>AI Fusion</td><td style="color:var(--emerald);">28%</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -351,16 +384,16 @@
         <!-- TAB 9: ANPR & VIOLATIONS -->
         <div id="tab-anpr" class="tab-content">
             <div class="card">
-                <div class="card-title">🚘 ANPR OCR & TRAFFIC VIOLATIONS REGISTRY</div>
+                <div class="card-header"><span>🚘 ANPR & RECENT TRAFFIC VIOLATIONS</span></div>
                 <table>
                     <thead><tr><th>TICKET ID</th><th>PLATE</th><th>TYPE</th><th>FINE</th><th>ACTION</th></tr></thead>
                     <tbody>
                         <tr>
-                            <td>TKT-DL01-8891</td>
+                            <td style="color:var(--cyan);">TKT-DL01-8891</td>
                             <td><span style="background:#fff;color:#000;padding:2px 6px;border-radius:3px;font-weight:700;">🇮🇳 DL-01-AB-1234</span></td>
                             <td>Red Light Jump</td>
                             <td style="color:var(--amber);">₹1,500</td>
-                            <td><button style="padding:4px 10px;font-size:0.68rem;" onclick="window.open('/api/v1/violations/citation-pdf/TKT-DL01-8891')">📄 Citation PDF</button></td>
+                            <td><button class="btn-secondary" onclick="window.open('/api/v1/violations/citation-pdf/TKT-DL01-8891')">📄 Citation PDF</button></td>
                         </tr>
                     </tbody>
                 </table>
@@ -370,14 +403,14 @@
         <!-- TAB 10: PIPELINE STATUS -->
         <div id="tab-pipeline" class="tab-content">
             <div class="card">
-                <div class="card-title">⚙️ AEGIS TRAFFIC PIPELINE — MODULE STATUS</div>
+                <div class="card-header"><span>⚙️ SYSTEM MODULE HEALTH MATRIX</span></div>
                 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-family:'JetBrains Mono';font-size:0.75rem;">
-                    <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;">YOLOv8 Detection: <span style="color:var(--emerald);">🟢 ONLINE</span></div>
+                    <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;">YOLOv8 Vision: <span style="color:var(--emerald);">🟢 ONLINE</span></div>
                     <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;">FFT Acoustics: <span style="color:var(--emerald);">🟢 ONLINE</span></div>
                     <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;">DistilBERT NLP: <span style="color:var(--emerald);">🟢 ONLINE</span></div>
-                    <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;">UCF Crime Classifier: <span style="color:var(--emerald);">🟢 ONLINE</span></div>
+                    <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;">UCF Crime AI: <span style="color:var(--emerald);">🟢 ONLINE</span></div>
                     <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;">AES-256 Vault: <span style="color:var(--emerald);">🟢 ONLINE</span></div>
-                    <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;">C-V2X BSM Engine: <span style="color:var(--emerald);">🟢 ONLINE</span></div>
+                    <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;">C-V2X Engine: <span style="color:var(--emerald);">🟢 ONLINE</span></div>
                 </div>
             </div>
         </div>
@@ -385,17 +418,22 @@
         <!-- TAB 11: PUBLIC CITIZEN PORTAL -->
         <div id="tab-citizen" class="tab-content">
             <div class="card">
-                <div class="card-title">👥 MUNICIPAL PUBLIC CITIZEN PORTAL</div>
-                <input type="text" id="pubPlate" placeholder="Enter Registration Plate to check fines...">
-                <button class="btn-primary" onclick="alert('Fine check complete. Active fines: ₹1,500')">🔍 Check Fines</button>
+                <div class="card-header"><span>👥 CITIZEN FINE LOOKUP & DISPUTE CHALLENGER</span></div>
+                <div style="display:flex;gap:10px;margin-bottom:12px;">
+                    <input type="text" id="citizenPlate" placeholder="Enter Registration Plate (e.g. DL-01-AB-1234)">
+                    <button class="btn-primary" style="width:auto;padding:0 24px;" onclick="searchCitizenPlate()">SEARCH</button>
+                </div>
+                <div id="citizenResult" style="font-family:'JetBrains Mono';font-size:0.78rem;color:var(--text-muted);">
+                    Enter your vehicle registration plate number to check outstanding traffic fines and submit electronic appeal disputes.
+                </div>
             </div>
         </div>
 
     </div>
 
+    <!-- LEAFLET MAP & CHART SCRIPTS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // TAB SWITCHER
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -404,13 +442,11 @@
             if(tabId === 'map') setTimeout(() => map.invalidateSize(), 200);
         }
 
-        // MAP
         const lat = 28.6315, lon = 77.2167;
         const map = L.map('map').setView([lat, lon], 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
         L.marker([lat, lon]).addTo(map).bindPopup('📍 Connaught Place Node');
 
-        // CHART
         const ctx = document.getElementById('chartRisk').getContext('2d');
         new Chart(ctx, {
             type: 'bar',
@@ -418,18 +454,34 @@
                 labels: ['Scan 1', 'Scan 2', 'Scan 3', 'Scan 4', 'Scan 5'],
                 datasets: [{ label: 'Risk Score %', data: [28, 45, 12, 85, 34], backgroundColor: '#00f0ff' }]
             },
-            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            options: { plugins: { legend: { display: false } } }
         });
 
-        // CHAT
         function sendChat() {
             const inp = document.getElementById('chatInput');
             const log = document.getElementById('chatLog');
             if(!inp.value.trim()) return;
             log.innerHTML += `<div style="margin-top:8px;">👤 <strong>User:</strong> ${inp.value}</div>`;
-            log.innerHTML += `<div style="color:var(--cyan);margin-top:4px;">🤖 <strong>Copilot:</strong> Real-time YOLOv8 queue is within normal operational limits. Signal timing optimized to 30s.</div>`;
+            log.innerHTML += `<div style="color:var(--cyan);margin-top:4px;">🤖 <strong>Copilot:</strong> Traffic queue is within nominal limits. Signal timing optimized to 30s.</div>`;
             inp.value = '';
             log.scrollTop = log.scrollHeight;
+        }
+
+        function searchCitizenPlate() {
+            const plate = document.getElementById('citizenPlate').value.trim().toUpperCase();
+            const resDiv = document.getElementById('citizenResult');
+            if(!plate) {
+                resDiv.innerHTML = '<span style="color:var(--rose);">Enter a valid plate number.</span>';
+                return;
+            }
+            resDiv.innerHTML = `
+                <div style="background:rgba(0,240,255,0.05);border:1px solid var(--cyan);padding:14px;border-radius:6px;margin-top:10px;">
+                    <div style="color:var(--cyan);font-weight:700;">🪪 Vehicle Plate: ${plate}</div>
+                    <div style="margin-top:6px;">Violation: Red Light Jump @ Connaught Place</div>
+                    <div style="color:var(--amber);font-weight:700;margin-top:4px;">Outstanding Fine: ₹1,500</div>
+                    <button class="btn-primary" style="margin-top:10px;" onclick="alert('Appeal Ticket registered. Reference ID: APP-99120')">⚖️ CONTEST TICKET & FILE APPEAL</button>
+                </div>
+            `;
         }
     </script>
 </body>
