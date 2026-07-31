@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AEGIS-TRAFFIC // Smart City AI Web Dashboard</title>
+    <title>AEGIS-TRAFFIC // Smart City AI Operations Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
             --bg-dark: #020617;
-            --panel-bg: rgba(13, 17, 23, 0.85);
+            --panel-bg: rgba(13, 17, 23, 0.88);
             --card-border: rgba(0, 240, 255, 0.2);
             --cyan: #00f0ff;
             --purple: #a855f7;
             --emerald: #10b981;
             --amber: #f59e0b;
             --rose: #ef4444;
+            --blue: #3b82f6;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
         }
@@ -38,7 +39,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 32px;
+            padding: 14px 32px;
             background: rgba(2, 6, 23, 0.95);
             border-bottom: 1px solid var(--card-border);
             backdrop-filter: blur(12px);
@@ -49,13 +50,19 @@
 
         .logo-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.4rem;
+            font-size: 1.35rem;
             font-weight: 800;
             color: var(--cyan);
             letter-spacing: 3px;
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
         .status-badge {
@@ -84,6 +91,38 @@
             0% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.4; transform: scale(1.2); }
             100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* LOCATION SELECTOR BAR */
+        .location-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--card-border);
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .location-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            color: var(--cyan);
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        select.loc-select {
+            background: rgba(2, 6, 23, 0.8);
+            border: 1px solid var(--card-border);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            outline: none;
+            cursor: pointer;
         }
 
         /* MAIN GRID */
@@ -157,7 +196,7 @@
 
         .kpi-val {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 800;
             color: var(--text-main);
         }
@@ -196,7 +235,7 @@
         .light-dot.green { background: var(--emerald); box-shadow: 0 0 20px var(--emerald); }
         .light-dot.red { background: var(--rose); box-shadow: 0 0 20px var(--rose); }
 
-        /* CITIZEN PORTAL SEARCH */
+        /* INPUTS & BUTTONS */
         .search-box {
             display: flex;
             gap: 10px;
@@ -237,6 +276,29 @@
             box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
         }
 
+        /* LOGIN MODAL */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(2, 6, 23, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-backdrop.active { display: flex; }
+
+        .login-box {
+            background: var(--panel-bg);
+            border: 1px solid var(--cyan);
+            border-radius: 12px;
+            padding: 28px;
+            width: 380px;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+        }
+
         /* TABLE */
         table {
             width: 100%;
@@ -265,23 +327,44 @@
         <div class="logo-title">
             <span>🚦</span> AEGIS-TRAFFIC WEB DASHBOARD
         </div>
-        <div class="status-badge">
-            <div class="pulse-dot"></div>
-            <span>VERCEL FRONTEND // STREAMLIT ENGINE CONNECTED</span>
+        <div class="header-controls">
+            <div class="status-badge">
+                <div class="pulse-dot"></div>
+                <span>NODE ACTIVE // VERIFIED ZERO-TRUST</span>
+            </div>
+            <button onclick="toggleLoginModal()" style="background:rgba(0,240,255,0.1);color:var(--cyan);border:1px solid var(--cyan);">
+                🔑 OFFICER LOGIN
+            </button>
         </div>
     </header>
 
     <div class="container">
 
+        <!-- DYNAMIC LOCATION SELECTOR SWITCHER -->
+        <div class="location-bar">
+            <div class="location-label">📍 DYNAMIC SITE NODE:</div>
+            <select id="locationSelect" class="loc-select" onchange="changeLocation(this.value)">
+                <option value="cp">🇮🇳 Connaught Place, New Delhi (India)</option>
+                <option value="ts">🇺🇸 Times Square, New York (USA)</option>
+                <option value="pc">🇬🇧 Piccadilly Circus, London (UK)</option>
+                <option value="shib">🇯🇵 Shibuya Crossing, Tokyo (Japan)</option>
+                <option value="paris">🇫🇷 Champs-Élysées, Paris (France)</option>
+                <option value="dubai">🇦🇪 Sheikh Zayed Road, Dubai (UAE)</option>
+            </select>
+            <div style="flex:1;"></div>
+            <input type="text" id="customLocInput" placeholder="Type custom city/location..." style="max-width:260px;" onkeydown="if(event.key==='Enter') searchCustomLocation()">
+            <button onclick="searchCustomLocation()" style="padding:8px 14px;">LOCATE</button>
+        </div>
+
         <!-- TOP KPI METRICS -->
         <div class="kpi-container">
             <div class="kpi-card">
-                <div class="kpi-label">Active Node</div>
-                <div class="kpi-val" style="color:var(--cyan);">Connaught Place</div>
+                <div class="kpi-label">Active Site Node</div>
+                <div class="kpi-val" id="nodeNameVal" style="color:var(--cyan);">Connaught Place</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Vehicle Queue</div>
-                <div class="kpi-val" style="color:var(--amber);">12 Units</div>
+                <div class="kpi-val" id="queueVal" style="color:var(--amber);">12 Units</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Idle CO₂ Rate</div>
@@ -332,7 +415,7 @@
             <div class="card">
                 <div class="card-header">
                     <span>🌍 MAP NODE INTELLIGENCE</span>
-                    <span style="color:var(--cyan);font-size:0.7rem;">LAT 28.6315 | LON 77.2167</span>
+                    <span id="coordsTag" style="color:var(--cyan);font-size:0.7rem;">LAT 28.6315 | LON 77.2167</span>
                 </div>
                 <div id="map"></div>
             </div>
@@ -408,34 +491,118 @@
 
     </div>
 
-    <!-- LEAFLET MAP SCRIPT -->
+    <!-- OFFICER LOGIN MODAL (OPTIONAL) -->
+    <div id="loginModal" class="modal-backdrop">
+        <div class="login-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <span style="font-family:'Orbitron';font-size:1.1rem;color:var(--cyan);font-weight:700;">🔑 OFFICER LOGIN</span>
+                <span onclick="toggleLoginModal()" style="cursor:pointer;color:var(--rose);font-weight:700;">✕</span>
+            </div>
+            <input type="text" id="modalUser" placeholder="Username (e.g. admin)">
+            <input type="password" id="modalPass" placeholder="Password">
+            <button onclick="alert('Authenticated successfully as Officer.')" style="width:100%;margin-top:10px;">🔐 CONNECT SESSION</button>
+        </div>
+    </div>
+
+    <!-- LEAFLET MAP & LOCATION SWITCHER SCRIPT -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        const locations = {
+            cp: { name: "Connaught Place", lat: 28.6315, lon: 77.2167, queue: "12 Units" },
+            ts: { name: "Times Square, NY", lat: 40.7580, lon: -73.9855, queue: "18 Units" },
+            pc: { name: "Piccadilly Circus", lat: 51.5100, lon: -0.1347, queue: "9 Units" },
+            shib: { name: "Shibuya Crossing", lat: 35.6595, lon: 139.7004, queue: "24 Units" },
+            paris: { name: "Champs-Élysées", lat: 48.8698, lon: 2.3075, queue: "15 Units" },
+            dubai: { name: "Sheikh Zayed Rd", lat: 25.2048, lon: 55.2708, queue: "21 Units" }
+        };
+
         // Initialize Map
-        const lat = 28.6315, lon = 77.2167;
-        const map = L.map('map').setView([lat, lon], 15);
+        let currentLat = 28.6315, currentLon = 77.2167;
+        const map = L.map('map').setView([currentLat, currentLon], 15);
         
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            maxZoom: 19
+            attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19
         }).addTo(map);
 
-        // Add Node Marker
-        L.marker([lat, lon]).addTo(map)
+        let marker = L.marker([currentLat, currentLon]).addTo(map)
             .bindPopup('<b>🚦 Connaught Place Node</b><br>AEGIS Active Surveillance')
             .openPopup();
 
-        L.circle([lat, lon], {
-            color: '#00f0ff',
-            fillColor: '#00f0ff',
-            fillOpacity: 0.1,
-            radius: 300
+        let circle = L.circle([currentLat, currentLon], {
+            color: '#00f0ff', fillColor: '#00f0ff', fillOpacity: 0.1, radius: 300
         }).addTo(map);
 
-        // Timestamp
         document.getElementById('v2xTime').innerText = new Date().toISOString();
 
-        // Search Plate Function
+        // Location Switcher Function
+        function changeLocation(key) {
+            const loc = locations[key];
+            if (!loc) return;
+
+            currentLat = loc.lat;
+            currentLon = loc.lon;
+
+            map.flyTo([currentLat, currentLon], 15);
+
+            if (marker) map.removeLayer(marker);
+            if (circle) map.removeLayer(circle);
+
+            marker = L.marker([currentLat, currentLon]).addTo(map)
+                .bindPopup(`<b>🚦 ${loc.name} Node</b><br>AEGIS Active Surveillance`)
+                .openPopup();
+
+            circle = L.circle([currentLat, currentLon], {
+                color: '#00f0ff', fillColor: '#00f0ff', fillOpacity: 0.1, radius: 300
+            }).addTo(map);
+
+            document.getElementById('nodeNameVal').innerText = loc.name;
+            document.getElementById('queueVal').innerText = loc.queue;
+            document.getElementById('coordsTag').innerText = `LAT ${loc.lat.toFixed(4)} | LON ${loc.lon.toFixed(4)}`;
+        }
+
+        // Custom Location Search via Geocoding
+        async function searchCustomLocation() {
+            const query = document.getElementById('customLocInput').value.trim();
+            if(!query) return;
+
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+                const data = await res.json();
+                if(data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    const name = data[0].display_name.split(',')[0];
+
+                    currentLat = lat;
+                    currentLon = lon;
+
+                    map.flyTo([lat, lon], 15);
+
+                    if (marker) map.removeLayer(marker);
+                    if (circle) map.removeLayer(circle);
+
+                    marker = L.marker([lat, lon]).addTo(map)
+                        .bindPopup(`<b>🚦 ${name} Node</b><br>AEGIS Active Surveillance`)
+                        .openPopup();
+
+                    circle = L.circle([lat, lon], {
+                        color: '#00f0ff', fillColor: '#00f0ff', fillOpacity: 0.1, radius: 300
+                    }).addTo(map);
+
+                    document.getElementById('nodeNameVal').innerText = name;
+                    document.getElementById('coordsTag').innerText = `LAT ${lat.toFixed(4)} | LON ${lon.toFixed(4)}`;
+                } else {
+                    alert('Location not found. Please try another search term.');
+                }
+            } catch(e) {
+                alert('Geocoding search failed.');
+            }
+        }
+
+        function toggleLoginModal() {
+            document.getElementById('loginModal').classList.toggle('active');
+        }
+
         function searchPlate() {
             const plate = document.getElementById('plateInput').value.trim().toUpperCase();
             const resDiv = document.getElementById('searchResults');
@@ -446,7 +613,7 @@
             resDiv.innerHTML = `
                 <div style="background:rgba(0,240,255,0.05);border:1px solid var(--cyan);padding:12px;border-radius:6px;margin-top:10px;">
                     <div style="color:var(--cyan);font-weight:700;">🪪 Vehicle Plate: ${plate}</div>
-                    <div style="margin-top:6px;">Violation: Red Light Jump @ Connaught Place</div>
+                    <div style="margin-top:6px;">Violation: Red Light Jump @ ${document.getElementById('nodeNameVal').innerText}</div>
                     <div style="color:var(--amber);font-weight:700;margin-top:4px;">Outstanding Fine: ₹1,500</div>
                     <button style="margin-top:10px;width:100%;" onclick="alert('Appeal Ticket registered. Reference ID: APP-99120')">⚖️ CONTEST TICKET & FILE APPEAL</button>
                 </div>

@@ -86,7 +86,6 @@ $logged_role      = $_SESSION['user_role'] ?? '';
                 radial-gradient(circle at 85% 85%, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
         }
 
-        /* HEADER */
         header {
             display: flex;
             justify-content: space-between;
@@ -109,6 +108,12 @@ $logged_role      = $_SESSION['user_role'] ?? '';
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
         .status-badge {
@@ -139,14 +144,37 @@ $logged_role      = $_SESSION['user_role'] ?? '';
             100% { opacity: 1; transform: scale(1); }
         }
 
-        /* LOGIN CARD */
-        .auth-card {
-            background: var(--panel-bg); border: 1px solid var(--card-border);
-            border-radius: 12px; padding: 30px; max-width: 420px; margin: 80px auto;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5); backdrop-filter: blur(12px);
+        .location-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--card-border);
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
 
-        /* MAIN GRID */
+        .location-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            color: var(--cyan);
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        select.loc-select {
+            background: rgba(2, 6, 23, 0.8);
+            border: 1px solid var(--card-border);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            outline: none;
+            cursor: pointer;
+        }
+
         .container {
             padding: 24px 32px;
             max-width: 1600px;
@@ -173,11 +201,6 @@ $logged_role      = $_SESSION['user_role'] ?? '';
             padding: 20px;
             backdrop-filter: blur(8px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            transition: border-color 0.3s ease;
-        }
-
-        .card:hover {
-            border-color: rgba(0, 240, 255, 0.4);
         }
 
         .card-header {
@@ -192,7 +215,6 @@ $logged_role      = $_SESSION['user_role'] ?? '';
             justify-content: space-between;
         }
 
-        /* METRICS */
         .kpi-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -217,12 +239,11 @@ $logged_role      = $_SESSION['user_role'] ?? '';
 
         .kpi-val {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 800;
             color: var(--text-main);
         }
 
-        /* MAP & SIGNAL */
         #map {
             height: 340px;
             width: 100%;
@@ -240,91 +261,49 @@ $logged_role      = $_SESSION['user_role'] ?? '';
             margin-top: 12px;
         }
 
-        .light-box {
-            text-align: center;
-        }
+        .light-box { text-align: center; }
 
         .light-dot {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            margin: 0 auto 8px;
-            background: #1e293b;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            width: 36px; height: 36px; border-radius: 50%; margin: 0 auto 8px; background: #1e293b;
         }
 
         .light-dot.green { background: var(--emerald); box-shadow: 0 0 20px var(--emerald); }
         .light-dot.red { background: var(--rose); box-shadow: 0 0 20px var(--rose); }
 
-        /* CITIZEN PORTAL SEARCH */
-        .search-box {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
+        .search-box { display: flex; gap: 10px; margin-bottom: 16px; }
 
         input[type="text"], input[type="password"] {
-            flex: 1;
-            width: 100%;
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid var(--card-border);
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 6px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            outline: none;
-            margin-bottom: 10px;
-        }
-
-        input[type="text"]:focus, input[type="password"]:focus {
-            border-color: var(--cyan);
+            flex: 1; width: 100%; background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--card-border); color: #fff;
+            padding: 10px 14px; border-radius: 6px; font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem; outline: none; margin-bottom: 10px;
         }
 
         button {
-            background: linear-gradient(135deg, #00f0ff, #0088ff);
-            color: #000;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            font-size: 0.75rem;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            background: linear-gradient(135deg, #00f0ff, #0088ff); color: #000;
+            font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.75rem;
+            padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;
         }
 
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+        button:hover { transform: translateY(-1px); box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
+
+        .modal-backdrop {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); z-index: 2000;
+            align-items: center; justify-content: center;
+        }
+        .modal-backdrop.active { display: flex; }
+        .login-box {
+            background: var(--panel-bg); border: 1px solid var(--cyan); border-radius: 12px;
+            padding: 28px; width: 380px; box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
         }
 
-        .seed-btn {
-            font-size: 0.7rem; font-family: 'JetBrains Mono'; padding: 4px 8px;
-            border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            color: var(--text-muted); cursor: pointer; margin-right: 4px; display: inline-block;
-        }
-
-        /* TABLE */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.78rem;
-        }
-
+        table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
         th { text-align: left; padding: 8px 12px; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.1); }
         td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-        .tag-badge {
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.68rem;
-            font-weight: 700;
-        }
-
+        .tag-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; }
         .tag-red { background: rgba(239, 68, 68, 0.15); color: var(--rose); border: 1px solid var(--rose); }
-        .tag-green { background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
     </style>
 </head>
 <body>
@@ -333,234 +312,300 @@ $logged_role      = $_SESSION['user_role'] ?? '';
         <div class="logo-title">
             <span>🚦</span> AEGIS-TRAFFIC WEB DASHBOARD
         </div>
-        <div class="status-badge">
-            <div class="pulse-dot"></div>
-            <span>NODE ACTIVE // VERIFIED ZERO-TRUST</span>
+        <div class="header-controls">
+            <div class="status-badge">
+                <div class="pulse-dot"></div>
+                <span>NODE ACTIVE // VERIFIED ZERO-TRUST</span>
+            </div>
+            <?php if ($is_authenticated): ?>
+                <span style="font-family:'JetBrains Mono';font-size:0.8rem;color:var(--cyan);">👤 <?php echo htmlspecialchars($logged_user); ?></span>
+                <a href="index.php?action=logout" style="color:var(--rose);font-family:'JetBrains Mono';font-size:0.75rem;text-decoration:none;font-weight:700;">🔓 LOGOUT</a>
+            <?php else: ?>
+                <button onclick="toggleLoginModal()" style="background:rgba(0,240,255,0.1);color:var(--cyan);border:1px solid var(--cyan);">
+                    🔑 OFFICER LOGIN
+                </button>
+            <?php endif; ?>
         </div>
     </header>
 
-    <?php if (!$is_authenticated): ?>
-        <!-- PHP AUTHENTICATION FORM -->
-        <div class="auth-card">
-            <h2 style="font-family:'Orbitron';font-size:1.3rem;margin-bottom:6px;color:var(--cyan);">PHP OPERATOR LOGIN</h2>
-            <p style="font-family:'JetBrains Mono';font-size:0.75rem;color:var(--text-muted);margin-bottom:20px;">Session Authentication against FastAPI Engine</p>
+    <div class="container">
 
-            <?php if (!empty($error_msg)): ?>
-                <div style="background:rgba(239,68,68,0.15);border:1px solid var(--rose);color:var(--rose);padding:10px;border-radius:6px;font-size:0.78rem;margin-bottom:14px;">
-                    ⚠️ <?php echo htmlspecialchars($error_msg); ?>
+        <!-- DYNAMIC LOCATION SWITCHER -->
+        <div class="location-bar">
+            <div class="location-label">📍 DYNAMIC SITE NODE:</div>
+            <select id="locationSelect" class="loc-select" onchange="changeLocation(this.value)">
+                <option value="cp">🇮🇳 Connaught Place, New Delhi (India)</option>
+                <option value="ts">🇺🇸 Times Square, New York (USA)</option>
+                <option value="pc">🇬🇧 Piccadilly Circus, London (UK)</option>
+                <option value="shib">🇯🇵 Shibuya Crossing, Tokyo (Japan)</option>
+                <option value="paris">🇫🇷 Champs-Élysées, Paris (France)</option>
+                <option value="dubai">🇦🇪 Sheikh Zayed Road, Dubai (UAE)</option>
+            </select>
+            <div style="flex:1;"></div>
+            <input type="text" id="customLocInput" placeholder="Type custom location..." style="max-width:260px;" onkeydown="if(event.key==='Enter') searchCustomLocation()">
+            <button onclick="searchCustomLocation()" style="padding:8px 14px;">LOCATE</button>
+        </div>
+
+        <!-- TOP KPI METRICS -->
+        <div class="kpi-container">
+            <div class="kpi-card">
+                <div class="kpi-label">Active Site Node</div>
+                <div class="kpi-val" id="nodeNameVal" style="color:var(--cyan);">Connaught Place</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Vehicle Queue</div>
+                <div class="kpi-val" id="queueVal" style="color:var(--amber);">12 Units</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Idle CO₂ Rate</div>
+                <div class="kpi-val" style="color:var(--emerald);">18.4 g/min</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">ATSC Carbon Saved</div>
+                <div class="kpi-val" style="color:var(--purple);">28.5%</div>
+            </div>
+        </div>
+
+        <!-- MAIN DASHBOARD GRID -->
+        <div class="grid-3">
+
+            <!-- LEFT: SIGNAL CONTROLLER & VRU SAFETY -->
+            <div class="card">
+                <div class="card-header">
+                    <span>🚥 ADAPTIVE SIGNAL CONTROLLER</span>
+                    <span style="color:var(--emerald);font-size:0.7rem;">ATSC AUTO</span>
                 </div>
-            <?php endif; ?>
+                <p style="font-family:'JetBrains Mono';font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">
+                    Real-time YOLOv8 queue density modulation active.
+                </p>
+                <div class="signal-lights">
+                    <div class="light-box">
+                        <div class="light-dot green"></div>
+                        <div style="font-family:'Orbitron';font-size:0.75rem;color:var(--emerald);">NORTH-SOUTH</div>
+                        <div style="font-family:'JetBrains Mono';font-size:0.7rem;color:var(--text-muted);">GREEN (32s)</div>
+                    </div>
+                    <div class="light-box">
+                        <div class="light-dot red"></div>
+                        <div style="font-family:'Orbitron';font-size:0.75rem;color:var(--rose);">EAST-WEST</div>
+                        <div style="font-family:'JetBrains Mono';font-size:0.7rem;color:var(--text-muted);">STOP</div>
+                    </div>
+                </div>
 
+                <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.08);padding-top:14px;">
+                    <div class="card-header" style="margin-bottom:8px;">🚶 VRU CROSSWALK GUARDIAN</div>
+                    <div style="font-family:'JetBrains Mono';font-size:0.75rem;line-height:1.8;color:var(--text-muted);">
+                        Pedestrians Detected: <span style="color:var(--cyan);font-weight:700;">3</span><br>
+                        WALK Phase Timer: <span style="color:var(--emerald);font-weight:700;">21s (+6s Extended)</span><br>
+                        Crosswalk Status: <span style="color:var(--emerald);">SAFE_OCCUPIED</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTER: MAP INTELLIGENCE -->
+            <div class="card">
+                <div class="card-header">
+                    <span>🌍 MAP NODE INTELLIGENCE</span>
+                    <span id="coordsTag" style="color:var(--cyan);font-size:0.7rem;">LAT 28.6315 | LON 77.2167</span>
+                </div>
+                <div id="map"></div>
+            </div>
+
+            <!-- RIGHT: PUBLIC CITIZEN FINE LOOKUP -->
+            <div class="card">
+                <div class="card-header">
+                    <span>👥 CITIZEN FINE LOOKUP</span>
+                    <span style="color:var(--amber);font-size:0.7rem;">PUBLIC PORTAL</span>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="plateInput" placeholder="Enter Registration Plate (e.g. DL-01-AB-1234)">
+                    <button onclick="searchPlate()">SEARCH</button>
+                </div>
+                <div id="searchResults" style="font-family:'JetBrains Mono';font-size:0.75rem;color:var(--text-muted);">
+                    Enter your vehicle registration plate number to check outstanding traffic fines and file digital appeals.
+                </div>
+            </div>
+
+        </div>
+
+        <!-- LOWER GRID: VIOLATIONS & V2X BROADCAST STREAM -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <span>🚘 ANPR & RECENT TRAFFIC VIOLATIONS</span>
+                    <span style="color:var(--rose);font-size:0.7rem;">LIVE SCAN</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>TICKET ID</th>
+                            <th>PLATE</th>
+                            <th>VIOLATION TYPE</th>
+                            <th>FINE</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="violationTable">
+                        <tr>
+                            <td style="color:var(--cyan);">TKT-DL01-8891</td>
+                            <td><span style="background:#fff;color:#000;padding:1px 6px;border-radius:3px;font-weight:700;">🇮🇳 DL-01-AB-1234</span></td>
+                            <td>Red Light Jump</td>
+                            <td style="color:var(--amber);">₹1,500</td>
+                            <td><span class="tag-badge tag-red">PENDING</span></td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--cyan);">TKT-DL01-8892</td>
+                            <td><span style="background:#fff;color:#000;padding:1px 6px;border-radius:3px;font-weight:700;">🇮🇳 DL-02-CD-5678</span></td>
+                            <td>Speeding (72 in 50 km/h)</td>
+                            <td style="color:var(--amber);">₹2,000</td>
+                            <td><span class="tag-badge tag-red">PENDING</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>📡 CELLULAR V2X (C-V2X) BSM BROADCAST STREAM</span>
+                    <span style="color:var(--purple);font-size:0.7rem;">DSRC CH 172</span>
+                </div>
+                <div style="font-family:'JetBrains Mono';font-size:0.72rem;background:rgba(0,0,0,0.4);padding:14px;border-radius:6px;color:#00f0ff;line-height:1.8;">
+                    // PACKET ID: BSM-99A82B01 | SAE J2735 IEEE 802.11p<br>
+                    // TIMESTAMP: <span id="v2xTime"></span><br>
+                    // SPaT STATE: <span style="color:var(--emerald);">NORTH_SOUTH_GREEN (32s)</span><br>
+                    // RECOMMENDED APPROACH SPEED: <span style="color:var(--amber);">45 KM/H</span><br>
+                    // HAZARD BROADCAST: <span style="color:var(--rose);">NOMINAL_FLOW</span><br>
+                    // DIGITAL SIGNATURE: <span style="color:var(--purple);">SHA256:8f2a...c01e (VALID_CA)</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- OFFICER LOGIN MODAL -->
+    <div id="loginModal" class="modal-backdrop">
+        <div class="login-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <span style="font-family:'Orbitron';font-size:1.1rem;color:var(--cyan);font-weight:700;">🔑 OFFICER LOGIN (PHP)</span>
+                <span onclick="toggleLoginModal()" style="cursor:pointer;color:var(--rose);font-weight:700;">✕</span>
+            </div>
             <form method="POST" action="index.php">
                 <input type="hidden" name="action" value="login">
-                <label style="font-family:'JetBrains Mono';font-size:0.7rem;color:var(--text-muted);">USERNAME</label>
-                <input type="text" id="php_user" name="username" placeholder="e.g. admin" required>
-
-                <label style="font-family:'JetBrains Mono';font-size:0.7rem;color:var(--text-muted);">PASSWORD</label>
-                <input type="password" id="php_pass" name="password" placeholder="••••••••" required>
-
-                <button type="submit" style="width:100%;">🔐 CONNECT SESSION</button>
+                <input type="text" name="username" placeholder="Username (e.g. admin)" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit" style="width:100%;margin-top:10px;">🔐 CONNECT SESSION</button>
             </form>
-
-            <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.1);text-align:center;">
-                <span class="seed-btn" onclick="document.getElementById('php_user').value='admin';document.getElementById('php_pass').value='Admin@AEGIS2024!';">🔑 Admin</span>
-                <span class="seed-btn" onclick="document.getElementById('php_user').value='operator';document.getElementById('php_pass').value='Operator@AEGIS2024!';">🔑 Operator</span>
-                <span class="seed-btn" onclick="document.getElementById('php_user').value='auditor';document.getElementById('php_pass').value='Auditor@AEGIS2024!';">🔑 Auditor</span>
-            </div>
         </div>
-    <?php else: ?>
+    </div>
 
-        <div class="container">
+    <!-- LEAFLET MAP & LOCATION SWITCHER SCRIPT -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const locations = {
+            cp: { name: "Connaught Place", lat: 28.6315, lon: 77.2167, queue: "12 Units" },
+            ts: { name: "Times Square, NY", lat: 40.7580, lon: -73.9855, queue: "18 Units" },
+            pc: { name: "Piccadilly Circus", lat: 51.5100, lon: -0.1347, queue: "9 Units" },
+            shib: { name: "Shibuya Crossing", lat: 35.6595, lon: 139.7004, queue: "24 Units" },
+            paris: { name: "Champs-Élysées", lat: 48.8698, lon: 2.3075, queue: "15 Units" },
+            dubai: { name: "Sheikh Zayed Rd", lat: 25.2048, lon: 55.2708, queue: "21 Units" }
+        };
 
-            <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(15,23,42,0.8);padding:12px 20px;border-radius:8px;border:1px solid var(--card-border);margin-bottom:20px;">
-                <div style="font-family:'Orbitron';font-size:0.88rem;color:var(--cyan);">
-                    👤 AUTHENTICATED OPERATOR: <strong><?php echo htmlspecialchars($logged_user); ?></strong> (<?php echo htmlspecialchars($logged_role); ?> CLEARANCE)
-                </div>
-                <a href="index.php?action=logout" style="color:var(--rose);font-family:'JetBrains Mono';font-size:0.8rem;text-decoration:none;font-weight:700;">🔓 LOGOUT SESSION</a>
-            </div>
+        let currentLat = 28.6315, currentLon = 77.2167;
+        const map = L.map('map').setView([currentLat, currentLon], 15);
+        
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19
+        }).addTo(map);
 
-            <!-- TOP KPI METRICS -->
-            <div class="kpi-container">
-                <div class="kpi-card">
-                    <div class="kpi-label">Active Node</div>
-                    <div class="kpi-val" style="color:var(--cyan);">Connaught Place</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Vehicle Queue</div>
-                    <div class="kpi-val" style="color:var(--amber);">12 Units</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Idle CO₂ Rate</div>
-                    <div class="kpi-val" style="color:var(--emerald);">18.4 g/min</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">ATSC Carbon Saved</div>
-                    <div class="kpi-val" style="color:var(--purple);">28.5%</div>
-                </div>
-            </div>
+        let marker = L.marker([currentLat, currentLon]).addTo(map)
+            .bindPopup('<b>🚦 Connaught Place Node</b><br>AEGIS Active Surveillance')
+            .openPopup();
 
-            <!-- MAIN DASHBOARD GRID -->
-            <div class="grid-3">
+        let circle = L.circle([currentLat, currentLon], {
+            color: '#00f0ff', fillColor: '#00f0ff', fillOpacity: 0.1, radius: 300
+        }).addTo(map);
 
-                <!-- LEFT: SIGNAL CONTROLLER & VRU SAFETY -->
-                <div class="card">
-                    <div class="card-header">
-                        <span>🚥 ADAPTIVE SIGNAL CONTROLLER</span>
-                        <span style="color:var(--emerald);font-size:0.7rem;">ATSC AUTO</span>
-                    </div>
-                    <p style="font-family:'JetBrains Mono';font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;">
-                        Real-time YOLOv8 queue density modulation active.
-                    </p>
-                    <div class="signal-lights">
-                        <div class="light-box">
-                            <div class="light-dot green"></div>
-                            <div style="font-family:'Orbitron';font-size:0.75rem;color:var(--emerald);">NORTH-SOUTH</div>
-                            <div style="font-family:'JetBrains Mono';font-size:0.7rem;color:var(--text-muted);">GREEN (32s)</div>
-                        </div>
-                        <div class="light-box">
-                            <div class="light-dot red"></div>
-                            <div style="font-family:'Orbitron';font-size:0.75rem;color:var(--rose);">EAST-WEST</div>
-                            <div style="font-family:'JetBrains Mono';font-size:0.7rem;color:var(--text-muted);">STOP</div>
-                        </div>
-                    </div>
+        document.getElementById('v2xTime').innerText = new Date().toISOString();
 
-                    <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.08);padding-top:14px;">
-                        <div class="card-header" style="margin-bottom:8px;">🚶 VRU CROSSWALK GUARDIAN</div>
-                        <div style="font-family:'JetBrains Mono';font-size:0.75rem;line-height:1.8;color:var(--text-muted);">
-                            Pedestrians Detected: <span style="color:var(--cyan);font-weight:700;">3</span><br>
-                            WALK Phase Timer: <span style="color:var(--emerald);font-weight:700;">21s (+6s Extended)</span><br>
-                            Crosswalk Status: <span style="color:var(--emerald);">SAFE_OCCUPIED</span>
-                        </div>
-                    </div>
-                </div>
+        function changeLocation(key) {
+            const loc = locations[key];
+            if (!loc) return;
 
-                <!-- CENTER: MAP INTELLIGENCE -->
-                <div class="card">
-                    <div class="card-header">
-                        <span>🌍 MAP NODE INTELLIGENCE</span>
-                        <span style="color:var(--cyan);font-size:0.7rem;">LAT 28.6315 | LON 77.2167</span>
-                    </div>
-                    <div id="map"></div>
-                </div>
+            currentLat = loc.lat;
+            currentLon = loc.lon;
+            map.flyTo([currentLat, currentLon], 15);
 
-                <!-- RIGHT: PUBLIC CITIZEN FINE LOOKUP -->
-                <div class="card">
-                    <div class="card-header">
-                        <span>👥 CITIZEN FINE LOOKUP</span>
-                        <span style="color:var(--amber);font-size:0.7rem;">PUBLIC PORTAL</span>
-                    </div>
-                    <div class="search-box">
-                        <input type="text" id="plateInput" placeholder="Enter Registration Plate (e.g. DL-01-AB-1234)">
-                        <button onclick="searchPlate()">SEARCH</button>
-                    </div>
-                    <div id="searchResults" style="font-family:'JetBrains Mono';font-size:0.75rem;color:var(--text-muted);">
-                        Enter your vehicle registration plate number to check outstanding traffic fines and file digital appeals.
-                    </div>
-                </div>
+            if (marker) map.removeLayer(marker);
+            if (circle) map.removeLayer(circle);
 
-            </div>
-
-            <!-- LOWER GRID: VIOLATIONS & V2X BROADCAST STREAM -->
-            <div class="grid-2">
-                <div class="card">
-                    <div class="card-header">
-                        <span>🚘 ANPR & RECENT TRAFFIC VIOLATIONS</span>
-                        <span style="color:var(--rose);font-size:0.7rem;">LIVE SCAN</span>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>TICKET ID</th>
-                                <th>PLATE</th>
-                                <th>VIOLATION TYPE</th>
-                                <th>FINE</th>
-                                <th>STATUS</th>
-                            </tr>
-                        </thead>
-                        <tbody id="violationTable">
-                            <tr>
-                                <td style="color:var(--cyan);">TKT-DL01-8891</td>
-                                <td><span style="background:#fff;color:#000;padding:1px 6px;border-radius:3px;font-weight:700;">🇮🇳 DL-01-AB-1234</span></td>
-                                <td>Red Light Jump</td>
-                                <td style="color:var(--amber);">₹1,500</td>
-                                <td><span class="tag-badge tag-red">PENDING</span></td>
-                            </tr>
-                            <tr>
-                                <td style="color:var(--cyan);">TKT-DL01-8892</td>
-                                <td><span style="background:#fff;color:#000;padding:1px 6px;border-radius:3px;font-weight:700;">🇮🇳 DL-02-CD-5678</span></td>
-                                <td>Speeding (72 in 50 km/h)</td>
-                                <td style="color:var(--amber);">₹2,000</td>
-                                <td><span class="tag-badge tag-red">PENDING</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <span>📡 CELLULAR V2X (C-V2X) BSM BROADCAST STREAM</span>
-                        <span style="color:var(--purple);font-size:0.7rem;">DSRC CH 172</span>
-                    </div>
-                    <div style="font-family:'JetBrains Mono';font-size:0.72rem;background:rgba(0,0,0,0.4);padding:14px;border-radius:6px;color:#00f0ff;line-height:1.8;">
-                        // PACKET ID: BSM-99A82B01 | SAE J2735 IEEE 802.11p<br>
-                        // TIMESTAMP: <span id="v2xTime"></span><br>
-                        // SPaT STATE: <span style="color:var(--emerald);">NORTH_SOUTH_GREEN (32s)</span><br>
-                        // RECOMMENDED APPROACH SPEED: <span style="color:var(--amber);">45 KM/H</span><br>
-                        // HAZARD BROADCAST: <span style="color:var(--rose);">NOMINAL_FLOW</span><br>
-                        // DIGITAL SIGNATURE: <span style="color:var(--purple);">SHA256:8f2a...c01e (VALID_CA)</span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- LEAFLET MAP SCRIPT -->
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-        <script>
-            // Initialize Map
-            const lat = 28.6315, lon = 77.2167;
-            const map = L.map('map').setView([lat, lon], 15);
-            
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap &copy; CARTO',
-                maxZoom: 19
-            }).addTo(map);
-
-            // Add Node Marker
-            L.marker([lat, lon]).addTo(map)
-                .bindPopup('<b>🚦 Connaught Place Node</b><br>AEGIS Active Surveillance')
+            marker = L.marker([currentLat, currentLon]).addTo(map)
+                .bindPopup(`<b>🚦 ${loc.name} Node</b><br>AEGIS Active Surveillance`)
                 .openPopup();
 
-            L.circle([lat, lon], {
-                color: '#00f0ff',
-                fillColor: '#00f0ff',
-                fillOpacity: 0.1,
-                radius: 300
+            circle = L.circle([currentLat, currentLon], {
+                color: '#00f0ff', fillColor: '#00f0ff', fillOpacity: 0.1, radius: 300
             }).addTo(map);
 
-            // Timestamp
-            document.getElementById('v2xTime').innerText = new Date().toISOString();
+            document.getElementById('nodeNameVal').innerText = loc.name;
+            document.getElementById('queueVal').innerText = loc.queue;
+            document.getElementById('coordsTag').innerText = `LAT ${loc.lat.toFixed(4)} | LON ${loc.lon.toFixed(4)}`;
+        }
 
-            // Search Plate Function
-            function searchPlate() {
-                const plate = document.getElementById('plateInput').value.trim().toUpperCase();
-                const resDiv = document.getElementById('searchResults');
-                if(!plate) {
-                    resDiv.innerHTML = '<span style="color:var(--rose);">Enter a valid plate number.</span>';
-                    return;
+        async function searchCustomLocation() {
+            const query = document.getElementById('customLocInput').value.trim();
+            if(!query) return;
+
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+                const data = await res.json();
+                if(data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    const name = data[0].display_name.split(',')[0];
+
+                    currentLat = lat; currentLon = lon;
+                    map.flyTo([lat, lon], 15);
+
+                    if (marker) map.removeLayer(marker);
+                    if (circle) map.removeLayer(circle);
+
+                    marker = L.marker([lat, lon]).addTo(map)
+                        .bindPopup(`<b>🚦 ${name} Node</b><br>AEGIS Active Surveillance`)
+                        .openPopup();
+
+                    circle = L.circle([lat, lon], {
+                        color: '#00f0ff', fillColor: '#00f0ff', fillOpacity: 0.1, radius: 300
+                    }).addTo(map);
+
+                    document.getElementById('nodeNameVal').innerText = name;
+                    document.getElementById('coordsTag').innerText = `LAT ${lat.toFixed(4)} | LON ${lon.toFixed(4)}`;
+                } else {
+                    alert('Location not found.');
                 }
-                resDiv.innerHTML = `
-                    <div style="background:rgba(0,240,255,0.05);border:1px solid var(--cyan);padding:12px;border-radius:6px;margin-top:10px;">
-                        <div style="color:var(--cyan);font-weight:700;">🪪 Vehicle Plate: ${plate}</div>
-                        <div style="margin-top:6px;">Violation: Red Light Jump @ Connaught Place</div>
-                        <div style="color:var(--amber);font-weight:700;margin-top:4px;">Outstanding Fine: ₹1,500</div>
-                        <button style="margin-top:10px;width:100%;" onclick="alert('Appeal Ticket registered. Reference ID: APP-99120')">⚖️ CONTEST TICKET & FILE APPEAL</button>
-                    </div>
-                `;
+            } catch(e) {
+                alert('Geocoding search failed.');
             }
-        </script>
+        }
 
-    <?php endif; ?>
+        function toggleLoginModal() {
+            document.getElementById('loginModal').classList.toggle('active');
+        }
 
+        function searchPlate() {
+            const plate = document.getElementById('plateInput').value.trim().toUpperCase();
+            const resDiv = document.getElementById('searchResults');
+            if(!plate) {
+                resDiv.innerHTML = '<span style="color:var(--rose);">Enter a valid plate number.</span>';
+                return;
+            }
+            resDiv.innerHTML = `
+                <div style="background:rgba(0,240,255,0.05);border:1px solid var(--cyan);padding:12px;border-radius:6px;margin-top:10px;">
+                    <div style="color:var(--cyan);font-weight:700;">🪪 Vehicle Plate: ${plate}</div>
+                    <div style="margin-top:6px;">Violation: Red Light Jump @ ${document.getElementById('nodeNameVal').innerText}</div>
+                    <div style="color:var(--amber);font-weight:700;margin-top:4px;">Outstanding Fine: ₹1,500</div>
+                    <button style="margin-top:10px;width:100%;" onclick="alert('Appeal Ticket registered. Reference ID: APP-99120')">⚖️ CONTEST TICKET & FILE APPEAL</button>
+                </div>
+            `;
+        }
+    </script>
 </body>
 </html>
