@@ -18,8 +18,8 @@ MODULE_PAGES = [
 
 
 def render_navbar(client):
-    """Renders top header layout, status badges, and right-aligned 3D module tab bar."""
-    hcol1, hcol2, hcol3 = st.columns([2, 3, 2.5])
+    """Renders top header layout, status badges, 3D location switcher, and right-aligned 3D module tab bar."""
+    hcol1, hcol2, hcol3 = st.columns([1.8, 3.2, 2.2])
     with hcol1:
         st.markdown("""
         <div style="padding:4px 0;">
@@ -34,17 +34,24 @@ def render_navbar(client):
         limit = st.session_state.get("speed_limit_kmh", 50)
         side = st.session_state.get("drive_side", "left")
 
-        st.markdown(f"""
-        <div style="background:rgba(6,12,26,.85);border:1px solid rgba(0,240,255,.2);border-radius:10px;padding:6px 14px;margin-top:2px;display:flex;align-items:center;justify-content:space-around;font-family:'JetBrains Mono',monospace;font-size:.72rem;box-shadow:0 4px 15px rgba(0,0,0,0.5);">
-            <div><span style="font-size:1.1rem;">{flag}</span> <strong style="color:#00f0ff;">{country}</strong></div>
-            <div style="color:#64748b;">|</div>
-            <div style="color:#94a3b8;">📍 {loc[:20]}...</div>
-            <div style="color:#64748b;">|</div>
-            <div>⚡ <span style="color:#38bdf8;">{limit} km/h</span></div>
-            <div style="color:#64748b;">|</div>
-            <div>🚗 <span style="color:#a855f7;">{side.upper()}</span></div>
-        </div>
-        """, unsafe_allow_html=True)
+        nc1, nc2 = st.columns([3, 1.2])
+        with nc1:
+            st.markdown(f"""
+            <div style="background:rgba(6,12,26,.85);border:1px solid rgba(0,240,255,.25);border-radius:10px;padding:6px 12px;margin-top:2px;display:flex;align-items:center;justify-content:space-around;font-family:'JetBrains Mono',monospace;font-size:.72rem;box-shadow:0 4px 15px rgba(0,0,0,0.5);">
+                <div><span style="font-size:1.1rem;">{flag}</span> <strong style="color:#00f0ff;">{country}</strong></div>
+                <div style="color:#64748b;">|</div>
+                <div style="color:#94a3b8;">📍 {loc[:16]}...</div>
+                <div style="color:#64748b;">|</div>
+                <div>⚡ <span style="color:#38bdf8;">{limit} km/h</span></div>
+                <div style="color:#64748b;">|</div>
+                <div>🚗 <span style="color:#a855f7;">{side.upper()}</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+        with nc2:
+            if st.button("📍 CHANGE NODE", key="btn_quick_change_location", use_container_width=True):
+                st.session_state.current_page = "🌍 Map Intelligence"
+                st.rerun()
+
     with hcol3:
         user = st.session_state.get("username", "Operator")
         role = st.session_state.get("user_role", "Operator")
@@ -72,7 +79,6 @@ def render_navbar(client):
     
     current = st.session_state.get("current_page", "📊 Operations HUD")
     
-    # Render 3D Navigation Tab Buttons across columns aligned right
     cols = st.columns(len(MODULE_PAGES))
     for col, (page_name, short_label) in zip(cols, MODULE_PAGES):
         is_active = (page_name == current)
