@@ -5,7 +5,9 @@ import streamlit as st
 
 MODULE_LIST = [
     ("📊 Operations HUD", "📊 Operations HUD"),
+    ("📹 Real-Time CCTV Analytics", "📹 Real-Time CCTV Analytics"),
     ("📈 Predictive Analytics", "📈 Predictive Analytics"),
+    ("⚡ Model Comparison & SLA", "⚡ Model Comparison & SLA"),
     ("🌍 Map Intelligence", "🌍 Map Intelligence"),
     ("🤖 AI Copilot", "🤖 AI Copilot"),
     ("🚘 ANPR & Violations", "🚘 ANPR & Violations"),
@@ -15,6 +17,7 @@ MODULE_LIST = [
     ("🛡️ Audit & Security", "🛡️ Audit & Security"),
     ("⚙️ Settings & Pipeline", "⚙️ Settings & Pipeline")
 ]
+
 
 
 def render_sidebar():

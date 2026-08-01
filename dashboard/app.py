@@ -20,7 +20,9 @@ from dashboard.components.sidebar import render_sidebar
 
 # Import Page Modules
 from dashboard.pages.overview import render_overview_page
+from dashboard.pages.cctv_live import render_cctv_live_page
 from dashboard.pages.analytics import render_analytics_page
+from dashboard.pages.benchmarks import render_benchmarks_page
 from dashboard.pages.maps import render_maps_page
 from dashboard.pages.violations import render_violations_page
 from dashboard.pages.anpr import render_anpr_page
@@ -83,7 +85,9 @@ render_sidebar()
 
 PAGE_ROUTER = {
     "📊 Operations HUD": render_overview_page,
+    "📹 Real-Time CCTV Analytics": render_cctv_live_page,
     "📈 Predictive Analytics": render_analytics_page,
+    "⚡ Model Comparison & SLA": render_benchmarks_page,
     "🌍 Map Intelligence": render_maps_page,
     "🤖 AI Copilot": render_copilot_page,
     "🚘 ANPR & Violations": render_violations_page,

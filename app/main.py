@@ -8,12 +8,20 @@ import os
 from typing import Optional, List
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Header, Depends, Request, status
+from fastapi import FastAPI, HTTPException, Header, Depends, Request, status, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from slowapi.errors import RateLimitExceeded
+
+# ── New Enterprise Feature Engines ──
+from app.pipeline.cctv_analytics import cctv_engine
+from app.pipeline.forecasting import forecasting_engine
+from app.pipeline.explainability import explainability_engine
+from app.core.performance_monitor import performance_monitor
+from app.core.benchmark_engine import benchmark_engine
+from app.pipeline.dataset_explorer import dataset_explorer
 
 try:
     from transformers import pipeline
@@ -1834,4 +1842,151 @@ def list_hazards(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
             "date": r.created_at.strftime("%Y-%m-%d %H:%M:%S")
         })
     return {"total": total, "hazards": res}
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# PHASE A, B, C: ENTERPRISE WEBSOCKETS & ADVANCED ANALYTICS ENDPOINTS
+# ────────────────────────────────────────────────────────────────────────────
+
+class ConnectionManager:
+    """Manages active WebSocket connections for live telemetry broadcast."""
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in list(self.active_connections):
+            try:
+                await connection.send_json(message)
+            except Exception:
+                self.disconnect(connection)
+
+ws_manager = ConnectionManager()
+
+
+@app.websocket("/ws/telemetry")
+async def websocket_telemetry_endpoint(websocket: WebSocket):
+    """
+    WebSocket Endpoint — Live Telemetry Streaming.
+    Streams live vehicle counts, speeds, congestion levels, and AI telemetry to connected clients every second.
+    """
+    await ws_manager.connect(websocket)
+    try:
+        import asyncio
+        while True:
+            frame_data = cctv_engine.process_cctv_frame("CAM-01")
+            telemetry_payload = {
+                "type": "TELEMETRY_UPDATE",
+                "timestamp": time.time(),
+                "camera_id": "CAM-01",
+                "total_vehicles": frame_data["analytics"]["total_vehicles"],
+                "avg_speed_kmh": frame_data["analytics"]["avg_speed_kmh"],
+                "congestion_index": frame_data["analytics"]["congestion_index"],
+                "congestion_level": frame_data["analytics"]["congestion_level"],
+                "class_counts": frame_data["analytics"]["class_counts"],
+                "fps": frame_data["analytics"]["fps"],
+                "inference_time_ms": frame_data["analytics"]["inference_time_ms"],
+                "active_tracks": frame_data["tracks"][:8]
+            }
+            await websocket.send_json(telemetry_payload)
+            await asyncio.sleep(1.0)
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+    except Exception:
+        ws_manager.disconnect(websocket)
+
+
+@app.get("/api/v1/cctv/analytics")
+def get_cctv_analytics(camera_id: str = "CAM-01"):
+    """
+    Real-Time CCTV Analytics — returns live YOLOv8 + ByteTrack frame analytics.
+    """
+    return cctv_engine.process_cctv_frame(camera_id)
+
+
+@app.get("/api/v1/cameras")
+def get_camera_list():
+    """
+    Camera Management — list registered CCTV cameras and status.
+    """
+    return cctv_engine.list_cameras()
+
+
+@app.get("/api/v1/predict/timeline")
+def get_prediction_timeline(density: float = 62.5, location: str = "Connaught Place"):
+    """
+    Time-Series Forecast Engine — multi-horizon traffic prediction (Now, 15m, 30m, 1h, Tomorrow).
+    """
+    return forecasting_engine.generate_timeline_forecast(current_density=density, location_name=location)
+
+
+@app.get("/api/v1/predict/explain")
+def get_ai_explainability(level: str = "High", count: int = 42, location: str = "Connaught Place"):
+    """
+    AI Explainability & Confidence — returns feature attribution factors and AI confidence % score.
+    """
+    return explainability_engine.explain_prediction(congestion_level=level, vehicle_count=count, location_name=location)
+
+
+@app.get("/api/v1/system/health")
+def get_system_health_metrics():
+    """
+    System Health & Performance Monitoring — CPU, RAM, API latency p50/p95, AI inference time, throughput.
+    """
+    return performance_monitor.get_system_health()
+
+
+@app.get("/api/v1/system/benchmarks")
+def get_system_benchmarks():
+    """
+    Model Comparison & SLA Benchmarks — compare YOLOv8n, YOLOv8s, YOLOv8m FPS, Latency & Accuracy.
+    """
+    return benchmark_engine.get_model_benchmarks()
+
+
+@app.get("/api/v1/dataset/explorer")
+def get_dataset_explorer_stats():
+    """
+    Dataset Explorer — statistics, bounding boxes, class splits for training datasets.
+    """
+    return dataset_explorer.get_dataset_metadata()
+
+
+@app.get("/api/v1/search")
+def global_search_everything(q: str = "", db: Session = Depends(get_db)):
+    """
+    Global Search Everywhere — search plates, roads, incidents, violations, and cameras.
+    """
+    q_lower = q.strip().lower()
+    if not q_lower:
+        return {"query": "", "results": []}
+
+    results = []
+    
+    # 1. Search Cameras
+    for cam in cctv_engine.list_cameras():
+        if q_lower in cam["id"].lower() or q_lower in cam["name"].lower() or q_lower in cam["location"].lower():
+            results.append({"type": "CAMERA", "title": cam["name"], "subtitle": f"Location: {cam['location']} | Status: {cam['status']}", "id": cam["id"]})
+
+    # 2. Search Violations
+    violations = crud.get_violations(db, limit=50)
+    for v in violations:
+        if q_lower in v.plate_number.lower() or q_lower in v.violation_type.lower() or q_lower in v.location.lower():
+            results.append({"type": "VIOLATION", "title": f"Plate: {v.plate_number}", "subtitle": f"{v.violation_type} at {v.location} (Fine: ${v.fine_amount})", "id": v.violation_id})
+
+    # 3. Search Incidents
+    incidents = crud.get_incidents(db, limit=50)
+    for inc in incidents:
+        if q_lower in inc.location.lower() or q_lower in inc.incident_type.lower() or q_lower in inc.severity.lower():
+            results.append({"type": "INCIDENT", "title": f"Incident: {inc.incident_type}", "subtitle": f"{inc.location} - Severity: {inc.severity}", "id": inc.incident_id})
+
+    return {"query": q, "total_matches": len(results), "results": results}
+
 
