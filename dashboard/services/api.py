@@ -13,8 +13,18 @@ from dashboard.services.logger import logger
 class AegisAPIError(Exception):
     """Custom exception raised for Aegis API operational failures."""
     def __init__(self, message: str, status_code: Optional[int] = None, detail: Any = None):
-        super().__init__(message)
-        self.message = message
+        if detail:
+            if isinstance(detail, dict):
+                err_msg = detail.get("detail", detail.get("error", str(detail)))
+            elif isinstance(detail, list):
+                err_msg = detail[0].get("msg", str(detail[0])) if detail else str(detail)
+            else:
+                err_msg = str(detail)
+            formatted = f"{message}: {err_msg}"
+        else:
+            formatted = message
+        super().__init__(formatted)
+        self.message = formatted
         self.status_code = status_code
         self.detail = detail
 
@@ -62,12 +72,15 @@ class AegisClient:
                 logger.info(f"Authentication successful for {username}")
                 return res.json()
             
-            detail = res.json().get("detail", "Authentication failed.")
+            try:
+                detail = res.json().get("detail", "Authentication failed.")
+            except Exception:
+                detail = res.text or "Access denied."
             logger.warning(f"Login failed for {username}: {detail}")
-            raise AegisAPIError("Login failed", status_code=res.status_code, detail=detail)
+            raise AegisAPIError("Authentication Error", status_code=res.status_code, detail=detail)
         except requests.RequestException as e:
             logger.exception(f"Connection error during login for {username}: {e}")
-            raise AegisAPIError("Backend microservice offline or unreachable.", detail=str(e))
+            raise AegisAPIError("Backend microservice offline on port 8000. Please start the FastAPI server first.", detail=str(e))
 
     def register(self, username: str, password: str, role: str) -> Dict[str, Any]:
         """Registers new operator credentials."""
@@ -77,11 +90,14 @@ class AegisClient:
             res = self.session.post(url, json={"username": username, "password": password, "role": role}, timeout=self.timeout)
             if res.status_code == 200:
                 return res.json()
-            detail = res.json().get("detail", "Registration failed.")
-            raise AegisAPIError("Registration failed", status_code=res.status_code, detail=detail)
+            try:
+                detail = res.json().get("detail", "Registration failed.")
+            except Exception:
+                detail = res.text or "Registration failed."
+            raise AegisAPIError("Registration Error", status_code=res.status_code, detail=detail)
         except requests.RequestException as e:
             logger.exception(f"Connection error during registration for {username}: {e}")
-            raise AegisAPIError("Backend offline or unreachable.", detail=str(e))
+            raise AegisAPIError("Backend microservice offline on port 8000.", detail=str(e))
 
     def get_dashboard_summary(self, token: str) -> Dict[str, Any]:
         """Fetches live dashboard summary stats."""

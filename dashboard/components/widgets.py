@@ -61,20 +61,26 @@ def render_login_portal(client, on_login_success):
 
             col_q1, col_q2, col_q3 = st.columns(3)
             if col_q1.button("🔑 Admin Quick Entry", use_container_width=True, key="btn_quick_admin"):
+                st.session_state["login_username_input"] = "admin"
+                st.session_state["login_password_input"] = "Admin@AEGIS2024!"
                 st.session_state.quick_user = "admin"
                 st.session_state.quick_pass = "Admin@AEGIS2024!"
                 st.rerun()
             if col_q2.button("🔑 Operator Quick Entry", use_container_width=True, key="btn_quick_operator"):
+                st.session_state["login_username_input"] = "operator"
+                st.session_state["login_password_input"] = "Operator@AEGIS2024!"
                 st.session_state.quick_user = "operator"
                 st.session_state.quick_pass = "Operator@AEGIS2024!"
                 st.rerun()
             if col_q3.button("🔑 Auditor Quick Entry", use_container_width=True, key="btn_quick_auditor"):
+                st.session_state["login_username_input"] = "auditor"
+                st.session_state["login_password_input"] = "Auditor@AEGIS2024!"
                 st.session_state.quick_user = "auditor"
                 st.session_state.quick_pass = "Auditor@AEGIS2024!"
                 st.rerun()
 
-            default_u = st.session_state.get("quick_user", "")
-            default_p = st.session_state.get("quick_pass", "")
+            default_u = st.session_state.get("login_username_input", st.session_state.get("quick_user", ""))
+            default_p = st.session_state.get("login_password_input", st.session_state.get("quick_pass", ""))
 
             with st.form("login_form", clear_on_submit=False):
                 st.markdown('<div class="t-section" style="margin-bottom:14px;">Operator Credentials</div>', unsafe_allow_html=True)
