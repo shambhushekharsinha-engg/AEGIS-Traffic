@@ -4,7 +4,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.backend
     container_name: aegis-backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     ports:
@@ -13,6 +13,7 @@ services:
       - .env
     environment:
       - PORT=8000
+      - AEGIS_ENV=development
     volumes:
       - .:/app
     restart: unless-stopped
@@ -20,7 +21,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.frontend
     container_name: aegis-frontend
     command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0
     ports:

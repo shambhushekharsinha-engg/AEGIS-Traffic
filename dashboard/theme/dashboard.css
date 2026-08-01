@@ -1,0 +1,103 @@
+/* AEGIS-TRAFFIC DASHBOARD & CARD STYLES */
+
+/* Card System */
+.card {
+    background: rgba(6, 12, 26, 0.9);
+    border: 1px solid rgba(0, 240, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.6);
+    transition: border-color .25s, box-shadow .25s;
+}
+
+.card:hover {
+    border-color: rgba(0, 240, 255, 0.28);
+    box-shadow: 0 6px 40px rgba(0, 240, 255, 0.07);
+}
+
+.card-alert-red   { border-left: 4px solid #ef4444 !important; background: rgba(239, 68, 68, 0.07) !important; }
+.card-alert-amber { border-left: 4px solid #f59e0b !important; background: rgba(245, 158, 11, 0.07) !important; }
+.card-alert-green { border-left: 4px solid #10b981 !important; background: rgba(16, 185, 129, 0.07) !important; }
+.card-alert-blue  { border-left: 4px solid #6366f1 !important; background: rgba(99, 102, 241, 0.07) !important; }
+.card-alert-purple{ border-left: 4px solid #a855f7 !important; background: rgba(168, 85, 247, 0.07) !important; }
+
+/* Metric Tiles */
+.metric-tile {
+    background: rgba(6, 12, 26, 0.95);
+    border: 1px solid rgba(0, 240, 255, 0.12);
+    border-radius: 10px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: transform .2s, box-shadow .2s;
+}
+
+.metric-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 240, 255, 0.12);
+}
+
+.metric-tile .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .68rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+}
+
+.metric-tile .value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.metric-tile .unit {
+    font-size: .7rem;
+    color: #4b6584;
+    margin-left: 3px;
+}
+
+/* Status Banner */
+.status-banner {
+    border-radius: 8px;
+    padding: 14px 20px;
+    border-left: 5px solid;
+    margin-bottom: 18px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: .88rem;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Signal Box */
+.signal-box {
+    background: rgba(6, 10, 22, 0.95);
+    border: 1px solid rgba(0, 240, 255, 0.18);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+}
+
+.signal-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    margin: 10px auto;
+}
+
+/* Section Divider */
+.sec-div {
+    font-family: 'Orbitron', sans-serif;
+    font-size: .78rem;
+    color: #00f0ff;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    padding: 8px 0 8px 14px;
+    border-left: 3px solid #00f0ff;
+    margin: 14px 0 10px 0;
+    background: linear-gradient(90deg, rgba(0, 240, 255, 0.05), transparent);
+    border-radius: 0 4px 4px 0;
+}

@@ -1,0 +1,148 @@
+/* AEGIS-TRAFFIC COMPONENTS, BUTTONS & FORM INPUT STYLES */
+
+/* Buttons */
+.stButton>button {
+    background: linear-gradient(135deg, #0a1628, #0d1f3c) !important;
+    border: 1px solid rgba(0, 240, 255, 0.4) !important;
+    color: #00f0ff !important;
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: .72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.5px !important;
+    padding: 10px 18px !important;
+    border-radius: 6px !important;
+    transition: all .22s !important;
+    text-transform: uppercase !important;
+}
+
+.stButton>button:hover {
+    background: #00f0ff !important;
+    color: #010308 !important;
+    box-shadow: 0 0 24px rgba(0, 240, 255, 0.55) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Sidebar Items */
+.sb-block {
+    background: rgba(0, 240, 255, 0.04);
+    border: 1px solid rgba(0, 240, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 8px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .78rem;
+}
+
+.sb-label {
+    color: #4b6584;
+    font-size: .65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Tabs Override */
+button[data-baseweb="tab"] {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: .7rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    color: #64748b !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 10px 16px !important;
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: #00f0ff !important;
+    border-bottom: 2px solid #00f0ff !important;
+}
+
+/* Chat Messages */
+.chat-msg-user {
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 10px 10px 2px 10px;
+    padding: 10px 14px;
+    margin: 6px 0;
+    font-family: 'Inter', sans-serif;
+    font-size: .87rem;
+    color: #e2e8f0;
+}
+
+.chat-msg-ai {
+    background: rgba(0, 240, 255, 0.06);
+    border: 1px solid rgba(0, 240, 255, 0.18);
+    border-radius: 10px 10px 10px 2px;
+    padding: 10px 14px;
+    margin: 6px 0;
+    font-family: 'Inter', sans-serif;
+    font-size: .87rem;
+    color: #cffafe;
+}
+
+/* Login Portal */
+.login-portal {
+    max-width: 480px;
+    margin: 60px auto 0;
+    background: rgba(6, 12, 26, 0.98);
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    border-radius: 16px;
+    padding: 40px 36px;
+    box-shadow: 0 0 80px rgba(0, 240, 255, 0.05);
+}
+
+.login-logo {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.badge-pill {
+    display: inline-block;
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    color: #00f0ff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+}
+
+.cred-hint {
+    background: rgba(16, 185, 129, 0.07);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .72rem;
+    color: #6ee7b7;
+    margin-top: 16px;
+    line-height: 1.8;
+}
+
+/* Form inputs & Chat input */
+.stTextInput>div>div>input, .stSelectbox>div>div { 
+    background: rgba(4, 8, 20, 0.8) !important; 
+    border: 1px solid rgba(0, 240, 255, 0.2) !important;
+    border-radius: 6px !important;
+    color: #e2e8f0 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: .82rem !important;
+}
+
+div[data-testid="stChatInput"] { 
+    background: rgba(4, 8, 20, 0.95) !important; 
+    border: 1px solid rgba(0, 240, 255, 0.35) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.08) !important;
+    padding: 4px !important;
+}
+
+div[data-testid="stChatInput"] textarea, .stChatInputContainer textarea { 
+    background: rgba(4, 8, 20, 0.95) !important; 
+    color: #f8fafc !important; 
+    font-family: 'JetBrains Mono', monospace !important; 
+    font-size: .85rem !important; 
+    caret-color: #00f0ff !important;
+}

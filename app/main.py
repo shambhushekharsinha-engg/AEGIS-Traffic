@@ -109,6 +109,9 @@ def redirect_api_openapi():
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
+from app.middleware.security import SecurityHeadersMiddleware
+
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins     = settings.allowed_origins,
@@ -143,13 +146,42 @@ def on_startup():
     except Exception as e:
         print(f"[AEGIS WARN] Startup initialization notice: {e}")
 
-# ── Observability Metrics ──────────────────────────────────────────────────────────
 SYSTEM_METRICS = {
     "total_requests":        0,
     "critical_incidents":    0,
     "unauthorized_breaches": 0,
 }
 DISPATCH_REGISTRY = {"status": "STABLE", "last_broadcast": "None"}
+
+
+@app.get("/health", tags=["Monitoring"])
+def health_check():
+    """Liveness & Readiness probe endpoint for Kubernetes / Docker container health monitoring."""
+    return {
+        "status": "healthy",
+        "app_name": settings.app_name,
+        "app_version": settings.app_version,
+        "environment": settings.environment,
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
+
+
+@app.get("/metrics", tags=["Monitoring"])
+def prometheus_metrics():
+    """Prometheus-compatible metrics endpoint exporting request counts and system health indicators."""
+    metrics_output = f"""# HELP aegis_requests_total Total HTTP requests processed
+# TYPE aegis_requests_total counter
+aegis_requests_total {SYSTEM_METRICS['total_requests']}
+
+# HELP aegis_critical_incidents_total Total critical traffic incidents detected
+# TYPE aegis_critical_incidents_total counter
+aegis_critical_incidents_total {SYSTEM_METRICS['critical_incidents']}
+
+# HELP aegis_unauthorized_breaches_total Total unauthorized access attempts blocked
+# TYPE aegis_unauthorized_breaches_total counter
+aegis_unauthorized_breaches_total {SYSTEM_METRICS['unauthorized_breaches']}
+"""
+    return Response(content=metrics_output, media_type="text/plain")
 
 
 # ── NLP models ───────────────────────────────────────────────────────────────────

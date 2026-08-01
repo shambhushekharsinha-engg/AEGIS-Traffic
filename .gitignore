@@ -29,6 +29,7 @@ check_dataset.py
 verify_ucf.py
 test_ucf_pipeline.py
 train_ucf.py
+logs/
 
 # ── Streamlit & editor configs ────────────────────────────────────────────────
 .streamlit/
