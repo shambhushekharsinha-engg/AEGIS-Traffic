@@ -28,6 +28,8 @@ from dashboard.pages.copilot import render_copilot_page
 from dashboard.pages.reports import render_reports_page
 from dashboard.pages.admin import render_admin_page
 from dashboard.pages.settings import render_settings_page
+from dashboard.pages.citizen import render_citizen_page
+from dashboard.pages.guide import render_guide_page
 
 
 # ── Page Config ──
@@ -80,17 +82,18 @@ render_navbar(client)
 render_sidebar()
 
 PAGE_ROUTER = {
-    "📊 Command Overview": render_overview_page,
+    "📊 Operations HUD": render_overview_page,
     "📈 Predictive Analytics": render_analytics_page,
-    "🗺️ GIS Traffic Map": render_maps_page,
-    "🚨 Violation Logs": render_violations_page,
-    "🚘 ANPR Scanner": render_anpr_page,
+    "🌍 Map Intelligence": render_maps_page,
     "🤖 AI Copilot": render_copilot_page,
+    "🚘 ANPR & Violations": render_violations_page,
     "📑 Reports & Exports": render_reports_page,
-    "🛡️ Audit & Admin": render_admin_page,
-    "⚙️ Settings": render_settings_page,
+    "👥 Public Citizen Portal": render_citizen_page,
+    "📚 Learning Guide": render_guide_page,
+    "🛡️ Audit & Security": render_admin_page,
+    "⚙️ Settings & Pipeline": render_settings_page,
 }
 
-current_page = st.session_state.get("current_page", "📊 Command Overview")
+current_page = st.session_state.get("current_page", "📊 Operations HUD")
 render_func = PAGE_ROUTER.get(current_page, render_overview_page)
 render_func(client)

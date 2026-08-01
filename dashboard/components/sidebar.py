@@ -9,22 +9,23 @@ def render_sidebar():
         st.markdown("""
         <div style="padding:16px 12px 8px;">
             <div class="t-hero" style="font-size:1.2rem;">AEGIS CORE</div>
-            <div class="t-sub">INTELLIGENT COMMAND</div>
+            <div class="t-sub">INTELLIGENT COMMAND HUB</div>
         </div>
         """, unsafe_allow_html=True)
         
         st.session_state.current_page = st.radio(
             "SYSTEM MODULES",
             [
-                "📊 Command Overview",
+                "📊 Operations HUD",
                 "📈 Predictive Analytics",
-                "🗺️ GIS Traffic Map",
-                "🚨 Violation Logs",
-                "🚘 ANPR Scanner",
+                "🌍 Map Intelligence",
                 "🤖 AI Copilot",
+                "🚘 ANPR & Violations",
                 "📑 Reports & Exports",
-                "🛡️ Audit & Admin",
-                "⚙️ Settings"
+                "👥 Public Citizen Portal",
+                "📚 Learning Guide",
+                "🛡️ Audit & Security",
+                "⚙️ Settings & Pipeline"
             ],
             index=0,
             key="sidebar_navigation_radio"
