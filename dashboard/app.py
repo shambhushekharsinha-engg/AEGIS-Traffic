@@ -11,6 +11,15 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import uuid
 import streamlit as st
 
+# ── Page Config ──
+# MUST be the first Streamlit command executed
+st.set_page_config(
+    page_title="AEGIS-TRAFFIC // Smart City Operations",
+    page_icon="🚦",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 from dashboard.theme.theme import inject_theme
 from dashboard.services.cache import get_api_client, cached_geo_sync
 from dashboard.services.logger import logger
@@ -33,14 +42,6 @@ from dashboard.pages.settings import render_settings_page
 from dashboard.pages.citizen import render_citizen_page
 from dashboard.pages.guide import render_guide_page
 
-
-# ── Page Config ──
-st.set_page_config(
-    page_title="AEGIS-TRAFFIC // Smart City Operations",
-    page_icon="🚦",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # ── Theme Injection ──
 inject_theme()
