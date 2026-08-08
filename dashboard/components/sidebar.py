@@ -9,6 +9,7 @@ MODULE_LIST = [
     ("📈 Predictive Analytics", "📈 Predictive Analytics"),
     ("⚡ Model Comparison & SLA", "⚡ Model Comparison & SLA"),
     ("🌍 Map Intelligence", "🌍 Map Intelligence"),
+    ("🏙️ 3D Digital Twin", "🏙️ 3D Digital Twin"),
     ("🤖 AI Copilot", "🤖 AI Copilot"),
     ("🚘 ANPR & Violations", "🚘 ANPR & Violations"),
     ("📑 Reports & Exports", "📑 Reports & Exports"),

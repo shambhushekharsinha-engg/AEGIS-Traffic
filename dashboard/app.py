@@ -33,6 +33,7 @@ from dashboard.views.cctv_live import render_cctv_live_page
 from dashboard.views.analytics import render_analytics_page
 from dashboard.views.benchmarks import render_benchmarks_page
 from dashboard.views.maps import render_maps_page
+from dashboard.views.digital_twin import render_digital_twin_page
 from dashboard.views.violations import render_violations_page
 from dashboard.views.anpr import render_anpr_page
 from dashboard.views.copilot import render_copilot_page
@@ -90,6 +91,7 @@ PAGE_ROUTER = {
     "📈 Predictive Analytics": render_analytics_page,
     "⚡ Model Comparison & SLA": render_benchmarks_page,
     "🌍 Map Intelligence": render_maps_page,
+    "🏙️ 3D Digital Twin": render_digital_twin_page,
     "🤖 AI Copilot": render_copilot_page,
     "🚘 ANPR & Violations": render_violations_page,
     "📑 Reports & Exports": render_reports_page,

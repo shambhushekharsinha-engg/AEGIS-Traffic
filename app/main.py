@@ -113,6 +113,10 @@ def redirect_api_openapi():
     from fastapi.responses import JSONResponse
     return JSONResponse(content=app.openapi())
 
+# ── NextGen Features (v9.0.0) ──
+from app.routers.nextgen import router as nextgen_router
+app.include_router(nextgen_router)
+
 # ── Middleware ────────────────────────────────────────────────────────────────────
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)

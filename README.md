@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/AEGIS%20TRAFFIC-v8.0%20PRODUCTION-00f0ff?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzAwZjBmZiIgZD0iTTEyIDJMMiA3bDEwIDUgMTAtNXoiLz48cGF0aCBmaWxsPSIjMDBmMGZmIiBkPSJNMiAxN2wxMCA1IDEwLTV2LTZMMTIgMTYgMiAxMXoiLz48L3N2Zz4=&labelColor=010308" />
+<img src="https://img.shields.io/badge/AEGIS%20TRAFFIC-v9.0%20PRODUCTION-00f0ff?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzAwZjBmZiIgZD0iTTEyIDJMMiA3bDEwIDUgMTAtNXoiLz48cGF0aCBmaWxsPSIjMDBmMGZmIiBkPSJNMiAxN2wxMCA1IDEwLTV2LTZMMTIgMTYgMiAxMXoiLz48L3N2Zz4=&labelColor=010308" />
 
 # 🚦 AEGIS — Traffic
 ### **Adaptive Edge-Grade Intelligence System for Smart-City Traffic Management**
@@ -82,7 +82,7 @@ graph TD
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                           AEGIS-TRAFFIC  v8.0                                       │
+│                           AEGIS-TRAFFIC  v9.0                                       │
 │                      SMART CITY OPERATIONS PLATFORM                                 │
 ├──────────────────────────────────┬──────────────────────────────────────────────────┤
 │   STREAMLIT FRONTEND             │          FASTAPI BACKEND (Vercel / Local)        │
@@ -184,7 +184,24 @@ graph TD
 
 ---
 
-## 🆕 v8.0.0 — What's New
+## 🆕 v9.0.0 — NextGen Smart City Expansion
+
+> Integration of deep tech paradigms: Federated Learning, 3D Digital Twins, Reinforcement Learning, and Blockchain.
+
+### 🚀 Next-Gen Tactical Command Protocols
+| Feature | Description | Architecture Implementation |
+|:---|:---|:---|
+| 🏙️ **3D Digital Twin** | Real-time Deck.gl spatial visualization | Extruded geospatial hex grid mapping active VRU and Vehicle tracks in true 3D. |
+| 🌊 **V2I Green Wave** | Emergency Vehicle Preemption | Automated route-clearance for Ambulances via `POST /api/v1/nextgen/v2i-preempt`. |
+| 🛸 **UAV Drone Dispatch** | MAVLink First-Responder Auto-Dispatch | Automatic tactical drone routing on critical crash detection via `POST /api/v1/nextgen/drone-dispatch`. |
+| 🔗 **Blockchain Anchor** | Decentralized Ledger Archiving | Cryptographic anchoring of audit logs to an immutable Hyperledger instance. |
+| 🤖 **RL Signal Opt** | Deep Q-Network Traffic Lights | Multi-agent signal optimization replacing static heuristic queue lengths. |
+| 🕵️ **O-D Matrix (ReID)**| Multi-Camera Vehicle Re-Identification | Tracks distinct vehicle paths across independent camera nodes. |
+| 🌐 **Edge Federated Sync** | Privacy-Preserving AI Training | Edge nodes perform local YOLO fine-tuning and sync only weights via FedAvg. |
+
+---
+
+## 🆕 v8.0.0 — Auth & Security Overhaul
 
 > Complete production-grade backend overhaul from v7.0.0 → v8.0.0
 

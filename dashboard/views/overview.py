@@ -223,3 +223,50 @@ def render_overview_page(client):
                 st.success("✅ No violations detected for this scenario.")
         except Exception:
             st.warning("Violations module offline — check backend.")
+
+    # ── NEXTGEN COMMAND PROTOCOLS (v9.0.0) ──
+    mini_separator()
+    sec_div("🚀 NEXT-GEN COMMAND PROTOCOLS (v9.0.0) — V2I & UAV DISPATCH")
+    st.markdown("""
+    <div class="t-sub" style="margin-bottom:12px;">
+        ADVANCED TACTICAL RESPONSE // RESTRICTED ACCESS
+    </div>
+    """, unsafe_allow_html=True)
+    
+    cmd1, cmd2 = st.columns(2)
+    with cmd1:
+        st.markdown('<div style="background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.3); padding:16px; border-radius:8px; text-align:center;">', unsafe_allow_html=True)
+        if st.button("🛸 DISPATCH UAV DRONE (MAVLINK)", use_container_width=True, type="primary"):
+            try:
+                res = requests.post(
+                    f"{BACKEND}/api/v1/nextgen/drone-dispatch",
+                    json={"incident_type": "HIGH_RISK_COLLISION", "latitude": st.session_state.get("latitude", 28.63), "longitude": st.session_state.get("longitude", 77.21)},
+                    headers=headers, timeout=5
+                )
+                if res.ok:
+                    data = res.json()
+                    st.success(f"✅ UAV {data['uav_callsign']} DISPATCHED! ETA: {data['eta_seconds']}s")
+                else:
+                    st.error("Access Denied or Server Error.")
+            except Exception:
+                st.error("UAV Comm Link Offline.")
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+    with cmd2:
+        st.markdown('<div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); padding:16px; border-radius:8px; text-align:center;">', unsafe_allow_html=True)
+        if st.button("🌊 ACTIVATE V2I GREEN WAVE", use_container_width=True, type="primary"):
+            try:
+                res = requests.post(
+                    f"{BACKEND}/api/v1/nextgen/v2i-preempt",
+                    json={"vehicle_id": "AMB-99-DEL", "vehicle_type": "AMBULANCE", "route_path": ["INT-1", "INT-2"]},
+                    headers=headers, timeout=5
+                )
+                if res.ok:
+                    data = res.json()
+                    st.success(f"✅ GREEN WAVE ACTIVE. {data['cleared_intersections']} intersections cleared.")
+                else:
+                    st.error("V2I Handshake Failed.")
+            except Exception:
+                st.error("V2I Grid Offline.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
