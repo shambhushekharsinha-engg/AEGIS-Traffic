@@ -28,19 +28,19 @@ from dashboard.components.navbar import render_navbar
 from dashboard.components.sidebar import render_sidebar
 
 # Import Page Modules
-from dashboard.pages.overview import render_overview_page
-from dashboard.pages.cctv_live import render_cctv_live_page
-from dashboard.pages.analytics import render_analytics_page
-from dashboard.pages.benchmarks import render_benchmarks_page
-from dashboard.pages.maps import render_maps_page
-from dashboard.pages.violations import render_violations_page
-from dashboard.pages.anpr import render_anpr_page
-from dashboard.pages.copilot import render_copilot_page
-from dashboard.pages.reports import render_reports_page
-from dashboard.pages.admin import render_admin_page
-from dashboard.pages.settings import render_settings_page
-from dashboard.pages.citizen import render_citizen_page
-from dashboard.pages.guide import render_guide_page
+from dashboard.views.overview import render_overview_page
+from dashboard.views.cctv_live import render_cctv_live_page
+from dashboard.views.analytics import render_analytics_page
+from dashboard.views.benchmarks import render_benchmarks_page
+from dashboard.views.maps import render_maps_page
+from dashboard.views.violations import render_violations_page
+from dashboard.views.anpr import render_anpr_page
+from dashboard.views.copilot import render_copilot_page
+from dashboard.views.reports import render_reports_page
+from dashboard.views.admin import render_admin_page
+from dashboard.views.settings import render_settings_page
+from dashboard.views.citizen import render_citizen_page
+from dashboard.views.guide import render_guide_page
 
 
 # ── Theme Injection ──
