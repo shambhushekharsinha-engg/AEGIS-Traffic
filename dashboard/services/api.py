@@ -127,7 +127,12 @@ class AegisClient:
         """Sends operational prompt to AI Copilot engine."""
         url = f"{self.base_url}/api/v1/chat"
         try:
-            res = self.session.post(url, json={"message": query}, headers=self._get_headers(token), timeout=12)
+            payload = {
+                "user_message": query,
+                "incident_context": "None",
+                "session_token": token
+            }
+            res = self.session.post(url, json=payload, headers=self._get_headers(token), timeout=12)
             if res.status_code == 200:
                 return res.json()
             return {"reply": "Unable to connect to AI Copilot inference backend."}
