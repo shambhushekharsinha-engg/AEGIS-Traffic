@@ -135,10 +135,10 @@ class AegisClient:
             res = self.session.post(url, json=payload, headers=self._get_headers(token), timeout=12)
             if res.status_code == 200:
                 return res.json()
-            return {"reply": "Unable to connect to AI Copilot inference backend."}
+            return {"reply": f"Unable to connect to AI Copilot inference backend. ERROR {res.status_code}: {res.text}"}
         except requests.RequestException as e:
             logger.error(f"Copilot API error: {e}")
-            return {"reply": "Copilot service unavailable."}
+            return {"reply": f"Copilot service unavailable. {e}"}
 
     def get_violations(self, token: str) -> Dict[str, Any]:
         """Fetches traffic violations ledger."""
