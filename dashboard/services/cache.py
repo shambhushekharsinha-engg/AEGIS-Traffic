@@ -8,10 +8,9 @@ from dashboard.services.api import AegisClient
 from dashboard.services.logger import logger
 
 
-@st.cache_resource
 def get_api_client() -> AegisClient:
-    """Returns singleton instance of AegisClient cached across Streamlit session runs."""
-    logger.info("Initializing AegisClient singleton...")
+    """Returns instance of AegisClient."""
+    logger.info("Initializing AegisClient...")
     return AegisClient()
 
 
