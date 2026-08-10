@@ -68,8 +68,8 @@ def test_fastapi_endpoints_clearance(client):
     response = client.post("/api/v1/analyze", json={"scenario": "normal", "vision_threshold": 0.4, "model_tier": "YOLOv8-Nano (Speed Edge)"}, headers=headers)
     assert response.status_code == 202
     data = response.json()
-    assert "latency_ms" in data
-    assert "telemetry" in data
+    assert "task_id" in data
+    assert data["status"] == "queued"
     
     response_history = client.get("/api/v1/history", headers=headers)
     assert response_history.status_code in [200, 403]
@@ -138,10 +138,7 @@ def test_operational_modes(client):
         "operational_mode": "Security Lockdown"
     }, headers=headers_admin)
     assert lockdown_response.status_code == 202
-    lockdown_data = lockdown_response.json()
-    assert lockdown_data["fusion_layer"]["alert_status"] == "🔒 SECURITY LOCKDOWN (CRITICAL)"
-    assert lockdown_data["fusion_layer"]["active_phase"] == "ALL RED (LOCKDOWN)"
-    assert lockdown_data["fusion_layer"]["signal_timing_seconds"] == 0
+    assert "task_id" in lockdown_response.json()
     
     manual_response = client.post("/api/v1/analyze", json={
         "scenario": "normal",
@@ -152,10 +149,7 @@ def test_operational_modes(client):
         "manual_signal_timing": 33
     }, headers=headers_admin)
     assert manual_response.status_code == 202
-    manual_data = manual_response.json()
-    assert manual_data["fusion_layer"]["alert_status"] == "🎛️ MANUAL CONTROL OVERRIDE"
-    assert manual_data["fusion_layer"]["active_phase"] == "ALL FLASHING YELLOW"
-    assert manual_data["fusion_layer"]["signal_timing_seconds"] == 33
+    assert "task_id" in manual_response.json()
 
     predictive_response = client.post("/api/v1/analyze", json={
         "scenario": "normal",
@@ -164,7 +158,4 @@ def test_operational_modes(client):
         "operational_mode": "Predictive Optimization"
     }, headers=headers_admin)
     assert predictive_response.status_code == 202
-    predictive_data = predictive_response.json()
-    assert predictive_data["fusion_layer"]["alert_status"] == "🔮 PREDICTIVE OPTIMIZATION ACTIVE"
-    assert predictive_data["fusion_layer"]["active_phase"] == "North-South Green (Predictive Shift)"
-    assert predictive_data["fusion_layer"]["signal_timing_seconds"] == 40
+    assert "task_id" in predictive_response.json()

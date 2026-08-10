@@ -55,6 +55,7 @@ from app.middleware.rate_limiter import limiter, rate_limit_exceeded_handler, AU
 
 # ── Core sensory modules ───────────────────────────────────────────────────────────
 from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
+from app.pipeline.fusion_core import MultimodalFusionCore
 from app.core.audio_module import AudioAnalyzer as AudioEngine
 from app.core.anpr_module import ANPREngine
 from app.core.violation_module import ViolationDetector

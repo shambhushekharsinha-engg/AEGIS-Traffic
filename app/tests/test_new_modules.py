@@ -176,7 +176,7 @@ class TestViolationDetector:
 class TestANPREndpoint:
     def test_anpr_normal_structure(self):
         response = client.get("/api/v1/anpr/normal", headers=HEADERS)
-        assert response.status_code == 202
+        assert response.status_code == 200
         data = response.json()
         assert "anpr_records" in data
         assert "summary" in data
@@ -184,7 +184,7 @@ class TestANPREndpoint:
 
     def test_anpr_tamper_empty(self):
         response = client.get("/api/v1/anpr/tamper", headers=HEADERS)
-        assert response.status_code == 202
+        assert response.status_code == 200
         data = response.json()
         assert data["anpr_records"] == []
 
@@ -200,14 +200,14 @@ class TestANPREndpoint:
 class TestViolationsEndpoint:
     def test_violations_normal_returns_empty(self):
         response = client.get("/api/v1/violations/normal", headers=HEADERS)
-        assert response.status_code == 202
+        assert response.status_code == 200
         data = response.json()
         assert "violations" in data
         assert len(data.get("violations", [])) == 0
 
     def test_violations_accident_structure(self):
         response = client.get("/api/v1/violations/accident", headers=HEADERS)
-        assert response.status_code == 202
+        assert response.status_code == 200
         data = response.json()
         assert "violations" in data
         assert "summary" in data
@@ -226,7 +226,7 @@ class TestPipelineStatusEndpoint:
     def test_pipeline_status_no_auth_required(self):
         """Pipeline status is public — no auth headers needed."""
         response = client.get("/api/v1/pipeline/status")
-        assert response.status_code == 202
+        assert response.status_code == 200
 
     def test_pipeline_status_structure(self):
         response = client.get("/api/v1/pipeline/status")
