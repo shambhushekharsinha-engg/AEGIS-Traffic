@@ -16,11 +16,21 @@ from app.config import get_settings
 
 settings = get_settings()
 
+import os
+
 # Global limiter instance — import this in main.py
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=[f"{settings.rate_limit_per_minute}/minute"],
-)
+redis_url = os.getenv("REDIS_URL")
+if redis_url:
+    limiter = Limiter(
+        key_func=get_remote_address,
+        default_limits=[f"{settings.rate_limit_per_minute}/minute"],
+        storage_uri=redis_url,
+    )
+else:
+    limiter = Limiter(
+        key_func=get_remote_address,
+        default_limits=[f"{settings.rate_limit_per_minute}/minute"],
+    )
 
 
 def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:

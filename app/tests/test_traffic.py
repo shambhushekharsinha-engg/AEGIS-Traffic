@@ -66,7 +66,7 @@ def test_fastapi_endpoints_clearance(client):
         "x-role-profile": "Operator"
     }
     response = client.post("/api/v1/analyze", json={"scenario": "normal", "vision_threshold": 0.4, "model_tier": "YOLOv8-Nano (Speed Edge)"}, headers=headers)
-    assert response.status_code == 200
+    assert response.status_code == 202
     data = response.json()
     assert "latency_ms" in data
     assert "telemetry" in data
@@ -119,7 +119,7 @@ def test_jwt_auth_flow(client):
         "longitude": -73.9855,
         "operational_mode": "AI Automated Fusion"
     }, headers=jwt_headers)
-    assert analyze_response.status_code == 200
+    assert analyze_response.status_code == 202
     history_response = client.get("/api/v1/history", headers=jwt_headers)
     assert history_response.status_code in [200, 403]
 
@@ -137,7 +137,7 @@ def test_operational_modes(client):
         "model_tier": "YOLOv8-Nano (Speed Edge)",
         "operational_mode": "Security Lockdown"
     }, headers=headers_admin)
-    assert lockdown_response.status_code == 200
+    assert lockdown_response.status_code == 202
     lockdown_data = lockdown_response.json()
     assert lockdown_data["fusion_layer"]["alert_status"] == "🔒 SECURITY LOCKDOWN (CRITICAL)"
     assert lockdown_data["fusion_layer"]["active_phase"] == "ALL RED (LOCKDOWN)"
@@ -151,7 +151,7 @@ def test_operational_modes(client):
         "manual_active_phase": "ALL FLASHING YELLOW",
         "manual_signal_timing": 33
     }, headers=headers_admin)
-    assert manual_response.status_code == 200
+    assert manual_response.status_code == 202
     manual_data = manual_response.json()
     assert manual_data["fusion_layer"]["alert_status"] == "🎛️ MANUAL CONTROL OVERRIDE"
     assert manual_data["fusion_layer"]["active_phase"] == "ALL FLASHING YELLOW"
@@ -163,7 +163,7 @@ def test_operational_modes(client):
         "model_tier": "YOLOv8-Nano (Speed Edge)",
         "operational_mode": "Predictive Optimization"
     }, headers=headers_admin)
-    assert predictive_response.status_code == 200
+    assert predictive_response.status_code == 202
     predictive_data = predictive_response.json()
     assert predictive_data["fusion_layer"]["alert_status"] == "🔮 PREDICTIVE OPTIMIZATION ACTIVE"
     assert predictive_data["fusion_layer"]["active_phase"] == "North-South Green (Predictive Shift)"

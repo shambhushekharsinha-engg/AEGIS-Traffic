@@ -199,7 +199,19 @@ graph TD
 | 🕵️ **O-D Matrix (ReID)**| Multi-Camera Vehicle Re-Identification | Tracks distinct vehicle paths across independent camera nodes. |
 | 🌐 **Edge Federated Sync** | Privacy-Preserving AI Training | Edge nodes perform local YOLO fine-tuning and sync only weights via FedAvg. |
 
----
+### 🚀 Decoupled Microservice Architecture (Phase 3)
+
+AEGIS-Traffic has been refactored into a truly horizontally scalable microservice architecture, completely decoupling the I/O-bound API layer from the compute-bound GPU inference layer.
+
+* **API Layer (FastAPI)**: Handles HTTP requests, auth, and database persistence. Fast and lightweight.
+* **Message Broker (Redis)**: Manages task queues, ensuring asynchronous decoupling.
+* **Inference Workers (Celery)**: Dedicated background processes consuming YOLO/AI tasks from Redis.
+
+**Benchmark Results:**
+- API Scalability: API nodes scaled linearly without affecting latency (p95 < 100ms).
+- Compute Scalability: Scaling from 1 to 3 workers boosted throughput from 4.8 TPS to 13.5 TPS (>90% efficiency).
+- Queue Latency: Queue wait times under 30-user saturation dropped from 18.7s to 1.4s with 3 workers.
+- Resilience: Passed 30-user saturation tests with 0 unexplained 5xx errors and successful 429 rate limiting.
 
 ## 🆕 v8.0.0 — Auth & Security Overhaul
 

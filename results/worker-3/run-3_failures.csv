@@ -1,0 +1,4 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,/api/v1/analyze,CatchResponseError('Failed to start task: 401'),561,2026-08-10T18:00:49Z,2026-08-10T18:01:46Z
+POST,/api/v1/analyze,CatchResponseError('Task Queue Unavailable (503)'),20,2026-08-10T18:01:06Z,2026-08-10T18:01:29Z
+POST,/api/v1/auth/login,HTTPError('429 Client Error: Too Many Requests for url: /api/v1/auth/login'),20,2026-08-10T18:00:49Z,2026-08-10T18:00:52Z

@@ -64,20 +64,13 @@ from app.core.geo_currency import (
 )
 
 # ── UCF Crime Dataset ───────────────────────────────────────────────────────────────
-try:
-    from app.core.ucf_dataset_loader import UCFDatasetLoader
-    from app.core.crime_classifier import CrimeClassifier
-    _ucf_loader     = UCFDatasetLoader()
-    _ucf_classifier = CrimeClassifier()
-    UCF_AVAILABLE   = True
-except Exception as _ucf_e:
-    _ucf_loader     = None
-    _ucf_classifier = None
-    UCF_AVAILABLE   = False
-    print(f"[WARN] UCF modules unavailable: {_ucf_e}")
+# In Phase 2.5/3, UCF models are lazy-loaded or offloaded to workers.
+_ucf_loader     = None
+_ucf_classifier = None
+UCF_AVAILABLE   = False
+print("[INFO] UCF Classifier eager loading disabled for API node.")
 
 # ── Pipeline ────────────────────────────────────────────────────────────────────────
-from app.pipeline.fusion_core import MultimodalFusionCore
 from app.pipeline.simulate_pipeline import execute_async_broadcast
 from app.pipeline.history_logger import (
     log_incident_to_ledger,
@@ -112,6 +105,27 @@ def redirect_api_redoc():
 def redirect_api_openapi():
     from fastapi.responses import JSONResponse
     return JSONResponse(content=app.openapi())
+
+# ── Health & Readiness ────────────────────────────────────────────────────────
+@app.get("/health", tags=["System"])
+def health_check():
+    """Liveness probe to check if the API process is alive."""
+    return {"status": "ok"}
+
+@app.get("/ready", tags=["System"])
+def readiness_check():
+    """Readiness probe to check if dependencies (e.g. DB) are reachable."""
+    from sqlalchemy import text
+    from fastapi import HTTPException
+    from app.db.database import engine
+    
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return {"status": "ready"}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Database unreachable: {str(e)}")
+
 
 # ── NextGen Features (v9.0.0) ──
 from app.routers.nextgen import router as nextgen_router
@@ -201,20 +215,8 @@ classifier = None
 ASSISTANT_ONLINE = False
 assistant = None
 
-if pipeline is not None and not IS_VERCEL:
-    print("[AEGIS] Loading NLP classifiers...")
-    try:
-        classifier = pipeline("zero-shot-classification", model="typeform/distilbert-base-uncased-mnli")
-    except Exception as e:
-        print(f"[WARN] NLP Classifier load error: {e}")
-
-    try:
-        assistant = pipeline("text-generation", model="Qwen/Qwen2.5-0.5B-Instruct", max_new_tokens=120)
-        ASSISTANT_ONLINE = True
-    except Exception as e:
-        print(f"[WARN] Assistant load error: {e}. Reverting to keyword helper.")
-else:
-    print("[INFO] NLP / LLM Pipeline disabled (serverless environment or transformers not installed).")
+# In Phase 2.5/3, NLP is lazy-loaded or offloaded to workers to keep the API node lightweight.
+print("[INFO] NLP / LLM Pipeline eager loading disabled for API node.")
 
 print("[AEGIS] All production layers initialized.")
 
@@ -577,186 +579,56 @@ def analyze_environment(
     request: Request,
     current_user: dict = Depends(get_current_user)
 ):
-    """Orchestrates telemetry streams under zero-trust multi-role authorization context models."""
-    global DISPATCH_REGISTRY
+    """Queues telemetry streams for async YOLO inference."""
+    global SYSTEM_METRICS
     SYSTEM_METRICS["total_requests"] += 1
 
-    scenario = payload.scenario.lower()
-    if scenario not in ["normal", "accident", "congested", "emergency", "tamper"]:
-        raise HTTPException(status_code=400, detail="Invalid target profile.")
-        
-    start_time = time.time()
-    
-    if payload.model_tier == "YOLOv8-XLarge (Precision High-Load)":
-        time.sleep(0.12)
-        
-    try:
-        # Get visual frame detections and the base64-encoded annotated image
-        vision_result = VisionEngine().process_traffic_scene(scenario)
-        visual_data = vision_result["detections"]
-        visual_image_b64 = vision_result["image_b64"]
-        
-        # Get audio analysis metrics and waveforms
-        audio_data = AudioEngine().check_anomaly(f"dataset/Audio_Samples/{scenario}_sound.wav")
-    except Exception as e:
-        print(f"⚠️ Telemetry ingest failure: {e}. Activating mock safety profiles.")
-        visual_data = [{"label": "person" if scenario == "normal" else "car", "confidence": 0.95}]
-        visual_image_b64 = ""
-        audio_data = {
-            "status": "Anomaly Detected" if scenario in ["accident", "emergency"] else "Normal",
-            "db_level": 88.5 if scenario in ["accident", "emergency"] else 42.1,
-            "type": "Collision" if scenario == "accident" else ("Siren" if scenario == "emergency" else "Ambient"),
-            "waveform": [0.0]*100,
-            "fft_frequencies": [0.0]*100,
-            "fft_amplitudes": [0.0]*100,
-            "peak_frequency": 0.0
-        }
-        
-    # Multimodal Fusion Logic
-    fusion_core = MultimodalFusionCore()
-    fused_results = fusion_core.fuse_and_classify(
-        visual_data, 
-        audio_data, 
-        scenario,
-        operational_mode=payload.operational_mode,
-        manual_active_phase=payload.manual_active_phase,
-        manual_signal_timing=payload.manual_signal_timing
-    )
-    
-    priority = fused_results["priority"]
-    risk_score = fused_results["risk_score"]
-    fused_context = fused_results["fused_context"]
-    report = fused_results["report"]
-    advisory = fused_results["advisory"]
-    signal_timing = fused_results["signal_timing_seconds"]
-    active_phase = fused_results["active_phase"]
-    vehicle_count = fused_results["vehicle_count"]
-    
-    traffic_density_percent = fused_results["traffic_density_percent"]
-    density_level           = fused_results["density_level"]
-    queue_length_meters     = fused_results["queue_length_meters"]
-    avg_speed_kmh           = fused_results["avg_speed_kmh"]
-    lane_counts             = fused_results["lane_counts"]
-    
+    from app.worker import analyze_traffic_task
 
-    execution_latency = (time.time() - start_time) * 1000
-
-    # ── Detect country / currency from location ────────────────────────────
-    country_code = detect_country(
-        location_name = payload.location_name,
-        lat           = payload.latitude,
-        lon           = payload.longitude,
-        try_nominatim = True,
-    )
-    country_cfg  = get_country_config(country_code)
-    _plate_pool  = get_plate_pool(country_code)
-
-    # ── Write to new normalized DB (incident + violations) ─────────────────────────
-    try:
-        _db = next(get_db())
-        user_id = int(current_user.get("sub", 0)) or None
-        # Build violations list from detector
-        _detector_v = ViolationDetector(
-            speed_limit_kmh = float(country_cfg.get("speed_limit_urban", 50)),
-            country_code    = country_code,
-        )
-        _viols_raw  = _detector_v.detect_violations(
-            visual_data, scenario, active_phase, avg_speed_kmh,
-            plate_pool = _plate_pool,
-        ).get("violations", [])
-        req_id = getattr(request.state, 'request_id', None) if hasattr(request, 'state') else None
-        crud.create_incident(
-            _db,
-            operator_name    = current_user.get("username", "system"),
-            operator_id      = user_id,
-            scenario         = scenario,
-            priority         = priority,
-            risk_score       = risk_score,
-            latency_ms       = round(execution_latency, 2),
-            vehicle_count    = vehicle_count,
-            avg_speed_kmh    = avg_speed_kmh,
-            traffic_density  = density_level,
-            active_phase     = active_phase,
-            signal_timing    = signal_timing,
-            operational_mode = payload.operational_mode,
-            crime_score      = fused_results.get("crime_score"),
-            crime_type       = fused_results.get("detected_crime_type"),
-            crime_severity   = fused_results.get("crime_severity"),
-            crime_is_anomaly = fused_results.get("crime_is_anomaly"),
-            location_name    = payload.location_name,
-            latitude         = payload.latitude,
-            longitude        = payload.longitude,
-            request_id       = req_id,
-            violations_data  = _viols_raw,
-        )
-        _db.close()
-    except Exception as _log_err:
-        print(f"[DB] Incident log warning: {_log_err}")
-
-    # ── Also write to legacy encrypted ledger (backward compat) ──────────────────
-    log_incident_to_ledger(
-        current_user.get("username", "system"),
-        priority, scenario, risk_score,
-        round(execution_latency, 2),
-        vehicle_count, active_phase, signal_timing,
-        location_name    = payload.location_name,
-        latitude         = payload.latitude,
-        longitude        = payload.longitude,
-        operational_mode = payload.operational_mode
-    )
-
-    if priority in ["🚨 COLLISION ALERT (PRIORITY 2)", "🚨 EMERGENCY OVERRIDE (PRIORITY 1)", "🛡️ TAMPER WARNING (PRIORITY 3)", "🔒 SECURITY LOCKDOWN (CRITICAL)"]:
-        SYSTEM_METRICS["critical_incidents"] += 1
-        timestamp = time.strftime('%H:%M:%S')
-        threading.Thread(target=execute_async_broadcast, args=(scenario, timestamp, DISPATCH_REGISTRY), daemon=True).start()
-        threading.Thread(target=dispatch_enterprise_webhook, args=(scenario, priority, fused_context), daemon=True).start()
-    elif priority == "✅ NOMINAL CONTROL":
-        DISPATCH_REGISTRY = {"status": "STABLE", "last_broadcast": "None"}
-        
-    return {
-        "scenario":      scenario,
-        "latency_ms":    round(execution_latency, 2),
-        "risk_score":    risk_score,
-        "fused_context": fused_context,
-        "telemetry": {
-            "visual_detections": visual_data,
-            "visual_image_b64":  visual_image_b64,
-            "acoustic_profile":  audio_data,
-        },
-        "fusion_layer": {
-            "alert_status":              priority,
-            "automated_incident_report": report,
-            "rerouting_advisory":        advisory,
-            "signal_timing_seconds":     signal_timing,
-            "active_phase":              active_phase,
-            "vehicle_count":             vehicle_count,
-        },
-        "traffic_analytics": {
-            "traffic_density_percent": traffic_density_percent,
-            "density_level":           density_level,
-            "queue_length_meters":     queue_length_meters,
-            "avg_speed_kmh":           avg_speed_kmh,
-            "lane_counts":             lane_counts,
-        },
-        "location": {
-            "name":      payload.location_name,
-            "latitude":  payload.latitude,
-            "longitude": payload.longitude,
-        },
-        "geo_context": {
-            "country_code":    country_code,
-            "country_name":    country_cfg["name"],
-            "country_flag":    country_cfg["flag"],
-            "currency_code":   country_cfg["currency_code"],
-            "currency_symbol": country_cfg["currency_symbol"],
-            "speed_limit_kmh": country_cfg["speed_limit_urban"],
-            "drive_side":      country_cfg.get("drive_side", "right"),
-            "plate_format":    country_cfg.get("plate_format", ""),
-            "plate_example":   country_cfg.get("plate_example", ""),
-        },
-        "dispatch_network":          DISPATCH_REGISTRY,
-        "system_telemetry_metrics": SYSTEM_METRICS,
+    user_context = {
+        "username": current_user.get("username", "system"),
+        "user_id": int(current_user.get("sub", 0)) if current_user.get("sub") else None
     }
+    
+    from fastapi.responses import JSONResponse
+    try:
+        task = analyze_traffic_task.delay(payload.model_dump(), user_context)
+    except Exception as e:
+        return JSONResponse(status_code=503, content={
+            "error": "Task Queue Unavailable",
+            "detail": "The background processing queue is currently unreachable. Please try again later."
+        })
+    
+    return JSONResponse(status_code=202, content={
+        "task_id": task.id,
+        "status": "queued"
+    })
+
+@app.get("/tasks/{task_id}", tags=["System"])
+def get_task_status(task_id: str):
+    from celery.result import AsyncResult
+    from app.worker import celery_app
+    
+    try:
+        result = AsyncResult(task_id, app=celery_app)
+        state = result.state
+    except Exception as e:
+        return JSONResponse(status_code=503, content={
+            "error": "Task State Unavailable",
+            "detail": "The background result backend is unreachable."
+        })
+        
+    response = {
+        "task_id": task_id,
+        "status": state.lower()
+    }
+    
+    if state == "SUCCESS":
+        response["result"] = result.result
+    elif state == "FAILURE":
+        response["error"] = str(result.info)
+        
+    return response
 
 # ────────────────────────────────────────────────────────────────────────────
 # Data Query Endpoints — Incidents, Violations, Audit Log (v8.0.0)

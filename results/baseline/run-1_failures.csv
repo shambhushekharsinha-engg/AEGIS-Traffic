@@ -1,0 +1,2 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,/api/v1/analyze,CatchResponseError('Task Queue Unavailable (503)'),20,2026-08-10T17:45:53Z,2026-08-10T17:46:19Z

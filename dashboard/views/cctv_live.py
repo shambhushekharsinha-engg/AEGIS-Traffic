@@ -40,7 +40,7 @@ def render_cctv_live_page(client):
             df_classes, x="Vehicle Class", y="Count",
             color="Vehicle Class",
             title="Live Vehicle Class Distribution",
-            color_discrete_sequence=px.colors.qualitative.Cyan
+            color_discrete_sequence=px.colors.qualitative.Pastel
         )
         fig.update_layout(template="plotly_dark", height=320)
         st.plotly_chart(fig, use_container_width=True)

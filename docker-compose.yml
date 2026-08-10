@@ -1,19 +1,92 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: aegis-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  db:
+    image: postgres:15
+    container_name: aegis-db
+    environment:
+      - POSTGRES_USER=aegis_user
+      - POSTGRES_PASSWORD=strong_password
+      - POSTGRES_DB=aegis_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegis_user -d aegis_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    container_name: aegis-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: aegis-backend
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    ports:
-      - "8000:8000"
+    # Removed container_name so it can scale multiple instances
+    command: gunicorn app.main:app -w 2 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
+    # Removed ports, Traefik will route traffic internally
     env_file:
       - .env
     environment:
       - PORT=8000
-      - AEGIS_ENV=development
+      - AEGIS_ENV=production
+      - DATABASE_URL=postgresql://aegis_user:strong_password@db:5432/aegis_db
+      - REDIS_URL=redis://redis:6379/0
+    # Removed Traefik labels as we use Nginx now
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  inference-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    # Removed container_name to allow horizontal scaling (Worker #1, Worker #2, etc.)
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=1
+    env_file:
+      - .env
+    environment:
+      - AEGIS_ENV=production
+      - DATABASE_URL=postgresql://aegis_user:strong_password@db:5432/aegis_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - .:/app
     restart: unless-stopped
@@ -23,7 +96,7 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     container_name: aegis-frontend
-    command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+    command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true --browser.gatherUsageStats false
     ports:
       - "8501:8501"
     env_file:
@@ -31,7 +104,16 @@ services:
     environment:
       - AEGIS_BACKEND_URL=http://backend:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     volumes:
       - .:/app
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
