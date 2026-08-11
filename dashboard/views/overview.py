@@ -3,15 +3,15 @@ AEGIS-Traffic — Operations HUD Page Module (Tab 1)
 """
 
 import os
+
 import requests
 import streamlit as st
-import plotly.express as px
-import plotly.graph_objects as go
+
 from dashboard.components.widgets import (
     metric_tile,
-    sec_div,
     mini_separator,
     risk_color,
+    sec_div,
 )
 
 BACKEND = os.environ.get("AEGIS_BACKEND_URL", "http://127.0.0.1:8000")
@@ -36,7 +36,7 @@ def render_overview_page(client):
 
     data = st.session_state.active_data
     fl = data.get("fusion_layer", {})
-    tel = data.get("telemetry", {})
+    data.get("telemetry", {})
     sm = data.get("system_telemetry_metrics", {})
     alert = fl.get("alert_status", "NORMAL")
     phase = fl.get("active_phase", "North-South Green")
@@ -60,7 +60,7 @@ def render_overview_page(client):
     st.markdown(
         f"""
     <div class="status-banner" style="background:{sb_bg};border-color:{sb_border};color:{sb_col};">
-        <span style="font-size:1.3rem;">{"🚨" if sb_border=="#ef4444" else ("⚠️" if sb_border=="#f59e0b" else "✅")}</span>
+        <span style="font-size:1.3rem;">{"🚨" if sb_border == "#ef4444" else ("⚠️" if sb_border == "#f59e0b" else "✅")}</span>
         <div>
             <div style="font-weight:700;font-size:.9rem;">{alert}</div>
             <div style="font-family:'JetBrains Mono',monospace;font-size:.68rem;opacity:.75;margin-top:2px;">
@@ -252,8 +252,8 @@ def render_overview_page(client):
                 for _p in _plates[:5]:
                     st.markdown(
                         f'<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:6px 10px;margin-bottom:4px;">'
-                        f'<span style="background:#fff;color:#000;font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:.78rem;padding:2px 6px;border-radius:3px;border:2px solid #000;">{_p.get("plate","—")}</span>'
-                        f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.7rem;color:#00f0ff;">{_cc} {_p.get("vehicle_type","Vehicle")}</span>'
+                        f'<span style="background:#fff;color:#000;font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:.78rem;padding:2px 6px;border-radius:3px;border:2px solid #000;">{_p.get("plate", "—")}</span>'
+                        f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:.7rem;color:#00f0ff;">{_cc} {_p.get("vehicle_type", "Vehicle")}</span>'
                         f"</div>",
                         unsafe_allow_html=True,
                     )
@@ -278,14 +278,14 @@ def render_overview_page(client):
                 for _v in _vlist[:5]:
                     _fine_disp = _v.get(
                         "fine_local",
-                        f"{st.session_state.get('currency_symbol', '₹')}{_v.get('fine_amount','—')}",
+                        f"{st.session_state.get('currency_symbol', '₹')}{_v.get('fine_amount', '—')}",
                     )
                     _flag_v = _v.get(
                         "country_flag", st.session_state.get("country_flag", "🇮🇳")
                     )
                     st.markdown(
                         f"<div style=\"font-family:'JetBrains Mono',monospace;font-size:.75rem;color:#f59e0b;margin-bottom:6px;\">"
-                        f'⚠️ <strong>{_v.get("type","—")}</strong> — {_v.get("vehicle_id","Unknown")} | {_flag_v} {_fine_disp}'
+                        f'⚠️ <strong>{_v.get("type", "—")}</strong> — {_v.get("vehicle_id", "Unknown")} | {_flag_v} {_fine_disp}'
                         f"</div>",
                         unsafe_allow_html=True,
                     )

@@ -26,11 +26,10 @@ import hashlib
 from datetime import datetime, timedelta
 
 from app.core.geo_currency import (
+    _DEFAULT_COUNTRY,
+    format_fine_with_usd,
     get_country_config,
     get_fine,
-    format_fine_with_usd,
-    COUNTRY_CONFIG,
-    _DEFAULT_COUNTRY,
 )
 
 # --------------------------------------------------------------------------- #
@@ -347,7 +346,6 @@ class ViolationDetector:
               "drive_side": str,
             }
         """
-        from app.core.geo_currency import COUNTRY_CONFIG
 
         # Country info for summary
         cc = self.country_code

@@ -4,10 +4,12 @@ Provides standard HTTP operations, auth header management, retry strategies, and
 """
 
 import os
+from typing import Any, Dict, Optional
+
 import requests
-from typing import Dict, Any, Optional
-from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
+
 from dashboard.services.logger import logger
 
 

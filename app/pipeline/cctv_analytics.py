@@ -4,8 +4,9 @@ Integrates OpenCV frame processing, YOLOv8 vehicle detection,
 ByteTrack multi-object tracking, speed estimation, and class distribution analytics.
 """
 
-import time
 import math
+import time
+
 import numpy as np
 
 

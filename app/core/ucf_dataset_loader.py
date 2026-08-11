@@ -34,10 +34,9 @@ Design:
 
 import os
 import random
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
-
 
 # ─── Default dataset root (relative to project root) ─────────────────────────
 _DEFAULT_DATASET_BASE = os.path.join(
@@ -99,7 +98,7 @@ class UCFDatasetLoader:
     def __init__(self, dataset_base_path: Optional[str] = None, seed: int = 42):
         self.base_path = Path(dataset_base_path or _DEFAULT_DATASET_BASE)
         self.train_root = self.base_path / "Train"
-        self.test_root  = self.base_path / "Test"
+        self.test_root = self.base_path / "Test"
         self.seed = seed
 
     # ── Public API ─────────────────────────────────────────────────────────────
@@ -110,10 +109,10 @@ class UCFDatasetLoader:
         Safe to call even when extraction is still ongoing.
         """
         train_stats = self._scan_split(self.train_root)
-        test_stats  = self._scan_split(self.test_root)
+        test_stats = self._scan_split(self.test_root)
 
         total_train_frames = sum(s["frame_count"] for s in train_stats.values())
-        total_test_frames  = sum(s["frame_count"] for s in test_stats.values())
+        total_test_frames = sum(s["frame_count"] for s in test_stats.values())
 
         all_categories = sorted(set(train_stats) | set(test_stats))
 
@@ -177,18 +176,18 @@ class UCFDatasetLoader:
                                   Prevents class imbalance in binary mode.
         """
         train_paths, train_labels = self.load_train_data(max_train_per_class)
-        test_paths,  test_labels  = self.load_test_data(max_test_per_class)
+        test_paths,  test_labels = self.load_test_data(max_test_per_class)
 
         # Optional: balance Anomalous ↔ Normal for binary training
         if balanced_binary:
             rng = random.Random(self.seed)
-            normal_idx   = [i for i, l in enumerate(train_labels) if l in NORMAL_LABELS]
-            anomaly_idx  = [i for i, l in enumerate(train_labels) if l not in NORMAL_LABELS]
-            target_n     = len(normal_idx)  # match Normal count
+            normal_idx = [i for i, l in enumerate(train_labels) if l in NORMAL_LABELS]
+            anomaly_idx = [i for i, l in enumerate(train_labels) if l not in NORMAL_LABELS]
+            target_n = len(normal_idx)  # match Normal count
             if len(anomaly_idx) > target_n:
                 anomaly_idx = rng.sample(anomaly_idx, target_n)
             keep_idx = sorted(normal_idx + anomaly_idx)
-            train_paths  = [train_paths[i]  for i in keep_idx]
+            train_paths = [train_paths[i] for i in keep_idx]
             train_labels = [train_labels[i] for i in keep_idx]
 
         all_classes = sorted(set(train_labels) | set(test_labels))
@@ -207,7 +206,7 @@ class UCFDatasetLoader:
     def get_available_classes(self) -> list[str]:
         """Returns all class names found across both splits (sorted)."""
         train_classes = set(self._scan_split(self.train_root).keys())
-        test_classes  = set(self._scan_split(self.test_root).keys())
+        test_classes = set(self._scan_split(self.test_root).keys())
         return sorted(train_classes | test_classes)
 
     def is_anomaly(self, label: str) -> bool:
@@ -276,7 +275,7 @@ class UCFDatasetLoader:
             rng.shuffle(combined)
             if combined:
                 all_paths, all_labels = zip(*combined)
-                all_paths  = list(all_paths)
+                all_paths = list(all_paths)
                 all_labels = list(all_labels)
 
         return all_paths, all_labels

@@ -2,11 +2,10 @@
 AEGIS-Traffic Streamlit Dashboard — Real-Time CCTV Analytics Page
 """
 
-import streamlit as st
+
 import pandas as pd
-import numpy as np
 import plotly.express as px
-import time
+import streamlit as st
 
 
 def render_cctv_live_page(client):

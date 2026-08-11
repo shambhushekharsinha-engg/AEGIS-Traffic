@@ -4,8 +4,7 @@ Calculates real-time idle exhaust emissions (CO2, NOx, PM2.5), Low-Emission Zone
 compliance, and carbon offsets achieved by adaptive signal control (ATSC).
 """
 
-import math
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 # Standard Emission Rates in grams per minute of idling
 # Source: EPA & EEA Heavy/Light Vehicle Idle Telemetry Standards

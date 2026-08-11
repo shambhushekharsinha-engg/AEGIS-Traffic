@@ -4,10 +4,10 @@ Generates IEEE 802.11p / SAE J2735 Basic Safety Message (BSM) broadcast packets
 for connected autonomous vehicles and municipal emergency fleets.
 """
 
+import hashlib
 import time
 import uuid
-import hashlib
-from typing import Dict, Any, List
+from typing import Any, Dict
 
 
 class V2XTelemetryCore:

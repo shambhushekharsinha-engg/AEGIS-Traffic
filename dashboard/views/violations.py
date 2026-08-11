@@ -2,9 +2,10 @@
 AEGIS-Traffic — Traffic Violation Logs Page Module
 """
 
-import streamlit as st
 import pandas as pd
-from dashboard.components.widgets import sec_div, metric_tile
+import streamlit as st
+
+from dashboard.components.widgets import metric_tile, sec_div
 
 
 def render_violations_page(client):
@@ -12,7 +13,7 @@ def render_violations_page(client):
     sec_div("🚨 AUTOMATED TRAFFIC VIOLATION AUDIT LEDGER")
 
     token = st.session_state.get("jwt_token", "")
-    violations_data = client.get_violations(token)
+    client.get_violations(token)
 
     col1, col2, col3, col4 = st.columns(4)
     col1.markdown(

@@ -2,9 +2,10 @@
 AEGIS-Traffic — Reports & Exports Page Module
 """
 
-import streamlit as st
+
 import pandas as pd
-from io import BytesIO
+import streamlit as st
+
 from dashboard.components.widgets import sec_div
 
 

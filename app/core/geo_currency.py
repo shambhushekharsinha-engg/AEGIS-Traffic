@@ -881,7 +881,7 @@ def format_fine(amount: int, country_code: str) -> str:
     """Return a formatted fine string with local currency symbol."""
     cfg = get_country_config(country_code)
     sym = cfg["currency_symbol"]
-    cod = cfg["currency_symbol"]
+    cfg["currency_symbol"]
 
     # Use comma formatting for amounts ≥ 1000
     amt_str = f"{amount:,}"

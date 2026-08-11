@@ -2,8 +2,8 @@
 AEGIS-Traffic Streamlit Dashboard — Model Comparison & System Benchmarks Page
 """
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 
 def render_benchmarks_page(client):

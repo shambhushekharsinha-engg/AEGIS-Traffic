@@ -1,36 +1,77 @@
 # ────────────────────────────────────────────────────────────────────────────
 # AEGIS-Traffic v8.0.0 — Production Backend
 # ────────────────────────────────────────────────────────────────────────────
-import uuid
-import time
-import threading
+from app.routers.simulation import router as simulation_router
+from app.routers.oversight import router as oversight_router
+from app.db.crud import create_citizen_hazard_report, get_citizen_hazard_reports
+from app.core.v2x_module import V2XTelemetryCore
+from app.core.pedestrian_module import PedestrianSafetyCore
+from app.core.pdf_generator import CitationPDFGenerator
+from app.core.environmental_module import EnvironmentalTelemetryCore
+from fastapi.responses import HTMLResponse
+from app.middleware.security import SecurityHeadersMiddleware
+from app.routers.nextgen import router as nextgen_router
+from app.pipeline.history_logger import (
+    fetch_incident_history,
+)
+from app.pipeline.fusion_core import MultimodalFusionCore
+from app.middleware.rate_limiter import (
+    AUTH_LIMIT,
+    limiter,
+    rate_limit_exceeded_handler,
+)
+from app.db.database import create_tables, get_db
+from app.db import crud
+from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
+from app.core.violation_module import ViolationDetector
+from app.core.geo_currency import (
+    detect_country,
+    get_country_config,
+    get_plate_pool,
+)
+from app.core.audio_module import AudioAnalyzer as AudioEngine
+from app.core.anpr_module import ANPREngine
+from app.auth.dependencies import get_current_user, require_role
+from app.auth.auth import (
+    blacklist_jti,
+    create_access_token,
+    create_refresh_token_string,
+    hash_refresh_token,
+    record_failed_login,
+    record_successful_login,
+    rotate_refresh_token,
+    store_refresh_token,
+    verify_password,
+    write_audit,
+)
+from sqlalchemy.orm import Session
 import os
-from typing import Optional, List
+import time
+import uuid
 from datetime import datetime
+from typing import List, Optional
 
 from fastapi import (
+    Depends,
     FastAPI,
     HTTPException,
-    Header,
-    Depends,
     Request,
-    status,
     WebSocket,
     WebSocketDisconnect,
 )
-from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from slowapi.errors import RateLimitExceeded
 
+from app.core.benchmark_engine import benchmark_engine
+from app.core.performance_monitor import performance_monitor
+
 # ── New Enterprise Feature Engines ──
 from app.pipeline.cctv_analytics import cctv_engine
-from app.pipeline.forecasting import forecasting_engine
-from app.pipeline.explainability import explainability_engine
-from app.core.performance_monitor import performance_monitor
-from app.core.benchmark_engine import benchmark_engine
 from app.pipeline.dataset_explorer import dataset_explorer
+from app.pipeline.explainability import explainability_engine
+from app.pipeline.forecasting import forecasting_engine
 
 try:
     from transformers import pipeline
@@ -45,49 +86,14 @@ from app.config import get_settings
 
 settings = get_settings()
 
-# ── Database layer ─────────────────────────────────────────────────────────────────
-from app.db.database import create_tables, get_db
-from app.db import crud
-from app.db.models import User as DBUser
-from sqlalchemy.orm import Session
 
 # ── Auth layer ────────────────────────────────────────────────────────────────────
-from app.auth.auth import (
-    hash_password,
-    verify_password,
-    create_access_token,
-    create_refresh_token_string,
-    store_refresh_token,
-    rotate_refresh_token,
-    hash_refresh_token,
-    blacklist_jti,
-    write_audit,
-    record_failed_login,
-    record_successful_login,
-)
-from app.auth.dependencies import get_current_user, require_role
-
-# ── Rate limiter ──────────────────────────────────────────────────────────────────
-from app.middleware.rate_limiter import (
-    limiter,
-    rate_limit_exceeded_handler,
-    AUTH_LIMIT,
-    DEFAULT_LIMIT,
-)
 
 # ── Core sensory modules ───────────────────────────────────────────────────────────
-from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
-from app.pipeline.fusion_core import MultimodalFusionCore
-from app.core.audio_module import AudioAnalyzer as AudioEngine
-from app.core.anpr_module import ANPREngine
-from app.core.violation_module import ViolationDetector
-from app.core.geo_currency import (
-    detect_country,
-    get_country_config,
-    get_fine,
-    format_fine_with_usd,
-    get_plate_pool,
-)
+
+# ── Database layer ─────────────────────────────────────────────────────────────────
+
+# ── Rate limiter ──────────────────────────────────────────────────────────────────
 
 # ── UCF Crime Dataset ───────────────────────────────────────────────────────────────
 # In Phase 2.5/3, UCF models are lazy-loaded or offloaded to workers.
@@ -96,13 +102,8 @@ _ucf_classifier = None
 UCF_AVAILABLE = False
 print("[INFO] UCF Classifier eager loading disabled for API node.")
 
+
 # ── Pipeline ────────────────────────────────────────────────────────────────────────
-from app.pipeline.simulate_pipeline import execute_async_broadcast
-from app.pipeline.history_logger import (
-    log_incident_to_ledger,
-    fetch_incident_history,
-    SessionLocal,
-)
 
 # ────────────────────────────────────────────────────────────────────────────
 # FastAPI App
@@ -149,8 +150,9 @@ def health_check():
 @app.get("/ready", tags=["System"])
 def readiness_check():
     """Readiness probe to check if dependencies (e.g. DB) are reachable."""
-    from sqlalchemy import text
     from fastapi import HTTPException
+    from sqlalchemy import text
+
     from app.db.database import engine
 
     try:
@@ -162,7 +164,6 @@ def readiness_check():
 
 
 # ── NextGen Features (v9.0.0) ──
-from app.routers.nextgen import router as nextgen_router
 
 app.include_router(nextgen_router)
 
@@ -170,7 +171,6 @@ app.include_router(nextgen_router)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
-from app.middleware.security import SecurityHeadersMiddleware
 
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
@@ -510,7 +510,7 @@ def logout(
     Revoke the current access token (JTI blacklist) and optional refresh token.
     After logout, the access token is immediately invalid even within its 15-minute window.
     """
-    from datetime import datetime as _dt, timedelta
+    from datetime import datetime as _dt
 
     jti = current_user.get("jti")
     exp = current_user.get("exp", int(time.time()) + 900)
@@ -802,6 +802,7 @@ def analyze_environment(
 @app.get("/tasks/{task_id}", tags=["System"])
 def get_task_status(task_id: str):
     from celery.result import AsyncResult
+
     from app.worker import celery_app
 
     try:
@@ -1514,7 +1515,7 @@ def get_map_vehicles(
     _base_speed = speed_limit * _speed_mult.get(scenario, 0.7)
 
     for rec in raw_records:
-        _seed_str = f"{rec.get('plate_text','')}{latitude:.3f}{longitude:.3f}"
+        _seed_str = f"{rec.get('plate_text', '')}{latitude:.3f}{longitude:.3f}"
         _h = int(_hl.md5(_seed_str.encode()).hexdigest(), 16)
 
         _angle = (_h % 360) * (_math.pi / 180)
@@ -1812,12 +1813,6 @@ def ucf_train(
 # Environmental, V2X, VRU, PDF Citation & Public Citizen Endpoints
 # ─────────────────────────────────────────────────────────────────────────────────
 
-from app.core.environmental_module import EnvironmentalTelemetryCore
-from app.core.v2x_module import V2XTelemetryCore
-from app.core.pdf_generator import CitationPDFGenerator
-from app.core.pedestrian_module import PedestrianSafetyCore
-from app.db.crud import create_citizen_hazard_report, get_citizen_hazard_reports
-from fastapi.responses import HTMLResponse
 
 env_core = EnvironmentalTelemetryCore()
 v2x_core = V2XTelemetryCore()
@@ -2244,9 +2239,6 @@ def global_search_everything(q: str = "", db: Session = Depends(get_db)):
 
     return {"query": q, "total_matches": len(results), "results": results}
 
-
-from app.routers.simulation import router as simulation_router
-from app.routers.oversight import router as oversight_router
 
 app.include_router(simulation_router)
 app.include_router(oversight_router)

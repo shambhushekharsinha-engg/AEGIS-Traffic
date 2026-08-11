@@ -3,9 +3,11 @@ AEGIS-Traffic — Public Citizen Portal Page Module (Tab 11)
 """
 
 import os
+
 import requests
 import streamlit as st
-from dashboard.components.widgets import sec_div, mini_separator
+
+from dashboard.components.widgets import sec_div
 
 BACKEND = os.environ.get("AEGIS_BACKEND_URL", "http://127.0.0.1:8000")
 

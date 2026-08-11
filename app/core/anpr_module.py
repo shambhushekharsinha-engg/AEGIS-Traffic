@@ -23,15 +23,11 @@ Real-world upgrade: replace `_run_ocr()` with EasyOCR/PaddleOCR on actual
 plate crops from video frames.
 """
 
-import random
 import hashlib
+import random
 from datetime import datetime
 
-from app.core.geo_currency import (
-    get_country_config,
-    get_plate_pool,
-    _DEFAULT_COUNTRY,
-)
+from app.core.geo_currency import _DEFAULT_COUNTRY, get_country_config, get_plate_pool
 
 # --------------------------------------------------------------------------- #
 #  Internal helpers                                                            #

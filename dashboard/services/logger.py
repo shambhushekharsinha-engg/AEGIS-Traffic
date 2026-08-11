@@ -3,8 +3,8 @@ AEGIS-Traffic — Structured Logging Service
 Configures file and console loggers for frontend and backend components.
 """
 
-import os
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 
 LOGS_DIR = os.path.join(

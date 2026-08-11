@@ -3,10 +3,12 @@ AEGIS-Traffic — Audit & Security Admin Page Module
 """
 
 import os
+
+import pandas as pd
 import requests
 import streamlit as st
-import pandas as pd
-from dashboard.components.widgets import sec_div, metric_tile
+
+from dashboard.components.widgets import sec_div
 
 BACKEND = os.environ.get("AEGIS_BACKEND_URL", "http://127.0.0.1:8000")
 

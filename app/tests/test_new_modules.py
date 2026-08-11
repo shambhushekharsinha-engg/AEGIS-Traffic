@@ -7,11 +7,11 @@ Tests for new pipeline modules added in v6.1.0:
   - Enhanced /api/v1/analyze response with traffic_analytics fields
 """
 
-import pytest
 from fastapi.testclient import TestClient
-from app.main import app
+
 from app.core.anpr_module import ANPREngine
 from app.core.violation_module import ViolationDetector
+from app.main import app
 from app.pipeline.fusion_core import MultimodalFusionCore
 
 client = TestClient(app)
@@ -289,11 +289,9 @@ class TestAnalyzeResponseTrafficAnalytics:
 
     def test_density_percent_in_valid_range(self):
         """Removed since it requires synchronous inference. Covered by worker tests."""
-        pass
 
     def test_lane_counts_structure(self):
         """Removed since it requires synchronous inference. Covered by worker tests."""
-        pass
 
 
 # ---------------------------------------------------------------------------

@@ -1,9 +1,10 @@
-import os
+
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
-from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
+
 from app.core.audio_module import AudioAnalyzer as AudioEngine
+from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
+from app.main import app
 from app.pipeline.fusion_core import MultimodalFusionCore
 
 

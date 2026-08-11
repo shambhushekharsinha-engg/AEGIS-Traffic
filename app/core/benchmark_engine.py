@@ -4,7 +4,6 @@ Compares YOLOv8 variants (Nano, Small, Medium) across FPS, Inference Latency, mA
 """
 
 import time
-import random
 
 
 class BenchmarkEngine:

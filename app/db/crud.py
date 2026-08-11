@@ -4,24 +4,23 @@ All database read/write operations go here. Never call DB directly from endpoint
 """
 
 from __future__ import annotations
+from app.db.models import CitizenHazardReport
+import uuid
 
-import json
-from datetime import datetime, timedelta
-from typing import Optional, List
+from datetime import datetime
+from typing import List, Optional
 
-from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
+from sqlalchemy.orm import Session
 
-from app.db.models import (
-    User,
-    RefreshToken,
-    SessionBlacklist,
-    AuditLog,
-    IncidentLog,
-    ViolationRecord,
-)
 from app.auth.auth import hash_password
 from app.config import get_settings
+from app.db.models import (
+    AuditLog,
+    IncidentLog,
+    User,
+    ViolationRecord,
+)
 
 settings = get_settings()
 
@@ -346,7 +345,7 @@ def get_incident_stats(db: Session) -> dict:
     avg_risk = db.query(func.avg(IncidentLog.risk_score)).scalar() or 0
     crime_count = (
         db.query(func.count(IncidentLog.id))
-        .filter(IncidentLog.crime_is_anomaly == True)
+        .filter(IncidentLog.crime_is_anomaly is True)
         .scalar()
         or 0
     )
@@ -362,9 +361,6 @@ def get_incident_stats(db: Session) -> dict:
 # ──────────────────────────────────────────────────────────────────────
 #  CITIZEN HAZARD REPORT CRUD
 # ──────────────────────────────────────────────────────────────────────
-
-from app.db.models import CitizenHazardReport
-import uuid
 
 
 def create_citizen_hazard_report(

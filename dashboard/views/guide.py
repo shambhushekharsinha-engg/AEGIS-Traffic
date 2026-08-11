@@ -3,7 +3,8 @@ AEGIS-Traffic — Learning Guide & Architecture Documentation Page Module (Tab 6
 """
 
 import streamlit as st
-from dashboard.components.widgets import sec_div, mini_separator
+
+from dashboard.components.widgets import mini_separator, sec_div
 
 
 def render_guide_page(client):

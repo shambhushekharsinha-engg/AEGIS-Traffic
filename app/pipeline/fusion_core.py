@@ -1,7 +1,5 @@
 # app/pipeline/fusion_core.py
 
-import time
-import math
 
 try:
     from transformers import pipeline

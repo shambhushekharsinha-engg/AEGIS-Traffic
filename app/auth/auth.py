@@ -22,7 +22,7 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.db.models import User, RefreshToken, SessionBlacklist, AuditLog
+from app.db.models import AuditLog, RefreshToken, SessionBlacklist, User
 
 settings = get_settings()
 
@@ -180,7 +180,7 @@ def rotate_refresh_token(
         db.query(RefreshToken)
         .filter(
             RefreshToken.token_hash == token_hash,
-            RefreshToken.revoked == False,
+            RefreshToken.revoked is False,
             RefreshToken.expires_at > now,
         )
         .first()

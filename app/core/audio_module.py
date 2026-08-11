@@ -1,8 +1,9 @@
-import os
-import numpy as np
 import math
-import wave
+import os
 import struct
+import wave
+
+import numpy as np
 
 try:
     import torch
@@ -174,7 +175,6 @@ class AudioAnalyzer:
         except Exception as e:
             print(f"⚠️ Pure wave load failed: {e}. Trying torchaudio fallback.")
             try:
-                import torch
                 import torchaudio
 
                 torch_waveform, sr = torchaudio.load(audio_path)

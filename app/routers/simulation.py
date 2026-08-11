@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from typing import List
+
+from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import List, Any, Dict
 
 from app.services.simulator.model import simulator
 

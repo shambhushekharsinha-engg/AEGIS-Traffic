@@ -10,20 +10,20 @@ Tables:
   violation_records  — Normalized, searchable violation rows
 """
 
+from datetime import datetime
+
 from sqlalchemy import (
-    Column,
-    Integer,
-    String,
     Boolean,
+    Column,
     DateTime,
     Float,
-    Text,
-    LargeBinary,
     ForeignKey,
+    Integer,
+    LargeBinary,
+    String,
+    Text,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from datetime import datetime
 
 from app.db.database import Base
 

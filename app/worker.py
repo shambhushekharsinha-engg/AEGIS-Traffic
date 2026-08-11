@@ -1,8 +1,7 @@
 import os
 import time
-import threading
+
 from celery import Celery
-import uuid
 
 # Set up Celery
 broker_url = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
@@ -30,9 +29,9 @@ fusion_core_instance = None
 def get_engines():
     global vision_engine_instance, audio_engine_instance, fusion_core_instance
     if fusion_core_instance is None:
+        from app.pipeline.audio_engine import AudioEngine
         from app.pipeline.fusion_core import MultimodalFusionCore
         from app.pipeline.vision_engine import VisionEngine
-        from app.pipeline.audio_engine import AudioEngine
 
         vision_engine_instance = VisionEngine()
         audio_engine_instance = AudioEngine()
@@ -46,16 +45,14 @@ def analyze_traffic_task(self, payload: dict, user_context: dict):
     Decoupled YOLO/PyTorch inference task.
     """
     try:
-        from app.db.database import SessionLocal
-        from app.db import crud
         from app.core.violation_module import ViolationDetector
+        from app.db import crud
+        from app.db.database import SessionLocal
         from app.pipeline.geo_context import (
             detect_country,
             get_country_config,
             get_plate_pool,
         )
-        from app.pipeline.history_logger import log_incident_to_ledger
-        from app.pipeline.simulate_pipeline import execute_async_broadcast
 
         scenario = payload.get("scenario", "normal").lower()
         model_tier = payload.get("model_tier")
@@ -73,7 +70,7 @@ def analyze_traffic_task(self, payload: dict, user_context: dict):
             audio_data = audio_eng.check_anomaly(
                 f"dataset/Audio_Samples/{scenario}_sound.wav"
             )
-        except Exception as e:
+        except Exception:
             visual_data = [
                 {
                     "label": "person" if scenario == "normal" else "car",
@@ -159,7 +156,7 @@ def analyze_traffic_task(self, payload: dict, user_context: dict):
                 violations_data=_viols_raw,
             )
             _db.close()
-        except Exception as _log_err:
+        except Exception:
             pass
 
         return {

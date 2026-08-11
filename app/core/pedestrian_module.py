@@ -4,7 +4,7 @@ Detects pedestrians, wheelchairs, strollers, and cyclists in crosswalk zones and
 calculates dynamic WALK phase extensions for municipal traffic controllers.
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 
 class PedestrianSafetyCore:

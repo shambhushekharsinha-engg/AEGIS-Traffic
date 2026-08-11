@@ -2,13 +2,14 @@
 AEGIS-Traffic — GIS Map Intelligence Page Module (Multi-View & 3D Location Controls)
 """
 
-import os
+
+import numpy as np
+import pandas as pd
+import pydeck as pdk
 import requests
 import streamlit as st
-import pandas as pd
-import numpy as np
-import pydeck as pdk
-from dashboard.components.widgets import sec_div, metric_tile, mini_separator
+
+from dashboard.components.widgets import metric_tile, mini_separator, sec_div
 from dashboard.services.cache import cached_geo_sync
 
 CITY_PRESETS = {

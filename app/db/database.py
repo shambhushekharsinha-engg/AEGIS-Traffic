@@ -2,10 +2,11 @@
 AEGIS-Traffic — Database Engine & Session Factory
 Supports SQLite (dev/serverless fallback) and PostgreSQL (prod) via DATABASE_URL.
 """
-from sqlalchemy import create_engine, event, text
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from typing import Generator
 import os
+from typing import Generator
+
+from sqlalchemy import create_engine, event, text
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.config import get_settings
 

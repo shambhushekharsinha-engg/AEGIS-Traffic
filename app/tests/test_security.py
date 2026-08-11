@@ -5,8 +5,9 @@ Tests security middleware response headers, JWT auth verification, and multi-env
 
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
+
 from app.config import get_settings
+from app.main import app
 
 
 @pytest.fixture

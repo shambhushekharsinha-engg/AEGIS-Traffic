@@ -15,11 +15,11 @@ written to for backward compatibility and older data queries.
 
 import json
 import os
-from datetime import datetime
+
 from cryptography.fernet import Fernet
 
 # ── Use the new shared engine & session (single DB, no conflicts) ─────────────
-from app.db.database import SessionLocal, engine
+from app.db.database import SessionLocal
 from app.db.models import EncryptedTelemetryLedger
 
 # ── Encryption (unchanged) ────────────────────────────────────────────────────

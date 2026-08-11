@@ -21,10 +21,12 @@ Public API:
         .is_model_available() → bool
 """
 
-import os
-import time
+from app.core.ucf_dataset_loader import (
+    UCFDatasetLoader,
+)
 import json
 import logging
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
@@ -57,11 +59,11 @@ except ImportError:
     SKIMAGE_AVAILABLE = False
 
 try:
-    from sklearn.linear_model import SGDClassifier
-    from sklearn.preprocessing import StandardScaler, LabelEncoder
-    from sklearn.pipeline import Pipeline
-    from sklearn.metrics import accuracy_score, classification_report
     import joblib
+    from sklearn.linear_model import SGDClassifier
+    from sklearn.metrics import accuracy_score, classification_report
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import LabelEncoder, StandardScaler
 
     SKLEARN_AVAILABLE = True
 except ImportError:
@@ -78,11 +80,6 @@ except ImportError:
     Image = None
     PIL_AVAILABLE = False
 
-from app.core.ucf_dataset_loader import (
-    UCFDatasetLoader,
-    CRIME_SEVERITY,
-    CRIME_TO_SCENARIO,
-)
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 _PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -328,12 +325,12 @@ class CrimeClassifier:
         # ── 2. Remap labels for binary mode ───────────────────────────────────
         if binary_mode:
             train_labels = [
-                "Normal" if self.loader.is_anomaly(l) is False else "Anomalous"
-                for l in data["train_labels"]
+                "Normal" if self.loader.is_anomaly(length) is False else "Anomalous"
+                for length in data["train_labels"]
             ]
             test_labels = [
-                "Normal" if self.loader.is_anomaly(l) is False else "Anomalous"
-                for l in data["test_labels"]
+                "Normal" if self.loader.is_anomaly(length) is False else "Anomalous"
+                for length in data["test_labels"]
             ]
             if verbose:
                 normal_n = train_labels.count("Normal")
@@ -407,10 +404,10 @@ class CrimeClassifier:
             if X_test_raw:
                 X_test = np.array(X_test_raw, dtype=np.float32)
                 y_test_enc = self.label_encoder.transform(
-                    [l for l in y_test if l in self.classes_]
+                    [length for length in y_test if length in self.classes_]
                 )
                 # Filter test set to only known classes
-                valid_idx = [i for i, l in enumerate(y_test) if l in self.classes_]
+                valid_idx = [i for i, length in enumerate(y_test) if length in self.classes_]
                 X_test_valid = X_test[valid_idx]
                 y_test_valid = y_test_enc
 
@@ -529,7 +526,7 @@ class CrimeClassifier:
                     # ── Binary case ───────────────────────────────────────────
                     # SGD binary: positive df → class index 1, negative → class index 0
                     # Confidence = sigmoid(|df|) clamped to [0.5, 1.0]
-                    _sig = lambda x: 1.0 / (1.0 + np.exp(-float(abs(x))))
+                    def _sig(x): return 1.0 / (1.0 + np.exp(-float(abs(x))))
                     conf = float(min(max(_sig(df), 0.5), 0.9999))
                     # df < 0 → class 0 wins; df > 0 → class 1 wins
                     if pred_enc == 0:

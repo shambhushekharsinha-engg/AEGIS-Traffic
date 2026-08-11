@@ -1,9 +1,11 @@
+from unittest.mock import MagicMock, patch
+
+import kombu.exceptions
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
-import kombu.exceptions
-from app.main import app
+
 from app.auth.dependencies import get_current_user
+from app.main import app
 
 client = TestClient(app)
 

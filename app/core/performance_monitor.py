@@ -3,9 +3,8 @@ AEGIS-Traffic — System Performance & Health Monitoring Engine
 Tracks API latency percentiles, AI inference speed, CPU/RAM load, DB pool health, cache hit rates, and request throughput.
 """
 
-import time
-import os
 import random
+import time
 
 
 class PerformanceMonitor:

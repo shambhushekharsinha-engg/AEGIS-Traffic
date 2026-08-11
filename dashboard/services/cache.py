@@ -3,8 +3,10 @@ AEGIS-Traffic — Caching Utilities
 Provides cached helper wrappers for heavy operations (Geo lookup, Weather API, AegisClient instance).
 """
 
+from typing import Any, Dict
+
 import streamlit as st
-from typing import Dict, Any
+
 from dashboard.services.api import AegisClient
 from dashboard.services.logger import logger
 

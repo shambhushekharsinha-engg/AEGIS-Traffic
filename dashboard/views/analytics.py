@@ -3,12 +3,13 @@ AEGIS-Traffic — Analytics & Dataset File Analyzer Page Module (Tab 2)
 """
 
 import os
-import requests
-import streamlit as st
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dashboard.components.widgets import sec_div, mini_separator, metric_tile
+import streamlit as st
+
+from dashboard.components.widgets import metric_tile, sec_div
 
 BACKEND = os.environ.get("AEGIS_BACKEND_URL", "http://127.0.0.1:8000")
 

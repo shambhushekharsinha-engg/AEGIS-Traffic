@@ -2,9 +2,10 @@
 AEGIS-Traffic — ANPR License Plate Scanner Page Module
 """
 
-import streamlit as st
 import pandas as pd
-from dashboard.components.widgets import sec_div, metric_tile
+import streamlit as st
+
+from dashboard.components.widgets import metric_tile, sec_div
 
 
 def render_anpr_page(client):
@@ -12,7 +13,7 @@ def render_anpr_page(client):
     sec_div("🚘 AUTOMATIC NUMBER PLATE RECOGNITION (ANPR) SYSTEM")
 
     token = st.session_state.get("jwt_token", "")
-    anpr_data = client.get_anpr(token)
+    client.get_anpr(token)
 
     col1, col2 = st.columns([1.5, 1])
 

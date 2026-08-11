@@ -4,10 +4,10 @@ Compiles formal, court-admissible citation tickets complete with ANPR snapshot c
 GPS metadata, legal statute citations, fine breakdowns, and SHA-256 digital signatures.
 """
 
-import time
 import hashlib
+import time
 import uuid
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 class CitationPDFGenerator:

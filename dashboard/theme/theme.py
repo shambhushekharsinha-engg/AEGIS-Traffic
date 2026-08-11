@@ -4,6 +4,7 @@ Reads external CSS files and injects them into Streamlit with @st.cache_data for
 """
 
 import os
+
 import streamlit as st
 
 THEME_DIR = os.path.dirname(__file__)

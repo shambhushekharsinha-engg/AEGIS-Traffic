@@ -1,4 +1,4 @@
-import pytest
+
 from app.services.privacy.policy import PrivacyPolicy
 
 

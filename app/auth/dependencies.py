@@ -5,16 +5,15 @@ Provides get_current_user, require_role, and get_db.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.auth.auth import decode_access_token, is_jti_blacklisted
 from app.db.database import get_db
 from app.db.models import User
-from app.auth.auth import decode_access_token, is_jti_blacklisted
 
 security = HTTPBearer(auto_error=False)
 

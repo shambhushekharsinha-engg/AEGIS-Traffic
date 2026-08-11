@@ -1,6 +1,6 @@
 # app/pipeline/simulate_pipeline.py
-import numpy as np
 import time
+
 
 
 def execute_async_broadcast(scenario_type: str, timestamp: str, registry_ref: dict):

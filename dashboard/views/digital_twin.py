@@ -2,11 +2,12 @@
 AEGIS-Traffic — 3D Digital Twin Visualization (v9.0.0)
 """
 
-import streamlit as st
-import pydeck as pdk
-import pandas as pd
-import numpy as np
 import random
+
+import pandas as pd
+import pydeck as pdk
+import streamlit as st
+
 from dashboard.components.widgets import sec_div
 
 
