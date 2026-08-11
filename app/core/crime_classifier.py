@@ -407,7 +407,9 @@ class CrimeClassifier:
                     [length for length in y_test if length in self.classes_]
                 )
                 # Filter test set to only known classes
-                valid_idx = [i for i, length in enumerate(y_test) if length in self.classes_]
+                valid_idx = [
+                    i for i, length in enumerate(y_test) if length in self.classes_
+                ]
                 X_test_valid = X_test[valid_idx]
                 y_test_valid = y_test_enc
 
@@ -526,7 +528,9 @@ class CrimeClassifier:
                     # ── Binary case ───────────────────────────────────────────
                     # SGD binary: positive df → class index 1, negative → class index 0
                     # Confidence = sigmoid(|df|) clamped to [0.5, 1.0]
-                    def _sig(x): return 1.0 / (1.0 + np.exp(-float(abs(x))))
+                    def _sig(x):
+                        return 1.0 / (1.0 + np.exp(-float(abs(x))))
+
                     conf = float(min(max(_sig(df), 0.5), 0.9999))
                     # df < 0 → class 0 wins; df > 0 → class 1 wins
                     if pred_enc == 0:

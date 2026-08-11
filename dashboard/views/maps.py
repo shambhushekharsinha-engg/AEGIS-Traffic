@@ -2,7 +2,6 @@
 AEGIS-Traffic — GIS Map Intelligence Page Module (Multi-View & 3D Location Controls)
 """
 
-
 import numpy as np
 import pandas as pd
 import pydeck as pdk

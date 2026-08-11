@@ -2,7 +2,6 @@
 import time
 
 
-
 def execute_async_broadcast(scenario_type: str, timestamp: str, registry_ref: dict):
     """Asynchronous background worker simulating encrypted emergency notifications."""
     registry_ref["status"] = "BROADCASTING"

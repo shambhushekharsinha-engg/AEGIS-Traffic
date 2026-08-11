@@ -1,4 +1,3 @@
-
 from app.services.simulator.model import simulator
 
 
