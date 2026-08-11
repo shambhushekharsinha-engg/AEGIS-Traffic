@@ -1460,3 +1460,24 @@ Key architectural design choices are formally documented under [`docs/adr/`](fil
 <img src="https://img.shields.io/badge/GitHub-shambhushekharsinha--engg-181717?style=flat-square&logo=github"/>
 
 </div>
+
+---
+
+<div align="center">
+
+**Built with ❤️ for Smart Cities · Powered by AI · Secured by Zero-Trust**
+
+<br/>
+
+<img src="https://img.shields.io/badge/YOLOv8-Computer%20Vision-purple?style=flat-square"/>
+<img src="https://img.shields.io/badge/DistilBERT-Zero--Shot%20NLP-FFD21E?style=flat-square&logo=huggingface&logoColor=black"/>
+<img src="https://img.shields.io/badge/Qwen%202.5-AI%20Copilot-00f0ff?style=flat-square"/>
+<img src="https://img.shields.io/badge/FastAPI-REST%20Microservice-009688?style=flat-square&logo=fastapi"/>
+<img src="https://img.shields.io/badge/Streamlit-Live%20Dashboard-FF4B4B?style=flat-square&logo=streamlit"/>
+<img src="https://img.shields.io/badge/Tests-36%2F36%20Passing-10b981?style=flat-square&logo=pytest"/>
+
+<br/><br/>
+
+**⭐ Star this repo if AEGIS-Traffic helped your smart city research!**
+
+</div>
