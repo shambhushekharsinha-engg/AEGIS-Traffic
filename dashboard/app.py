@@ -3,29 +3,31 @@ AEGIS-Traffic — Smart City Operations Dashboard (Refactored Main Entrypoint)
 Modular controller handling routing, session state, theme injection, and authentication gate.
 """
 
-from dashboard.views.violations import render_violations_page
-from dashboard.views.settings import render_settings_page
-from dashboard.views.reports import render_reports_page
-from dashboard.views.overview import render_overview_page
-from dashboard.views.maps import render_maps_page
-from dashboard.views.impact import render_impact_dashboard
-from dashboard.views.guide import render_guide_page
-from dashboard.views.digital_twin import render_digital_twin_page
-from dashboard.views.copilot import render_copilot_page
-from dashboard.views.citizen import render_citizen_page
-from dashboard.views.cctv_live import render_cctv_live_page
-from dashboard.views.benchmarks import render_benchmarks_page
-from dashboard.views.analytics import render_analytics_page
-from dashboard.views.admin import render_admin_page
-from dashboard.theme.theme import inject_theme
-from dashboard.services.cache import cached_geo_sync, get_api_client
-from dashboard.components.widgets import render_login_portal
-from dashboard.components.sidebar import render_sidebar
-from dashboard.components.navbar import render_navbar
-import streamlit as st
-import uuid
 import os
 import sys
+import uuid
+
+import streamlit as st
+
+from dashboard.components.navbar import render_navbar
+from dashboard.components.sidebar import render_sidebar
+from dashboard.components.widgets import render_login_portal
+from dashboard.services.cache import cached_geo_sync, get_api_client
+from dashboard.theme.theme import inject_theme
+from dashboard.views.admin import render_admin_page
+from dashboard.views.analytics import render_analytics_page
+from dashboard.views.benchmarks import render_benchmarks_page
+from dashboard.views.cctv_live import render_cctv_live_page
+from dashboard.views.citizen import render_citizen_page
+from dashboard.views.copilot import render_copilot_page
+from dashboard.views.digital_twin import render_digital_twin_page
+from dashboard.views.guide import render_guide_page
+from dashboard.views.impact import render_impact_dashboard
+from dashboard.views.maps import render_maps_page
+from dashboard.views.overview import render_overview_page
+from dashboard.views.reports import render_reports_page
+from dashboard.views.settings import render_settings_page
+from dashboard.views.violations import render_violations_page
 
 # Ensure root directory is on Python path for app/ imports if needed
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

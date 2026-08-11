@@ -4,9 +4,8 @@ All database read/write operations go here. Never call DB directly from endpoint
 """
 
 from __future__ import annotations
-from app.db.models import CitizenHazardReport
-import uuid
 
+import uuid
 from datetime import datetime
 from typing import List, Optional
 
@@ -17,6 +16,7 @@ from app.auth.auth import hash_password
 from app.config import get_settings
 from app.db.models import (
     AuditLog,
+    CitizenHazardReport,
     IncidentLog,
     User,
     ViolationRecord,

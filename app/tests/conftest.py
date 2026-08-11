@@ -4,6 +4,7 @@ Ensures SQLite database tables and default seed accounts exist before any test r
 """
 
 from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
 

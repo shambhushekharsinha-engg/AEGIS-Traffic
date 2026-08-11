@@ -1,50 +1,6 @@
 # ────────────────────────────────────────────────────────────────────────────
 # AEGIS-Traffic v8.0.0 — Production Backend
 # ────────────────────────────────────────────────────────────────────────────
-from app.routers.simulation import router as simulation_router
-from app.routers.oversight import router as oversight_router
-from app.db.crud import create_citizen_hazard_report, get_citizen_hazard_reports
-from app.core.v2x_module import V2XTelemetryCore
-from app.core.pedestrian_module import PedestrianSafetyCore
-from app.core.pdf_generator import CitationPDFGenerator
-from app.core.environmental_module import EnvironmentalTelemetryCore
-from fastapi.responses import HTMLResponse
-from app.middleware.security import SecurityHeadersMiddleware
-from app.routers.nextgen import router as nextgen_router
-from app.pipeline.history_logger import (
-    fetch_incident_history,
-)
-from app.pipeline.fusion_core import MultimodalFusionCore
-from app.middleware.rate_limiter import (
-    AUTH_LIMIT,
-    limiter,
-    rate_limit_exceeded_handler,
-)
-from app.db.database import create_tables, get_db
-from app.db import crud
-from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
-from app.core.violation_module import ViolationDetector
-from app.core.geo_currency import (
-    detect_country,
-    get_country_config,
-    get_plate_pool,
-)
-from app.core.audio_module import AudioAnalyzer as AudioEngine
-from app.core.anpr_module import ANPREngine
-from app.auth.dependencies import get_current_user, require_role
-from app.auth.auth import (
-    blacklist_jti,
-    create_access_token,
-    create_refresh_token_string,
-    hash_refresh_token,
-    record_failed_login,
-    record_successful_login,
-    rotate_refresh_token,
-    store_refresh_token,
-    verify_password,
-    write_audit,
-)
-from sqlalchemy.orm import Session
 import os
 import time
 import uuid
@@ -63,15 +19,58 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy.orm import Session
 
+from app.auth.auth import (
+    blacklist_jti,
+    create_access_token,
+    create_refresh_token_string,
+    hash_refresh_token,
+    record_failed_login,
+    record_successful_login,
+    rotate_refresh_token,
+    store_refresh_token,
+    verify_password,
+    write_audit,
+)
+from app.auth.dependencies import get_current_user, require_role
+from app.core.anpr_module import ANPREngine
+from app.core.audio_module import AudioAnalyzer as AudioEngine
 from app.core.benchmark_engine import benchmark_engine
+from app.core.environmental_module import EnvironmentalTelemetryCore
+from app.core.geo_currency import (
+    detect_country,
+    get_country_config,
+    get_plate_pool,
+)
+from app.core.pdf_generator import CitationPDFGenerator
+from app.core.pedestrian_module import PedestrianSafetyCore
 from app.core.performance_monitor import performance_monitor
+from app.core.v2x_module import V2XTelemetryCore
+from app.core.violation_module import ViolationDetector
+from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
+from app.db import crud
+from app.db.crud import create_citizen_hazard_report, get_citizen_hazard_reports
+from app.db.database import create_tables, get_db
+from app.middleware.rate_limiter import (
+    AUTH_LIMIT,
+    limiter,
+    rate_limit_exceeded_handler,
+)
+from app.middleware.security import SecurityHeadersMiddleware
 
 # ── New Enterprise Feature Engines ──
 from app.pipeline.cctv_analytics import cctv_engine
 from app.pipeline.dataset_explorer import dataset_explorer
 from app.pipeline.explainability import explainability_engine
 from app.pipeline.forecasting import forecasting_engine
+from app.pipeline.fusion_core import MultimodalFusionCore
+from app.pipeline.history_logger import (
+    fetch_incident_history,
+)
+from app.routers.nextgen import router as nextgen_router
+from app.routers.oversight import router as oversight_router
+from app.routers.simulation import router as simulation_router
 
 try:
     from transformers import pipeline

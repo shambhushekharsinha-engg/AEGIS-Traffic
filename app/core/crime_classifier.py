@@ -21,15 +21,16 @@ Public API:
         .is_model_available() → bool
 """
 
-from app.core.ucf_dataset_loader import (
-    UCFDatasetLoader,
-)
 import json
 import logging
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
+
+from app.core.ucf_dataset_loader import (
+    UCFDatasetLoader,
+)
 
 logger = logging.getLogger("crime_classifier")
 

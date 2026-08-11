@@ -33,7 +33,7 @@ jobs:
 
       - name: Check Import Sorting with isort
         run: |
-          python -m isort --check-only app dashboard
+          python -m isort --profile black --check-only app dashboard
 
       - name: Lint Code with Flake8
         run: |
