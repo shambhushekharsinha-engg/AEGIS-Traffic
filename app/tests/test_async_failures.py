@@ -8,9 +8,13 @@ from app.auth.dependencies import get_current_user
 client = TestClient(app)
 
 def override_get_current_user():
-    return {"username": "admin", "role": "admin", "sub": "1"}
+    return {"username": "admin", "role": "Admin", "sub": "1"}
 
-app.dependency_overrides[get_current_user] = override_get_current_user
+@pytest.fixture(autouse=True)
+def override_auth():
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    yield
+    app.dependency_overrides.clear()
 
 def test_redis_offline_graceful_degradation():
     """Verify that when Redis is unreachable, the API returns a 503 instead of crashing."""
