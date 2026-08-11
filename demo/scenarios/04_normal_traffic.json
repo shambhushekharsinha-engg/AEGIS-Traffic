@@ -1,0 +1,14 @@
+{
+  "scenario_name": "Normal Traffic Flow",
+  "telemetry": {
+    "vehicle_count": 12,
+    "average_speed": 45.0,
+    "lane_occupancy": 30,
+    "sustained_minutes": 60
+  },
+  "current_signal": {
+    "green_sec": 45,
+    "cycle_sec": 90
+  },
+  "proposed_signals": [45, 50, 55]
+}

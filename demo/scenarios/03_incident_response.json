@@ -1,0 +1,15 @@
+{
+  "scenario_name": "Incident Response Event",
+  "telemetry": {
+    "vehicle_count": 0,
+    "average_speed": 0.0,
+    "accident_detected": true,
+    "confidence": 0.94,
+    "lane_blocked": true
+  },
+  "current_signal": {
+    "green_sec": 30,
+    "cycle_sec": 90
+  },
+  "proposed_signals": [90]
+}

@@ -42,6 +42,7 @@ from dashboard.views.admin import render_admin_page
 from dashboard.views.settings import render_settings_page
 from dashboard.views.citizen import render_citizen_page
 from dashboard.views.guide import render_guide_page
+from dashboard.views.impact import render_impact_dashboard
 
 
 # ── Theme Injection ──
@@ -86,6 +87,7 @@ render_navbar(client)
 render_sidebar()
 
 PAGE_ROUTER = {
+    "🌍 City Impact": render_impact_dashboard,
     "📊 Operations HUD": render_overview_page,
     "📹 Real-Time CCTV Analytics": render_cctv_live_page,
     "📈 Predictive Analytics": render_analytics_page,

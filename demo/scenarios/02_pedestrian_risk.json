@@ -1,0 +1,16 @@
+{
+  "scenario_name": "Pedestrian Risk Event",
+  "telemetry": {
+    "vehicle_count": 42,
+    "average_speed": 48.0,
+    "pedestrian_count": 18,
+    "pedestrian_density": "HIGH",
+    "crossing_occupancy": "HIGH"
+  },
+  "current_signal": {
+    "green_sec": 45,
+    "pedestrian_walk_sec": 15,
+    "cycle_sec": 120
+  },
+  "proposed_signals": [20, 25, 30]
+}

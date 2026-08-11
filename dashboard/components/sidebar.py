@@ -4,6 +4,7 @@ AEGIS-Traffic — Sidebar Navigation Component (3D Button Engine)
 import streamlit as st
 
 MODULE_LIST = [
+    ("🌍 City Impact", "🌍 City Impact"),
     ("📊 Operations HUD", "📊 Operations HUD"),
     ("📹 Real-Time CCTV Analytics", "📹 Real-Time CCTV Analytics"),
     ("📈 Predictive Analytics", "📈 Predictive Analytics"),

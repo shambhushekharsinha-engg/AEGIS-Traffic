@@ -210,3 +210,18 @@ class CitizenHazardReport(Base):
     status        = Column(String(32), nullable=False, default="SUBMITTED")  # SUBMITTED | IN_REVIEW | DISPATCHED | RESOLVED
     created_at    = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
 
+class DecisionRecord(Base):
+    """Immutable audit trail of human-in-the-loop decisions."""
+    __tablename__ = "decision_records"
+
+    id                 = Column(Integer, primary_key=True, autoincrement=True)
+    decision_id        = Column(String(64), unique=True, nullable=False, index=True)
+    event_id           = Column(String(64), nullable=True) # ID from incident logs
+    recommendation     = Column(Text, nullable=False)
+    recommended_action = Column(String(128), nullable=False)
+    status             = Column(String(32), nullable=False, default="PENDING") # PENDING | APPROVED | REJECTED
+    created_at         = Column(DateTime, nullable=False, default=datetime.utcnow)
+    reviewed_at        = Column(DateTime, nullable=True)
+    reviewed_by        = Column(String(64), nullable=True) # username
+    reason             = Column(Text, nullable=True)
+    simulation_id      = Column(String(64), nullable=True)

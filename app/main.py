@@ -1867,3 +1867,9 @@ def global_search_everything(q: str = "", db: Session = Depends(get_db)):
     return {"query": q, "total_matches": len(results), "results": results}
 
 
+
+from app.routers.simulation import router as simulation_router
+from app.routers.oversight import router as oversight_router
+
+app.include_router(simulation_router)
+app.include_router(oversight_router)

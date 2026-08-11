@@ -1,0 +1,14 @@
+{
+  "scenario_name": "High Congestion Event",
+  "telemetry": {
+    "vehicle_count": 127,
+    "average_speed": 18.0,
+    "lane_occupancy": 87,
+    "sustained_minutes": 4
+  },
+  "current_signal": {
+    "green_sec": 45,
+    "cycle_sec": 105
+  },
+  "proposed_signals": [55, 60, 65]
+}
