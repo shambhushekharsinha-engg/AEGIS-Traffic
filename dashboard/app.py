@@ -28,6 +28,7 @@ from dashboard.views.guide import render_guide_page
 from dashboard.views.impact import render_impact_dashboard
 from dashboard.views.maps import render_maps_page
 from dashboard.views.overview import render_overview_page
+from dashboard.views.replay import render_replay_page
 from dashboard.views.reports import render_reports_page
 from dashboard.views.settings import render_settings_page
 from dashboard.views.violations import render_violations_page
@@ -107,6 +108,7 @@ PAGE_ROUTER = {
     "📚 Learning Guide": render_guide_page,
     "🛡️ Audit & Security": render_admin_page,
     "⚙️ Settings & Pipeline": render_settings_page,
+    "📽️ Scenario Replay": render_replay_page,
 }
 
 current_page = st.session_state.get("current_page", "📊 Operations HUD")

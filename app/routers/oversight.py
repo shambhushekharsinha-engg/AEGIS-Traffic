@@ -101,3 +101,11 @@ def create_decision(req: CreateDecisionRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(record)
     return record
+
+
+from app.services.impact.ledger import ImpactLedgerService
+
+
+@router.get("/ledger")
+def get_impact_ledger(db: Session = Depends(get_db)):
+    return ImpactLedgerService.calculate_ledger(db)

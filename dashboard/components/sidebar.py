@@ -6,6 +6,7 @@ import streamlit as st
 
 MODULE_LIST = [
     ("🌍 City Impact", "🌍 City Impact"),
+    ("📽️ Scenario Replay", "📽️ Scenario Replay"),
     ("📊 Operations HUD", "📊 Operations HUD"),
     ("📹 Real-Time CCTV Analytics", "📹 Real-Time CCTV Analytics"),
     ("📈 Predictive Analytics", "📈 Predictive Analytics"),

@@ -1481,3 +1481,13 @@ Key architectural design choices are formally documented under [`docs/adr/`](fil
 **⭐ Star this repo if AEGIS-Traffic helped your smart city research!**
 
 </div>
+
+
+## Core Workflow
+
+Phase A - Measure: What is happening and what is the estimated impact?
+Phase B - Simulate: What might happen if we intervene?
+Phase C - Govern: Should a human approve the intervention?
+Phase D - Protect: Structural redaction of configured PII at the API boundary when privacy mode is enabled.
+Phase E - Replay: VCR-mode stepping through the entire scenario timeline for PBEL demonstration.
+Phase F - Impact Ledger: Quantifying cumulative impact across Observed, Estimated, Simulated, and Approved tiers.
