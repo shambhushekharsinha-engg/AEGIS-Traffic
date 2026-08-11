@@ -9,10 +9,7 @@ broker_url = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 result_backend = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 
 celery_app = Celery(
-    "aegis_tasks",
-    broker=broker_url,
-    backend=result_backend,
-    include=["app.worker"]
+    "aegis_tasks", broker=broker_url, backend=result_backend, include=["app.worker"]
 )
 
 celery_app.conf.update(
@@ -29,16 +26,19 @@ vision_engine_instance = None
 audio_engine_instance = None
 fusion_core_instance = None
 
+
 def get_engines():
     global vision_engine_instance, audio_engine_instance, fusion_core_instance
     if fusion_core_instance is None:
         from app.pipeline.fusion_core import MultimodalFusionCore
         from app.pipeline.vision_engine import VisionEngine
         from app.pipeline.audio_engine import AudioEngine
+
         vision_engine_instance = VisionEngine()
         audio_engine_instance = AudioEngine()
         fusion_core_instance = MultimodalFusionCore()
     return vision_engine_instance, audio_engine_instance, fusion_core_instance
+
 
 @celery_app.task(bind=True, max_retries=3, name="app.worker.analyze_traffic_task")
 def analyze_traffic_task(self, payload: dict, user_context: dict):
@@ -49,48 +49,63 @@ def analyze_traffic_task(self, payload: dict, user_context: dict):
         from app.db.database import SessionLocal
         from app.db import crud
         from app.core.violation_module import ViolationDetector
-        from app.pipeline.geo_context import detect_country, get_country_config, get_plate_pool
+        from app.pipeline.geo_context import (
+            detect_country,
+            get_country_config,
+            get_plate_pool,
+        )
         from app.pipeline.history_logger import log_incident_to_ledger
         from app.pipeline.simulate_pipeline import execute_async_broadcast
 
         scenario = payload.get("scenario", "normal").lower()
         model_tier = payload.get("model_tier")
-        
+
         vision_eng, audio_eng, fusion_core = get_engines()
         start_time = time.time()
 
         if model_tier == "YOLOv8-XLarge (Precision High-Load)":
             time.sleep(0.12)
-            
+
         try:
             vision_result = vision_eng.process_traffic_scene(scenario)
             visual_data = vision_result["detections"]
             visual_image_b64 = vision_result["image_b64"]
-            audio_data = audio_eng.check_anomaly(f"dataset/Audio_Samples/{scenario}_sound.wav")
+            audio_data = audio_eng.check_anomaly(
+                f"dataset/Audio_Samples/{scenario}_sound.wav"
+            )
         except Exception as e:
-            visual_data = [{"label": "person" if scenario == "normal" else "car", "confidence": 0.95}]
+            visual_data = [
+                {
+                    "label": "person" if scenario == "normal" else "car",
+                    "confidence": 0.95,
+                }
+            ]
             visual_image_b64 = ""
             audio_data = {
-                "status": "Anomaly Detected" if scenario in ["accident", "emergency"] else "Normal",
+                "status": (
+                    "Anomaly Detected"
+                    if scenario in ["accident", "emergency"]
+                    else "Normal"
+                ),
                 "db_level": 88.5,
                 "type": "Collision" if scenario == "accident" else "Ambient",
-                "waveform": [0.0]*100,
-                "fft_frequencies": [0.0]*100,
-                "fft_amplitudes": [0.0]*100,
-                "peak_frequency": 0.0
+                "waveform": [0.0] * 100,
+                "fft_frequencies": [0.0] * 100,
+                "fft_amplitudes": [0.0] * 100,
+                "peak_frequency": 0.0,
             }
-            
+
         fused_results = fusion_core.fuse_and_classify(
-            visual_data, 
-            audio_data, 
+            visual_data,
+            audio_data,
             scenario,
             operational_mode=payload.get("operational_mode"),
             manual_active_phase=payload.get("manual_active_phase"),
-            manual_signal_timing=payload.get("manual_signal_timing")
+            manual_signal_timing=payload.get("manual_signal_timing"),
         )
-        
+
         execution_latency = (time.time() - start_time) * 1000
-        
+
         # Geo-context
         country_code = detect_country(
             location_name=payload.get("location_name"),
@@ -109,13 +124,16 @@ def analyze_traffic_task(self, payload: dict, user_context: dict):
                 country_code=country_code,
             )
             _viols_raw = _detector_v.detect_violations(
-                visual_data, scenario, fused_results["active_phase"], fused_results["avg_speed_kmh"],
+                visual_data,
+                scenario,
+                fused_results["active_phase"],
+                fused_results["avg_speed_kmh"],
                 plate_pool=_plate_pool,
             ).get("violations", [])
-            
+
             # Idempotency check: we can use self.request.id as request_id
             req_id = self.request.id
-            
+
             crud.create_incident(
                 _db,
                 operator_name=user_context.get("username", "system"),
@@ -184,8 +202,8 @@ def analyze_traffic_task(self, payload: dict, user_context: dict):
                 "drive_side": country_cfg.get("drive_side", "right"),
                 "plate_format": country_cfg.get("plate_format", ""),
                 "plate_example": country_cfg.get("plate_example", ""),
-            }
+            },
         }
-        
+
     except Exception as exc:
         raise self.retry(exc=exc, countdown=5)

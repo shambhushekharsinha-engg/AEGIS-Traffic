@@ -32,7 +32,9 @@ class CitationPDFGenerator:
         lon = violation_record.get("longitude", 0.0)
         speed_kmh = violation_record.get("speed_kmh", 0)
         speed_limit = violation_record.get("speed_limit_kmh", 50)
-        timestamp = violation_record.get("timestamp", time.strftime("%Y-%m-%d %H:%M:%S UTC"))
+        timestamp = violation_record.get(
+            "timestamp", time.strftime("%Y-%m-%d %H:%M:%S UTC")
+        )
         severity = violation_record.get("severity", "HIGH")
 
         # Compute tamper-evident hash

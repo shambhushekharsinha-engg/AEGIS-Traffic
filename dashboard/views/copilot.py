@@ -1,6 +1,7 @@
 """
 AEGIS-Traffic — AI Copilot Assistant Page Module
 """
+
 import streamlit as st
 from dashboard.components.widgets import sec_div
 
@@ -9,7 +10,8 @@ def render_copilot_page(client):
     """Renders interactive AI Assistant chat for municipal traffic operators."""
     sec_div("🤖 AEGIS AI TRAFFIC COPILOT — INTERACTIVE ASSISTANT")
 
-    st.markdown("""
+    st.markdown(
+        """
     <div style="background: linear-gradient(90deg, rgba(168,85,247,0.1), rgba(0,240,255,0.1)); border: 1px solid rgba(0,240,255,0.3); padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 0 15px rgba(0, 240, 255, 0.05);">
         <div style="font-size: 2.5rem; text-shadow: 0 0 10px rgba(0,240,255,0.8);">🧠</div>
         <div>
@@ -83,38 +85,53 @@ def render_copilot_page(client):
         text-align: right;
     }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     if "copilot_history" not in st.session_state:
         st.session_state.copilot_history = [
-            {"role": "assistant", "content": "Hello Operator! I am AEGIS AI Copilot. I have full read-access to the municipal sensor grid. How can I assist with traffic flow optimization or emergency dispatch today?"}
+            {
+                "role": "assistant",
+                "content": "Hello Operator! I am AEGIS AI Copilot. I have full read-access to the municipal sensor grid. How can I assist with traffic flow optimization or emergency dispatch today?",
+            }
         ]
 
     for msg in st.session_state.copilot_history:
         if msg["role"] == "user":
-            st.markdown(f"""
+            st.markdown(
+                f"""
             <div class="cyber-chat-user">
                 <div style="display:flex; align-items:center; margin-bottom:6px; font-family:'Orbitron',sans-serif; font-size:0.75rem; color:#00f0ff;">
                     <span class="chat-avatar avatar-user">OP</span> COMMAND AUTHORITY
                 </div>
                 {msg["content"]}
             </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
         else:
-            st.markdown(f"""
+            st.markdown(
+                f"""
             <div class="cyber-chat-ai">
                 <div style="display:flex; align-items:center; margin-bottom:6px; font-family:'Orbitron',sans-serif; font-size:0.75rem; color:#a855f7;">
                     <span class="chat-avatar avatar-ai">AI</span> AEGIS COPILOT
                 </div>
                 {msg["content"]}
             </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
-    prompt = st.chat_input("Ask AI Copilot (e.g. 'Recommend signal timing for heavy congestion on North Corridor')...")
+    prompt = st.chat_input(
+        "Ask AI Copilot (e.g. 'Recommend signal timing for heavy congestion on North Corridor')..."
+    )
     if prompt:
         st.session_state.copilot_history.append({"role": "user", "content": prompt})
         token = st.session_state.get("jwt_token", "")
-        with st.spinner("🧠 AI Copilot fusing multimodal telemetry and generating tactical response..."):
+        with st.spinner(
+            "🧠 AI Copilot fusing multimodal telemetry and generating tactical response..."
+        ):
             reply_obj = client.chat_copilot(prompt, token)
             reply = reply_obj.get("reply", "Received and processed operational query.")
         st.session_state.copilot_history.append({"role": "assistant", "content": reply})

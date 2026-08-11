@@ -2,10 +2,12 @@
 AEGIS-Traffic — Theme Loader
 Reads external CSS files and injects them into Streamlit with @st.cache_data for instant rendering.
 """
+
 import os
 import streamlit as st
 
 THEME_DIR = os.path.dirname(__file__)
+
 
 @st.cache_data
 def load_combined_css() -> str:
@@ -18,6 +20,7 @@ def load_combined_css() -> str:
             with open(path, "r", encoding="utf-8") as file:
                 css_content.append(file.read())
     return "<style>\n" + "\n".join(css_content) + "\n</style>"
+
 
 def inject_theme():
     """Injects cached theme CSS into current Streamlit view."""

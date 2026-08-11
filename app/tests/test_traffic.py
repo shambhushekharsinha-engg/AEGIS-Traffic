@@ -30,7 +30,7 @@ def test_audio_engine_siren_detection():
     normal_res = engine.check_anomaly("data/audio_samples/normal_sound.wav")
     assert normal_res["type"] == "Ambient"
     assert normal_res["status"] == "Normal"
-    
+
     emergency_res = engine.check_anomaly("data/audio_samples/emergency_sound.wav")
     assert emergency_res["type"] == "Siren"
     assert emergency_res["status"] == "Anomaly Detected"
@@ -40,44 +40,61 @@ def test_audio_engine_siren_detection():
 def test_multimodal_fusion_priority_rules():
     """Verify that the Fusion Core adaptively overrides traffic light states under hazards."""
     core = MultimodalFusionCore()
-    
-    res_normal = core.fuse_and_classify([{"label": "car"}], {"type": "Ambient", "db_level": 42.0}, "normal")
+
+    res_normal = core.fuse_and_classify(
+        [{"label": "car"}], {"type": "Ambient", "db_level": 42.0}, "normal"
+    )
     assert res_normal["priority"] == "✅ NOMINAL CONTROL"
     assert res_normal["signal_timing_seconds"] == 15
     assert res_normal["active_phase"] == "North-South Green"
-    
-    res_emergency = core.fuse_and_classify([{"label": "car"}, {"label": "truck"}], {"type": "Siren", "db_level": 85.0}, "emergency")
+
+    res_emergency = core.fuse_and_classify(
+        [{"label": "car"}, {"label": "truck"}],
+        {"type": "Siren", "db_level": 85.0},
+        "emergency",
+    )
     assert res_emergency["priority"] == "🚨 EMERGENCY OVERRIDE (PRIORITY 1)"
     assert res_emergency["signal_timing_seconds"] == 25
     assert res_emergency["active_phase"] == "EMERGENCY VEHICLE PRIORITY (GREEN)"
-    
-    res_accident = core.fuse_and_classify([{"label": "car"}], {"type": "Collision", "db_level": 92.0}, "accident")
+
+    res_accident = core.fuse_and_classify(
+        [{"label": "car"}], {"type": "Collision", "db_level": 92.0}, "accident"
+    )
     assert res_accident["priority"] == "🚨 COLLISION ALERT (PRIORITY 2)"
     assert res_accident["active_phase"] == "ALL RED (CONTAINMENT)"
 
 
 def test_fastapi_endpoints_clearance(client):
     """Verify that FastAPI endpoints restrict access without proper Zero-Trust headers."""
-    response = client.post("/api/v1/analyze", json={"scenario": "normal", "vision_threshold": 0.4, "model_tier": "YOLOv8-Nano (Speed Edge)"})
+    response = client.post(
+        "/api/v1/analyze",
+        json={
+            "scenario": "normal",
+            "vision_threshold": 0.4,
+            "model_tier": "YOLOv8-Nano (Speed Edge)",
+        },
+    )
     assert response.status_code == 401
-    
-    headers = {
-        "x-session-auth": "TEST-SESSION-12345",
-        "x-role-profile": "Operator"
-    }
-    response = client.post("/api/v1/analyze", json={"scenario": "normal", "vision_threshold": 0.4, "model_tier": "YOLOv8-Nano (Speed Edge)"}, headers=headers)
+
+    headers = {"x-session-auth": "TEST-SESSION-12345", "x-role-profile": "Operator"}
+    response = client.post(
+        "/api/v1/analyze",
+        json={
+            "scenario": "normal",
+            "vision_threshold": 0.4,
+            "model_tier": "YOLOv8-Nano (Speed Edge)",
+        },
+        headers=headers,
+    )
     assert response.status_code == 202
     data = response.json()
     assert "task_id" in data
     assert data["status"] == "queued"
-    
+
     response_history = client.get("/api/v1/history", headers=headers)
     assert response_history.status_code in [200, 403]
-    
-    headers_admin = {
-        "x-session-auth": "TEST-SESSION-12345",
-        "x-role-profile": "Admin"
-    }
+
+    headers_admin = {"x-session-auth": "TEST-SESSION-12345", "x-role-profile": "Admin"}
     response_history_admin = client.get("/api/v1/history", headers=headers_admin)
     assert response_history_admin.status_code == 200
     assert "history" in response_history_admin.json()
@@ -85,40 +102,47 @@ def test_fastapi_endpoints_clearance(client):
 
 def test_jwt_auth_flow(client):
     """Verify registration, login, and JWT-authenticated requests."""
-    admin_login = client.post("/api/v1/auth/login", json={
-        "username": "admin",
-        "password": "Admin@AEGIS2024!"
-    })
+    admin_login = client.post(
+        "/api/v1/auth/login", json={"username": "admin", "password": "Admin@AEGIS2024!"}
+    )
     assert admin_login.status_code == 200
     admin_token = admin_login.json()["access_token"]
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
-    reg_response = client.post("/api/v1/auth/register", json={
-        "username": "test_operator_99",
-        "password": "securepassword",
-        "role": "Operator"
-    }, headers=admin_headers)
+    reg_response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "username": "test_operator_99",
+            "password": "securepassword",
+            "role": "Operator",
+        },
+        headers=admin_headers,
+    )
     assert reg_response.status_code in [200, 400, 409]
-    
-    login_response = client.post("/api/v1/auth/login", json={
-        "username": "test_operator_99",
-        "password": "securepassword"
-    })
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={"username": "test_operator_99", "password": "securepassword"},
+    )
     assert login_response.status_code == 200
     login_data = login_response.json()
     assert "access_token" in login_data
     token = login_data["access_token"]
-    
+
     jwt_headers = {"Authorization": f"Bearer {token}"}
-    analyze_response = client.post("/api/v1/analyze", json={
-        "scenario": "normal",
-        "vision_threshold": 0.4,
-        "model_tier": "YOLOv8-Nano (Speed Edge)",
-        "location_name": "Times Square, NY",
-        "latitude": 40.7580,
-        "longitude": -73.9855,
-        "operational_mode": "AI Automated Fusion"
-    }, headers=jwt_headers)
+    analyze_response = client.post(
+        "/api/v1/analyze",
+        json={
+            "scenario": "normal",
+            "vision_threshold": 0.4,
+            "model_tier": "YOLOv8-Nano (Speed Edge)",
+            "location_name": "Times Square, NY",
+            "latitude": 40.7580,
+            "longitude": -73.9855,
+            "operational_mode": "AI Automated Fusion",
+        },
+        headers=jwt_headers,
+    )
     assert analyze_response.status_code == 202
     history_response = client.get("/api/v1/history", headers=jwt_headers)
     assert history_response.status_code in [200, 403]
@@ -126,36 +150,45 @@ def test_jwt_auth_flow(client):
 
 def test_operational_modes(client):
     """Verify that operational mode parameters affect output states appropriately."""
-    headers_admin = {
-        "x-session-auth": "admin",
-        "x-role-profile": "Admin"
-    }
-    
-    lockdown_response = client.post("/api/v1/analyze", json={
-        "scenario": "normal",
-        "vision_threshold": 0.4,
-        "model_tier": "YOLOv8-Nano (Speed Edge)",
-        "operational_mode": "Security Lockdown"
-    }, headers=headers_admin)
+    headers_admin = {"x-session-auth": "admin", "x-role-profile": "Admin"}
+
+    lockdown_response = client.post(
+        "/api/v1/analyze",
+        json={
+            "scenario": "normal",
+            "vision_threshold": 0.4,
+            "model_tier": "YOLOv8-Nano (Speed Edge)",
+            "operational_mode": "Security Lockdown",
+        },
+        headers=headers_admin,
+    )
     assert lockdown_response.status_code == 202
     assert "task_id" in lockdown_response.json()
-    
-    manual_response = client.post("/api/v1/analyze", json={
-        "scenario": "normal",
-        "vision_threshold": 0.4,
-        "model_tier": "YOLOv8-Nano (Speed Edge)",
-        "operational_mode": "Manual Override",
-        "manual_active_phase": "ALL FLASHING YELLOW",
-        "manual_signal_timing": 33
-    }, headers=headers_admin)
+
+    manual_response = client.post(
+        "/api/v1/analyze",
+        json={
+            "scenario": "normal",
+            "vision_threshold": 0.4,
+            "model_tier": "YOLOv8-Nano (Speed Edge)",
+            "operational_mode": "Manual Override",
+            "manual_active_phase": "ALL FLASHING YELLOW",
+            "manual_signal_timing": 33,
+        },
+        headers=headers_admin,
+    )
     assert manual_response.status_code == 202
     assert "task_id" in manual_response.json()
 
-    predictive_response = client.post("/api/v1/analyze", json={
-        "scenario": "normal",
-        "vision_threshold": 0.4,
-        "model_tier": "YOLOv8-Nano (Speed Edge)",
-        "operational_mode": "Predictive Optimization"
-    }, headers=headers_admin)
+    predictive_response = client.post(
+        "/api/v1/analyze",
+        json={
+            "scenario": "normal",
+            "vision_threshold": 0.4,
+            "model_tier": "YOLOv8-Nano (Speed Edge)",
+            "operational_mode": "Predictive Optimization",
+        },
+        headers=headers_admin,
+    )
     assert predictive_response.status_code == 202
     assert "task_id" in predictive_response.json()

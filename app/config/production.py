@@ -1,5 +1,7 @@
 """AEGIS-Traffic — Production Settings"""
+
 from app.config.base import BaseAppConfig
+
 
 class ProductionConfig(BaseAppConfig):
     environment: str = "production"

@@ -2,6 +2,7 @@
 AEGIS-Traffic — Base Settings Module
 Defines core application configuration schema using Pydantic BaseSettings.
 """
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 

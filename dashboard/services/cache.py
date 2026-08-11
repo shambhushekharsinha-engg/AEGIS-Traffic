@@ -2,6 +2,7 @@
 AEGIS-Traffic — Caching Utilities
 Provides cached helper wrappers for heavy operations (Geo lookup, Weather API, AegisClient instance).
 """
+
 import streamlit as st
 from typing import Dict, Any
 from dashboard.services.api import AegisClient
@@ -19,7 +20,10 @@ def cached_geo_sync(location_name: str, lat: float, lon: float) -> Dict[str, Any
     """Caches geo-currency context lookup for 5 minutes."""
     try:
         from app.core.geo_currency import detect_country, get_country_config
-        cc = detect_country(location_name=location_name, lat=lat, lon=lon, try_nominatim=True)
+
+        cc = detect_country(
+            location_name=location_name, lat=lat, lon=lon, try_nominatim=True
+        )
         cfg = get_country_config(cc)
         return {
             "country_code": cc,

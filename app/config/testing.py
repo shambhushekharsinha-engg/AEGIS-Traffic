@@ -1,5 +1,7 @@
 """AEGIS-Traffic — Testing Settings"""
+
 from app.config.base import BaseAppConfig
+
 
 class TestingConfig(BaseAppConfig):
     environment: str = "testing"

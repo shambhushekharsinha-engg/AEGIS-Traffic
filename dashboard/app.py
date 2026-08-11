@@ -2,6 +2,7 @@
 AEGIS-Traffic — Smart City Operations Dashboard (Refactored Main Entrypoint)
 Modular controller handling routing, session state, theme injection, and authentication gate.
 """
+
 import sys
 import os
 
@@ -17,7 +18,7 @@ st.set_page_config(
     page_title="AEGIS-TRAFFIC // Smart City Operations",
     page_icon="🚦",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 from dashboard.theme.theme import inject_theme
@@ -43,7 +44,6 @@ from dashboard.views.settings import render_settings_page
 from dashboard.views.citizen import render_citizen_page
 from dashboard.views.guide import render_guide_page
 from dashboard.views.impact import render_impact_dashboard
-
 
 # ── Theme Injection ──
 inject_theme()
@@ -73,7 +73,11 @@ for key, default in [
         st.session_state[key] = default
 
 # Sync Geo Context via cached helper
-geo_cfg = cached_geo_sync(st.session_state.location_name, st.session_state.latitude, st.session_state.longitude)
+geo_cfg = cached_geo_sync(
+    st.session_state.location_name,
+    st.session_state.latitude,
+    st.session_state.longitude,
+)
 for k, v in geo_cfg.items():
     st.session_state[k] = v
 

@@ -14,7 +14,7 @@ class PedestrianSafetyCore:
     def evaluate_crosswalk_safety(
         self,
         visual_detections: List[Dict[str, Any]] = None,
-        base_walk_seconds: int = 15
+        base_walk_seconds: int = 15,
     ) -> Dict[str, Any]:
         """
         Evaluate crosswalk occupancy and calculate WALK signal phase extension.
@@ -28,7 +28,9 @@ class PedestrianSafetyCore:
             lbl = str(det.get("label", "")).lower()
             if "person" in lbl or "pedestrian" in lbl:
                 pedestrian_count += 1
-            elif any(k in lbl for k in ["wheelchair", "stroller", "bicycle", "cyclist"]):
+            elif any(
+                k in lbl for k in ["wheelchair", "stroller", "bicycle", "cyclist"]
+            ):
                 vru_special_count += 1
 
         # Standard walking speed assumption = 1.2 m/s across 14m crosswalk

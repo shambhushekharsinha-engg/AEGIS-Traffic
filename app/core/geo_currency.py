@@ -20,7 +20,6 @@ Detection order:
 import re
 from typing import Optional
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # MASTER COUNTRY TRAFFIC CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
@@ -33,382 +32,627 @@ from typing import Optional
 COUNTRY_CONFIG: dict[str, dict] = {
     # ── South Asia ────────────────────────────────────────────────────────────
     "IN": {
-        "name": "India", "flag": "🇮🇳",
-        "currency_code": "INR", "currency_symbol": "₹", "usd_rate": 83.5,
-        "speed_limit_urban": 50, "speed_limit_highway": 100,
+        "name": "India",
+        "flag": "🇮🇳",
+        "currency_code": "INR",
+        "currency_symbol": "₹",
+        "usd_rate": 83.5,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 100,
         "drive_side": "left",
-        "plate_format": "XX00 XX0000",   # State-District-Series-Number
+        "plate_format": "XX00 XX0000",  # State-District-Series-Number
         "plate_example": "MH12 AA1234",
         "plate_keywords": [
-            "India", "Bharat", "Delhi", "New Delhi", "Mumbai", "Bombay",
-            "Bangalore", "Bengaluru", "Chennai", "Madras", "Kolkata", "Calcutta",
-            "Hyderabad", "Ahmedabad", "Pune", "Jaipur", "Lucknow", "Chandigarh",
-            "Noida", "Gurgaon", "Gurugram", "Indore", "Surat", "Bhopal", "Patna",
-            "Varanasi", "Goa", "Connaught Place", "MG Road", "Maharashtra",
-            "Karnataka", "Tamil Nadu", "Gujarat", "Uttar Pradesh", "Rajasthan",
-            "West Bengal", "Andhra", "Telangana", "Kerala", "Punjab", "Haryana",
-            "MH", "DL", "KA", "TN", "GJ", "UP", "RJ", "WB", "AP", "TS",
+            "India",
+            "Bharat",
+            "Delhi",
+            "New Delhi",
+            "Mumbai",
+            "Bombay",
+            "Bangalore",
+            "Bengaluru",
+            "Chennai",
+            "Madras",
+            "Kolkata",
+            "Calcutta",
+            "Hyderabad",
+            "Ahmedabad",
+            "Pune",
+            "Jaipur",
+            "Lucknow",
+            "Chandigarh",
+            "Noida",
+            "Gurgaon",
+            "Gurugram",
+            "Indore",
+            "Surat",
+            "Bhopal",
+            "Patna",
+            "Varanasi",
+            "Goa",
+            "Connaught Place",
+            "MG Road",
+            "Maharashtra",
+            "Karnataka",
+            "Tamil Nadu",
+            "Gujarat",
+            "Uttar Pradesh",
+            "Rajasthan",
+            "West Bengal",
+            "Andhra",
+            "Telangana",
+            "Kerala",
+            "Punjab",
+            "Haryana",
+            "MH",
+            "DL",
+            "KA",
+            "TN",
+            "GJ",
+            "UP",
+            "RJ",
+            "WB",
+            "AP",
+            "TS",
         ],
         "fines": {
-            "RED_LIGHT_JUMP":  2000,
-            "WRONG_LANE":       500,
-            "ILLEGAL_UTURN":   1000,
-            "OVERSPEEDING":    2000,
-            "NO_HELMET":       1000,
-            "ILLEGAL_PARKING":  500,
-            "WRONG_WAY":       5000,
-            "ROAD_ACCIDENT":  10000,
-            "ASSAULT_DETECTED":20000,
-            "VANDALISM_DETECTED":5000,
+            "RED_LIGHT_JUMP": 2000,
+            "WRONG_LANE": 500,
+            "ILLEGAL_UTURN": 1000,
+            "OVERSPEEDING": 2000,
+            "NO_HELMET": 1000,
+            "ILLEGAL_PARKING": 500,
+            "WRONG_WAY": 5000,
+            "ROAD_ACCIDENT": 10000,
+            "ASSAULT_DETECTED": 20000,
+            "VANDALISM_DETECTED": 5000,
         },
     },
     "PK": {
-        "name": "Pakistan", "flag": "🇵🇰",
-        "currency_code": "PKR", "currency_symbol": "Rs", "usd_rate": 278.0,
-        "speed_limit_urban": 50, "speed_limit_highway": 120,
+        "name": "Pakistan",
+        "flag": "🇵🇰",
+        "currency_code": "PKR",
+        "currency_symbol": "Rs",
+        "usd_rate": 278.0,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 120,
         "drive_side": "left",
         "plate_format": "XXX-000",
         "plate_example": "LEA-1234",
         "plate_keywords": ["LEA", "KHI", "LHR", "ISB", "PEW"],
         "fines": {
-            "RED_LIGHT_JUMP":  1000,
-            "OVERSPEEDING":    2000,
-            "NO_HELMET":        500,
-            "ILLEGAL_PARKING":  500,
-            "WRONG_WAY":       3000,
+            "RED_LIGHT_JUMP": 1000,
+            "OVERSPEEDING": 2000,
+            "NO_HELMET": 500,
+            "ILLEGAL_PARKING": 500,
+            "WRONG_WAY": 3000,
         },
     },
-
     # ── East Asia ─────────────────────────────────────────────────────────────
     "JP": {
-        "name": "Japan", "flag": "🇯🇵",
-        "currency_code": "JPY", "currency_symbol": "¥", "usd_rate": 149.5,
-        "speed_limit_urban": 40, "speed_limit_highway": 100,
+        "name": "Japan",
+        "flag": "🇯🇵",
+        "currency_code": "JPY",
+        "currency_symbol": "¥",
+        "usd_rate": 149.5,
+        "speed_limit_urban": 40,
+        "speed_limit_highway": 100,
         "drive_side": "left",
         "plate_format": "XX 00 XX 0000",
         "plate_example": "品川 300 あ 1234",
         "plate_keywords": ["品川", "大阪", "名古屋", "横浜", "神戸"],
         "fines": {
-            "RED_LIGHT_JUMP":  90000,
-            "OVERSPEEDING":    35000,
-            "NO_HELMET":       50000,
+            "RED_LIGHT_JUMP": 90000,
+            "OVERSPEEDING": 35000,
+            "NO_HELMET": 50000,
             "ILLEGAL_PARKING": 15000,
-            "WRONG_WAY":      100000,
+            "WRONG_WAY": 100000,
         },
     },
     "CN": {
-        "name": "China", "flag": "🇨🇳",
-        "currency_code": "CNY", "currency_symbol": "¥", "usd_rate": 7.25,
-        "speed_limit_urban": 60, "speed_limit_highway": 120,
+        "name": "China",
+        "flag": "🇨🇳",
+        "currency_code": "CNY",
+        "currency_symbol": "¥",
+        "usd_rate": 7.25,
+        "speed_limit_urban": 60,
+        "speed_limit_highway": 120,
         "drive_side": "right",
         "plate_format": "X X0000X",
         "plate_example": "京 A12345",
-        "plate_keywords": ["京", "沪", "粤", "苏", "浙", "Beijing", "Shanghai", "Guangzhou"],
+        "plate_keywords": [
+            "京",
+            "沪",
+            "粤",
+            "苏",
+            "浙",
+            "Beijing",
+            "Shanghai",
+            "Guangzhou",
+        ],
         "fines": {
-            "RED_LIGHT_JUMP":  200,
-            "OVERSPEEDING":    500,
-            "NO_HELMET":       200,
+            "RED_LIGHT_JUMP": 200,
+            "OVERSPEEDING": 500,
+            "NO_HELMET": 200,
             "ILLEGAL_PARKING": 200,
-            "WRONG_WAY":      1000,
+            "WRONG_WAY": 1000,
         },
     },
     "KR": {
-        "name": "South Korea", "flag": "🇰🇷",
-        "currency_code": "KRW", "currency_symbol": "₩", "usd_rate": 1330.0,
-        "speed_limit_urban": 50, "speed_limit_highway": 110,
+        "name": "South Korea",
+        "flag": "🇰🇷",
+        "currency_code": "KRW",
+        "currency_symbol": "₩",
+        "usd_rate": 1330.0,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 110,
         "drive_side": "right",
         "plate_format": "00X 0000",
         "plate_example": "12가 3456",
         "plate_keywords": ["Seoul", "Busan", "Incheon", "Daegu", "서울", "부산"],
         "fines": {
-            "RED_LIGHT_JUMP":  70000,
-            "OVERSPEEDING":    60000,
-            "NO_HELMET":       20000,
+            "RED_LIGHT_JUMP": 70000,
+            "OVERSPEEDING": 60000,
+            "NO_HELMET": 20000,
             "ILLEGAL_PARKING": 40000,
-            "WRONG_WAY":      130000,
+            "WRONG_WAY": 130000,
         },
     },
-
     # ── Southeast Asia ────────────────────────────────────────────────────────
     "SG": {
-        "name": "Singapore", "flag": "🇸🇬",
-        "currency_code": "SGD", "currency_symbol": "S$", "usd_rate": 1.35,
-        "speed_limit_urban": 50, "speed_limit_highway": 90,
+        "name": "Singapore",
+        "flag": "🇸🇬",
+        "currency_code": "SGD",
+        "currency_symbol": "S$",
+        "usd_rate": 1.35,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 90,
         "drive_side": "left",
         "plate_format": "XXX 0000 X",
         "plate_example": "SBA 1234 A",
         "plate_keywords": ["Singapore", "Orchard", "Changi", "Sentosa"],
         "fines": {
-            "RED_LIGHT_JUMP":   500,
-            "OVERSPEEDING":     200,
-            "NO_HELMET":        150,
-            "ILLEGAL_PARKING":  100,
-            "WRONG_WAY":       1000,
+            "RED_LIGHT_JUMP": 500,
+            "OVERSPEEDING": 200,
+            "NO_HELMET": 150,
+            "ILLEGAL_PARKING": 100,
+            "WRONG_WAY": 1000,
         },
     },
     "MY": {
-        "name": "Malaysia", "flag": "🇲🇾",
-        "currency_code": "MYR", "currency_symbol": "RM", "usd_rate": 4.70,
-        "speed_limit_urban": 50, "speed_limit_highway": 110,
+        "name": "Malaysia",
+        "flag": "🇲🇾",
+        "currency_code": "MYR",
+        "currency_symbol": "RM",
+        "usd_rate": 4.70,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 110,
         "drive_side": "left",
         "plate_format": "XXX 0000",
         "plate_example": "WXY 1234",
         "plate_keywords": ["Kuala Lumpur", "Penang", "Johor", "Malacca", "Malaysia"],
         "fines": {
-            "RED_LIGHT_JUMP":  300,
-            "OVERSPEEDING":    300,
-            "NO_HELMET":       150,
+            "RED_LIGHT_JUMP": 300,
+            "OVERSPEEDING": 300,
+            "NO_HELMET": 150,
             "ILLEGAL_PARKING": 100,
-            "WRONG_WAY":       500,
+            "WRONG_WAY": 500,
         },
     },
-
     # ── Middle East ───────────────────────────────────────────────────────────
     "AE": {
-        "name": "United Arab Emirates", "flag": "🇦🇪",
-        "currency_code": "AED", "currency_symbol": "د.إ", "usd_rate": 3.67,
-        "speed_limit_urban": 60, "speed_limit_highway": 140,
+        "name": "United Arab Emirates",
+        "flag": "🇦🇪",
+        "currency_code": "AED",
+        "currency_symbol": "د.إ",
+        "usd_rate": 3.67,
+        "speed_limit_urban": 60,
+        "speed_limit_highway": 140,
         "drive_side": "right",
         "plate_format": "X 00000",
         "plate_example": "Dubai A 12345",
-        "plate_keywords": ["Dubai", "Abu Dhabi", "Sharjah", "UAE", "Emirates", "Sheikh Zayed"],
+        "plate_keywords": [
+            "Dubai",
+            "Abu Dhabi",
+            "Sharjah",
+            "UAE",
+            "Emirates",
+            "Sheikh Zayed",
+        ],
         "fines": {
             "RED_LIGHT_JUMP": 1000,
-            "OVERSPEEDING":    600,
-            "NO_HELMET":       500,
+            "OVERSPEEDING": 600,
+            "NO_HELMET": 500,
             "ILLEGAL_PARKING": 500,
-            "WRONG_WAY":      3000,
+            "WRONG_WAY": 3000,
         },
     },
     "SA": {
-        "name": "Saudi Arabia", "flag": "🇸🇦",
-        "currency_code": "SAR", "currency_symbol": "﷼", "usd_rate": 3.75,
-        "speed_limit_urban": 60, "speed_limit_highway": 120,
+        "name": "Saudi Arabia",
+        "flag": "🇸🇦",
+        "currency_code": "SAR",
+        "currency_symbol": "﷼",
+        "usd_rate": 3.75,
+        "speed_limit_urban": 60,
+        "speed_limit_highway": 120,
         "drive_side": "right",
         "plate_format": "X 000 XXX",
         "plate_example": "A 123 BCD",
         "plate_keywords": ["Riyadh", "Jeddah", "Mecca", "Medina", "Saudi"],
         "fines": {
             "RED_LIGHT_JUMP": 1000,
-            "OVERSPEEDING":    600,
-            "NO_HELMET":       300,
+            "OVERSPEEDING": 600,
+            "NO_HELMET": 300,
             "ILLEGAL_PARKING": 200,
-            "WRONG_WAY":      2000,
+            "WRONG_WAY": 2000,
         },
     },
-
     # ── Europe ────────────────────────────────────────────────────────────────
     "GB": {
-        "name": "United Kingdom", "flag": "🇬🇧",
-        "currency_code": "GBP", "currency_symbol": "£", "usd_rate": 0.79,
-        "speed_limit_urban": 48, "speed_limit_highway": 112,   # 30/70 mph
+        "name": "United Kingdom",
+        "flag": "🇬🇧",
+        "currency_code": "GBP",
+        "currency_symbol": "£",
+        "usd_rate": 0.79,
+        "speed_limit_urban": 48,
+        "speed_limit_highway": 112,  # 30/70 mph
         "drive_side": "left",
         "plate_format": "XX00 XXX",
         "plate_example": "AB12 CDE",
-        "plate_keywords": ["London", "Manchester", "Birmingham", "Leeds", "Edinburgh",
-                           "Trafalgar", "Oxford", "Cambridge", "UK", "Britain", "England", "Scotland", "Wales"],
+        "plate_keywords": [
+            "London",
+            "Manchester",
+            "Birmingham",
+            "Leeds",
+            "Edinburgh",
+            "Trafalgar",
+            "Oxford",
+            "Cambridge",
+            "UK",
+            "Britain",
+            "England",
+            "Scotland",
+            "Wales",
+        ],
         "fines": {
             "RED_LIGHT_JUMP": 100,
-            "OVERSPEEDING":   100,
-            "NO_HELMET":      100,
+            "OVERSPEEDING": 100,
+            "NO_HELMET": 100,
             "ILLEGAL_PARKING": 70,
-            "WRONG_WAY":      2500,
+            "WRONG_WAY": 2500,
         },
     },
     "DE": {
-        "name": "Germany", "flag": "🇩🇪",
-        "currency_code": "EUR", "currency_symbol": "€", "usd_rate": 0.92,
-        "speed_limit_urban": 50, "speed_limit_highway": 130,   # recommended; Autobahn sections unlimited
+        "name": "Germany",
+        "flag": "🇩🇪",
+        "currency_code": "EUR",
+        "currency_symbol": "€",
+        "usd_rate": 0.92,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 130,  # recommended; Autobahn sections unlimited
         "drive_side": "right",
         "plate_format": "XXX XX 0000",
         "plate_example": "B AB 1234",
-        "plate_keywords": ["Berlin", "Munich", "Hamburg", "Frankfurt", "Cologne", "Stuttgart",
-                           "Germany", "Deutschland", "Bayern", "Autobahn"],
+        "plate_keywords": [
+            "Berlin",
+            "Munich",
+            "Hamburg",
+            "Frankfurt",
+            "Cologne",
+            "Stuttgart",
+            "Germany",
+            "Deutschland",
+            "Bayern",
+            "Autobahn",
+        ],
         "fines": {
-            "RED_LIGHT_JUMP":  200,
-            "OVERSPEEDING":    120,
-            "NO_HELMET":        65,
-            "ILLEGAL_PARKING":  55,
-            "WRONG_WAY":       600,
+            "RED_LIGHT_JUMP": 200,
+            "OVERSPEEDING": 120,
+            "NO_HELMET": 65,
+            "ILLEGAL_PARKING": 55,
+            "WRONG_WAY": 600,
         },
     },
     "FR": {
-        "name": "France", "flag": "🇫🇷",
-        "currency_code": "EUR", "currency_symbol": "€", "usd_rate": 0.92,
-        "speed_limit_urban": 50, "speed_limit_highway": 130,
+        "name": "France",
+        "flag": "🇫🇷",
+        "currency_code": "EUR",
+        "currency_symbol": "€",
+        "usd_rate": 0.92,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 130,
         "drive_side": "right",
         "plate_format": "XX-000-XX",
         "plate_example": "AB-123-CD",
-        "plate_keywords": ["Paris", "Lyon", "Marseille", "Toulouse", "Nice",
-                           "Arc de Triomphe", "Eiffel", "France", "French"],
+        "plate_keywords": [
+            "Paris",
+            "Lyon",
+            "Marseille",
+            "Toulouse",
+            "Nice",
+            "Arc de Triomphe",
+            "Eiffel",
+            "France",
+            "French",
+        ],
         "fines": {
             "RED_LIGHT_JUMP": 135,
-            "OVERSPEEDING":   135,
-            "NO_HELMET":       135,
+            "OVERSPEEDING": 135,
+            "NO_HELMET": 135,
             "ILLEGAL_PARKING": 35,
-            "WRONG_WAY":      750,
+            "WRONG_WAY": 750,
         },
     },
     "IT": {
-        "name": "Italy", "flag": "🇮🇹",
-        "currency_code": "EUR", "currency_symbol": "€", "usd_rate": 0.92,
-        "speed_limit_urban": 50, "speed_limit_highway": 130,
+        "name": "Italy",
+        "flag": "🇮🇹",
+        "currency_code": "EUR",
+        "currency_symbol": "€",
+        "usd_rate": 0.92,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 130,
         "drive_side": "right",
         "plate_format": "XX 000 XX",
         "plate_example": "AB 123 CD",
-        "plate_keywords": ["Rome", "Milan", "Venice", "Florence", "Naples",
-                           "Roma", "Milano", "Italy", "Italia", "Colosseum"],
+        "plate_keywords": [
+            "Rome",
+            "Milan",
+            "Venice",
+            "Florence",
+            "Naples",
+            "Roma",
+            "Milano",
+            "Italy",
+            "Italia",
+            "Colosseum",
+        ],
         "fines": {
             "RED_LIGHT_JUMP": 167,
-            "OVERSPEEDING":   167,
-            "NO_HELMET":       100,
+            "OVERSPEEDING": 167,
+            "NO_HELMET": 100,
             "ILLEGAL_PARKING": 41,
-            "WRONG_WAY":      500,
+            "WRONG_WAY": 500,
         },
     },
     "ES": {
-        "name": "Spain", "flag": "🇪🇸",
-        "currency_code": "EUR", "currency_symbol": "€", "usd_rate": 0.92,
-        "speed_limit_urban": 50, "speed_limit_highway": 120,
+        "name": "Spain",
+        "flag": "🇪🇸",
+        "currency_code": "EUR",
+        "currency_symbol": "€",
+        "usd_rate": 0.92,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 120,
         "drive_side": "right",
         "plate_format": "0000 XXX",
         "plate_example": "1234 ABC",
-        "plate_keywords": ["Madrid", "Barcelona", "Seville", "Valencia", "Bilbao",
-                           "Spain", "España", "Sagrada"],
+        "plate_keywords": [
+            "Madrid",
+            "Barcelona",
+            "Seville",
+            "Valencia",
+            "Bilbao",
+            "Spain",
+            "España",
+            "Sagrada",
+        ],
         "fines": {
             "RED_LIGHT_JUMP": 200,
-            "OVERSPEEDING":   100,
-            "NO_HELMET":       100,
+            "OVERSPEEDING": 100,
+            "NO_HELMET": 100,
             "ILLEGAL_PARKING": 80,
-            "WRONG_WAY":       500,
+            "WRONG_WAY": 500,
         },
     },
     "RU": {
-        "name": "Russia", "flag": "🇷🇺",
-        "currency_code": "RUB", "currency_symbol": "₽", "usd_rate": 90.0,
-        "speed_limit_urban": 60, "speed_limit_highway": 110,
+        "name": "Russia",
+        "flag": "🇷🇺",
+        "currency_code": "RUB",
+        "currency_symbol": "₽",
+        "usd_rate": 90.0,
+        "speed_limit_urban": 60,
+        "speed_limit_highway": 110,
         "drive_side": "right",
         "plate_format": "X 000 XX 00",
         "plate_example": "А 123 ВС 77",
-        "plate_keywords": ["Moscow", "Saint Petersburg", "Novosibirsk", "Yekaterinburg",
-                           "Russia", "Россия", "Kremlin", "Red Square"],
+        "plate_keywords": [
+            "Moscow",
+            "Saint Petersburg",
+            "Novosibirsk",
+            "Yekaterinburg",
+            "Russia",
+            "Россия",
+            "Kremlin",
+            "Red Square",
+        ],
         "fines": {
             "RED_LIGHT_JUMP": 1000,
-            "OVERSPEEDING":    500,
-            "NO_HELMET":       500,
+            "OVERSPEEDING": 500,
+            "NO_HELMET": 500,
             "ILLEGAL_PARKING": 500,
-            "WRONG_WAY":      5000,
+            "WRONG_WAY": 5000,
         },
     },
-
     # ── Americas ──────────────────────────────────────────────────────────────
     "US": {
-        "name": "United States", "flag": "🇺🇸",
-        "currency_code": "USD", "currency_symbol": "$", "usd_rate": 1.0,
-        "speed_limit_urban": 40, "speed_limit_highway": 105,   # varies by state
+        "name": "United States",
+        "flag": "🇺🇸",
+        "currency_code": "USD",
+        "currency_symbol": "$",
+        "usd_rate": 1.0,
+        "speed_limit_urban": 40,
+        "speed_limit_highway": 105,  # varies by state
         "drive_side": "right",
         "plate_format": "XXX 0000",
         "plate_example": "ABC 1234",
-        "plate_keywords": ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix",
-                           "Times Square", "Broadway", "Manhattan", "Brooklyn",
-                           "USA", "United States", "America", "California", "Texas",
-                           "Florida", "Las Vegas", "San Francisco", "Boston", "Seattle"],
+        "plate_keywords": [
+            "New York",
+            "Los Angeles",
+            "Chicago",
+            "Houston",
+            "Phoenix",
+            "Times Square",
+            "Broadway",
+            "Manhattan",
+            "Brooklyn",
+            "USA",
+            "United States",
+            "America",
+            "California",
+            "Texas",
+            "Florida",
+            "Las Vegas",
+            "San Francisco",
+            "Boston",
+            "Seattle",
+        ],
         "fines": {
             "RED_LIGHT_JUMP": 250,
-            "OVERSPEEDING":   150,
-            "NO_HELMET":      100,
+            "OVERSPEEDING": 150,
+            "NO_HELMET": 100,
             "ILLEGAL_PARKING": 65,
-            "WRONG_WAY":      500,
-            "ROAD_ACCIDENT":  1500,
+            "WRONG_WAY": 500,
+            "ROAD_ACCIDENT": 1500,
         },
     },
     "CA": {
-        "name": "Canada", "flag": "🇨🇦",
-        "currency_code": "CAD", "currency_symbol": "C$", "usd_rate": 1.36,
-        "speed_limit_urban": 50, "speed_limit_highway": 100,
+        "name": "Canada",
+        "flag": "🇨🇦",
+        "currency_code": "CAD",
+        "currency_symbol": "C$",
+        "usd_rate": 1.36,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 100,
         "drive_side": "right",
         "plate_format": "XXX 000",
         "plate_example": "ABC 123",
-        "plate_keywords": ["Toronto", "Vancouver", "Montreal", "Calgary", "Ottawa",
-                           "Canada", "Ontario", "British Columbia", "Quebec"],
+        "plate_keywords": [
+            "Toronto",
+            "Vancouver",
+            "Montreal",
+            "Calgary",
+            "Ottawa",
+            "Canada",
+            "Ontario",
+            "British Columbia",
+            "Quebec",
+        ],
         "fines": {
             "RED_LIGHT_JUMP": 325,
-            "OVERSPEEDING":   150,
-            "NO_HELMET":       115,
-            "ILLEGAL_PARKING":  60,
-            "WRONG_WAY":       500,
+            "OVERSPEEDING": 150,
+            "NO_HELMET": 115,
+            "ILLEGAL_PARKING": 60,
+            "WRONG_WAY": 500,
         },
     },
     "BR": {
-        "name": "Brazil", "flag": "🇧🇷",
-        "currency_code": "BRL", "currency_symbol": "R$", "usd_rate": 4.97,
-        "speed_limit_urban": 60, "speed_limit_highway": 110,
+        "name": "Brazil",
+        "flag": "🇧🇷",
+        "currency_code": "BRL",
+        "currency_symbol": "R$",
+        "usd_rate": 4.97,
+        "speed_limit_urban": 60,
+        "speed_limit_highway": 110,
         "drive_side": "right",
         "plate_format": "XXX-0000",
         "plate_example": "ABC-1234",
-        "plate_keywords": ["São Paulo", "Rio de Janeiro", "Brasília", "Salvador",
-                           "Brazil", "Brasil", "Copacabana", "Carnival"],
+        "plate_keywords": [
+            "São Paulo",
+            "Rio de Janeiro",
+            "Brasília",
+            "Salvador",
+            "Brazil",
+            "Brasil",
+            "Copacabana",
+            "Carnival",
+        ],
         "fines": {
-            "RED_LIGHT_JUMP":  293,
-            "OVERSPEEDING":    195,
-            "NO_HELMET":       195,
-            "ILLEGAL_PARKING":  88,
-            "WRONG_WAY":       880,
+            "RED_LIGHT_JUMP": 293,
+            "OVERSPEEDING": 195,
+            "NO_HELMET": 195,
+            "ILLEGAL_PARKING": 88,
+            "WRONG_WAY": 880,
         },
     },
-
     # ── Africa ────────────────────────────────────────────────────────────────
     "ZA": {
-        "name": "South Africa", "flag": "🇿🇦",
-        "currency_code": "ZAR", "currency_symbol": "R", "usd_rate": 18.6,
-        "speed_limit_urban": 60, "speed_limit_highway": 120,
+        "name": "South Africa",
+        "flag": "🇿🇦",
+        "currency_code": "ZAR",
+        "currency_symbol": "R",
+        "usd_rate": 18.6,
+        "speed_limit_urban": 60,
+        "speed_limit_highway": 120,
         "drive_side": "left",
         "plate_format": "XXX 000 XX",
         "plate_example": "CAA 123 GP",
-        "plate_keywords": ["Johannesburg", "Cape Town", "Durban", "Pretoria",
-                           "South Africa", "Soweto", "Table Mountain"],
+        "plate_keywords": [
+            "Johannesburg",
+            "Cape Town",
+            "Durban",
+            "Pretoria",
+            "South Africa",
+            "Soweto",
+            "Table Mountain",
+        ],
         "fines": {
             "RED_LIGHT_JUMP": 1500,
-            "OVERSPEEDING":   1000,
-            "NO_HELMET":       500,
+            "OVERSPEEDING": 1000,
+            "NO_HELMET": 500,
             "ILLEGAL_PARKING": 500,
-            "WRONG_WAY":      3000,
+            "WRONG_WAY": 3000,
         },
     },
     "NG": {
-        "name": "Nigeria", "flag": "🇳🇬",
-        "currency_code": "NGN", "currency_symbol": "₦", "usd_rate": 1550.0,
-        "speed_limit_urban": 50, "speed_limit_highway": 100,
+        "name": "Nigeria",
+        "flag": "🇳🇬",
+        "currency_code": "NGN",
+        "currency_symbol": "₦",
+        "usd_rate": 1550.0,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 100,
         "drive_side": "right",
         "plate_format": "XXX-000XX",
         "plate_example": "ABC-123DE",
         "plate_keywords": ["Lagos", "Abuja", "Kano", "Ibadan", "Nigeria"],
         "fines": {
             "RED_LIGHT_JUMP": 10000,
-            "OVERSPEEDING":   10000,
-            "NO_HELMET":       2000,
+            "OVERSPEEDING": 10000,
+            "NO_HELMET": 2000,
             "ILLEGAL_PARKING": 5000,
-            "WRONG_WAY":      20000,
+            "WRONG_WAY": 20000,
         },
     },
-
     # ── Oceania ───────────────────────────────────────────────────────────────
     "AU": {
-        "name": "Australia", "flag": "🇦🇺",
-        "currency_code": "AUD", "currency_symbol": "A$", "usd_rate": 1.53,
-        "speed_limit_urban": 50, "speed_limit_highway": 110,
+        "name": "Australia",
+        "flag": "🇦🇺",
+        "currency_code": "AUD",
+        "currency_symbol": "A$",
+        "usd_rate": 1.53,
+        "speed_limit_urban": 50,
+        "speed_limit_highway": 110,
         "drive_side": "left",
         "plate_format": "XXX 000",
         "plate_example": "ABC 123",
-        "plate_keywords": ["Sydney", "Melbourne", "Brisbane", "Perth", "Adelaide",
-                           "Australia", "NSW", "Victoria", "Queensland", "Harbour Bridge",
-                           "Opera House"],
+        "plate_keywords": [
+            "Sydney",
+            "Melbourne",
+            "Brisbane",
+            "Perth",
+            "Adelaide",
+            "Australia",
+            "NSW",
+            "Victoria",
+            "Queensland",
+            "Harbour Bridge",
+            "Opera House",
+        ],
         "fines": {
             "RED_LIGHT_JUMP": 433,
-            "OVERSPEEDING":   270,
-            "NO_HELMET":      319,
+            "OVERSPEEDING": 270,
+            "NO_HELMET": 319,
             "ILLEGAL_PARKING": 110,
-            "WRONG_WAY":      935,
+            "WRONG_WAY": 935,
         },
     },
 }
@@ -421,33 +665,34 @@ _DEFAULT_COUNTRY = "IN"
 
 # Bounding box fallback for offline / fast coordinate matching (lat_min, lat_max, lon_min, lon_max)
 COUNTRY_BOUNDS: dict[str, tuple[float, float, float, float]] = {
-    "IN": (6.0, 36.0, 68.0, 97.5),       # India
-    "US": (24.0, 50.0, -125.0, -66.0),   # USA mainland
-    "GB": (49.5, 61.0, -10.5, 2.0),      # UK
-    "JP": (24.0, 46.0, 123.0, 154.0),    # Japan
-    "DE": (47.0, 55.5, 5.5, 15.5),       # Germany
-    "FR": (41.0, 51.5, -5.5, 10.0),      # France
-    "IT": (36.0, 47.5, 6.5, 18.5),       # Italy
-    "ES": (36.0, 44.0, -9.5, 4.5),       # Spain
-    "AE": (22.5, 26.5, 51.0, 56.5),      # UAE
-    "SG": (1.15, 1.48, 103.5, 104.1),    # Singapore
-    "CN": (18.0, 53.5, 73.0, 135.0),     # China
-    "KR": (33.0, 38.8, 124.5, 131.0),    # South Korea
-    "PK": (23.5, 37.0, 60.5, 77.5),      # Pakistan
-    "CA": (42.0, 70.0, -141.0, -52.0),   # Canada
+    "IN": (6.0, 36.0, 68.0, 97.5),  # India
+    "US": (24.0, 50.0, -125.0, -66.0),  # USA mainland
+    "GB": (49.5, 61.0, -10.5, 2.0),  # UK
+    "JP": (24.0, 46.0, 123.0, 154.0),  # Japan
+    "DE": (47.0, 55.5, 5.5, 15.5),  # Germany
+    "FR": (41.0, 51.5, -5.5, 10.0),  # France
+    "IT": (36.0, 47.5, 6.5, 18.5),  # Italy
+    "ES": (36.0, 44.0, -9.5, 4.5),  # Spain
+    "AE": (22.5, 26.5, 51.0, 56.5),  # UAE
+    "SG": (1.15, 1.48, 103.5, 104.1),  # Singapore
+    "CN": (18.0, 53.5, 73.0, 135.0),  # China
+    "KR": (33.0, 38.8, 124.5, 131.0),  # South Korea
+    "PK": (23.5, 37.0, 60.5, 77.5),  # Pakistan
+    "CA": (42.0, 70.0, -141.0, -52.0),  # Canada
     "AU": (-44.0, -10.0, 112.0, 154.0),  # Australia
-    "BR": (-34.0, 5.5, -74.0, -34.5),    # Brazil
-    "ZA": (-35.0, -22.0, 16.5, 33.0),    # South Africa
-    "NG": (4.0, 14.0, 2.5, 14.5),        # Nigeria
-    "SA": (16.0, 32.5, 34.5, 55.5),      # Saudi Arabia
-    "MY": (1.0, 7.5, 99.5, 119.5),       # Malaysia
-    "RU": (41.0, 77.0, 19.5, 180.0),     # Russia
+    "BR": (-34.0, 5.5, -74.0, -34.5),  # Brazil
+    "ZA": (-35.0, -22.0, 16.5, 33.0),  # South Africa
+    "NG": (4.0, 14.0, 2.5, 14.5),  # Nigeria
+    "SA": (16.0, 32.5, 34.5, 55.5),  # Saudi Arabia
+    "MY": (1.0, 7.5, 99.5, 119.5),  # Malaysia
+    "RU": (41.0, 77.0, 19.5, 180.0),  # Russia
 }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DETECTION HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _keyword_detect(location_name: str) -> Optional[str]:
     """Scan location_name string against each country's keyword list."""
@@ -481,6 +726,7 @@ def _nominatim_detect(lat: float, lon: float, timeout: int = 1) -> Optional[str]
     """
     try:
         import requests as _req
+
         r = _req.get(
             "https://nominatim.openstreetmap.org/reverse",
             params={"lat": lat, "lon": lon, "format": "json", "zoom": 5},
@@ -499,6 +745,7 @@ def _nominatim_detect(lat: float, lon: float, timeout: int = 1) -> Optional[str]
 # ─────────────────────────────────────────────────────────────────────────────
 # PUBLIC API
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def detect_country(
     location_name: str = "",
@@ -592,7 +839,10 @@ def get_country_config(country_code: str) -> dict:
 
     flag_str = _make_flag(cc)
     us_fines = COUNTRY_CONFIG["US"]["fines"]
-    scaled_fines = {k: round((v / COUNTRY_CONFIG["US"]["usd_rate"]) * rate) for k, v in us_fines.items()}
+    scaled_fines = {
+        k: round((v / COUNTRY_CONFIG["US"]["usd_rate"]) * rate)
+        for k, v in us_fines.items()
+    }
 
     return {
         "name": f"Jurisdiction ({cc})",
@@ -623,7 +873,7 @@ def get_fine(violation_type: str, country_code: str) -> int:
     india_fines = COUNTRY_CONFIG["IN"]["fines"]
     # Scale India's fine to local currency (approximate)
     inr_amount = india_fines.get(violation_type, 0)
-    usd_value  = inr_amount / COUNTRY_CONFIG["IN"]["usd_rate"]
+    usd_value = inr_amount / COUNTRY_CONFIG["IN"]["usd_rate"]
     return round(usd_value * cfg["usd_rate"])
 
 
@@ -643,16 +893,16 @@ def format_fine_with_usd(amount: int, country_code: str) -> dict:
     Return fine in both local currency AND approximate USD equivalent.
     Used for cross-country comparison displays.
     """
-    cfg      = get_country_config(country_code)
+    cfg = get_country_config(country_code)
     usd_rate = cfg["usd_rate"]
-    usd_val  = round(amount / usd_rate, 2)
+    usd_val = round(amount / usd_rate, 2)
     return {
-        "local_amount":    amount,
+        "local_amount": amount,
         "local_formatted": format_fine(amount, country_code),
-        "currency_code":   cfg["currency_code"],
+        "currency_code": cfg["currency_code"],
         "currency_symbol": cfg["currency_symbol"],
-        "usd_equivalent":  usd_val,
-        "usd_formatted":   f"≈ ${usd_val:,.2f}",
+        "usd_equivalent": usd_val,
+        "usd_formatted": f"≈ ${usd_val:,.2f}",
     }
 
 
@@ -662,6 +912,7 @@ def get_plate_pool(country_code: str) -> list[str]:
     used by the ANPR module for simulated OCR output.
     """
     import random
+
     cfg = get_country_config(country_code)
     fmt = cfg.get("plate_format", "XX 0000")
     kws = cfg.get("plate_keywords", ["AB"])

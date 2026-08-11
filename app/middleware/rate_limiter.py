@@ -6,6 +6,7 @@ Limits:
   General API:    60 requests / minute per IP
   Auth endpoints: 10 requests / minute per IP  (brute-force protection)
 """
+
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -33,20 +34,22 @@ else:
     )
 
 
-def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+def rate_limit_exceeded_handler(
+    request: Request, exc: RateLimitExceeded
+) -> JSONResponse:
     """Custom 429 response body."""
     return JSONResponse(
         status_code=429,
         content={
-            "error":   "RateLimitExceeded",
-            "code":    "RATE_LIMIT_EXCEEDED",
-            "detail":  f"Too many requests. Limit: {exc.limit}. Please retry after 60 seconds.",
-            "limit":   str(exc.limit),
+            "error": "RateLimitExceeded",
+            "code": "RATE_LIMIT_EXCEEDED",
+            "detail": f"Too many requests. Limit: {exc.limit}. Please retry after 60 seconds.",
+            "limit": str(exc.limit),
         },
         headers={"Retry-After": "60"},
     )
 
 
 # Convenience limit strings
-AUTH_LIMIT    = f"{settings.auth_rate_limit_per_minute}/minute"
+AUTH_LIMIT = f"{settings.auth_rate_limit_per_minute}/minute"
 DEFAULT_LIMIT = f"{settings.rate_limit_per_minute}/minute"

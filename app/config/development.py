@@ -1,5 +1,7 @@
 """AEGIS-Traffic — Development Settings"""
+
 from app.config.base import BaseAppConfig
+
 
 class DevelopmentConfig(BaseAppConfig):
     environment: str = "development"

@@ -23,7 +23,7 @@ class V2XTelemetryCore:
         active_phase: str,
         signal_timing_seconds: int,
         alert_status: str,
-        vehicle_count: int
+        vehicle_count: int,
     ) -> Dict[str, Any]:
         """
         Generate a C-V2X BSM IEEE 802.11p packet payload for broadcast to nearby vehicles.
@@ -32,8 +32,14 @@ class V2XTelemetryCore:
         timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
         # Determine SPaT (Signal Phase and Timing) State
-        spat_state = "GREEN" if "Green" in active_phase or "GO" in active_phase else (
-            "RED" if "RED" in active_phase or "LOCKDOWN" in active_phase else "YELLOW"
+        spat_state = (
+            "GREEN"
+            if "Green" in active_phase or "GO" in active_phase
+            else (
+                "RED"
+                if "RED" in active_phase or "LOCKDOWN" in active_phase
+                else "YELLOW"
+            )
         )
 
         # Safety Alert Level
@@ -68,7 +74,9 @@ class V2XTelemetryCore:
                 "active_phase": active_phase,
                 "spat_state": spat_state,
                 "remaining_phase_seconds": signal_timing_seconds,
-                "recommended_approach_speed_kmh": 0 if spat_state == "RED" else (35 if spat_state == "YELLOW" else 50),
+                "recommended_approach_speed_kmh": (
+                    0 if spat_state == "RED" else (35 if spat_state == "YELLOW" else 50)
+                ),
             },
             "hazard_broadcast": {
                 "active": hazard_flag,
@@ -79,5 +87,5 @@ class V2XTelemetryCore:
             "cryptographic_attestation": {
                 "hash": packet_hash,
                 "signature_status": "VALID_MUNICIPAL_CA",
-            }
+            },
         }

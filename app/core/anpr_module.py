@@ -28,25 +28,26 @@ import hashlib
 from datetime import datetime
 
 from app.core.geo_currency import (
-    get_country_config, get_plate_pool, _DEFAULT_COUNTRY,
+    get_country_config,
+    get_plate_pool,
+    _DEFAULT_COUNTRY,
 )
-
 
 # --------------------------------------------------------------------------- #
 #  Internal helpers                                                            #
 # --------------------------------------------------------------------------- #
 
-_SESSION_PLATES: dict[str, str] = {}   # vehicle_id → plate (stable per server lifetime)
+_SESSION_PLATES: dict[str, str] = {}  # vehicle_id → plate (stable per server lifetime)
 
 
 def _vehicle_type_from_label(label: str) -> str:
     mapping = {
-        "car":        "Car",
-        "truck":      "Truck",
-        "bus":        "Bus",
+        "car": "Car",
+        "truck": "Truck",
+        "bus": "Bus",
         "motorcycle": "Motorcycle",
-        "bicycle":    "Bicycle",
-        "person":     "Pedestrian",
+        "bicycle": "Bicycle",
+        "person": "Pedestrian",
     }
     return mapping.get(label.lower(), "Unknown")
 
@@ -54,6 +55,7 @@ def _vehicle_type_from_label(label: str) -> str:
 # --------------------------------------------------------------------------- #
 #  Main ANPR Engine                                                            #
 # --------------------------------------------------------------------------- #
+
 
 class ANPREngine:
     """
@@ -77,12 +79,12 @@ class ANPREngine:
                           plate strings (e.g. 'IN', 'US', 'GB', 'JP', 'AE').
         """
         self.country_code = country_code
-        self.country_cfg  = get_country_config(country_code)
+        self.country_cfg = get_country_config(country_code)
         # Pre-generate a pool of country-specific plates
         # Seed with country so pool is stable per country (not random each call)
         random.seed(hash(country_code) % (2**31))
-        self._plate_pool  = get_plate_pool(country_code)
-        self._session_plates: dict[str, str] = {}   # vehicle_id → plate
+        self._plate_pool = get_plate_pool(country_code)
+        self._session_plates: dict[str, str] = {}  # vehicle_id → plate
 
     # ------------------------------------------------------------------ #
     #  Private                                                            #
@@ -95,13 +97,16 @@ class ANPREngine:
         """
         if vehicle_id not in self._session_plates:
             # Deterministic plate selection based on vehicle_id hash
-            idx  = int(hashlib.md5(vehicle_id.encode()).hexdigest(), 16)
-            self._session_plates[vehicle_id] = self._plate_pool[idx % len(self._plate_pool)]
+            idx = int(hashlib.md5(vehicle_id.encode()).hexdigest(), 16)
+            self._session_plates[vehicle_id] = self._plate_pool[
+                idx % len(self._plate_pool)
+            ]
 
-        plate_text     = self._session_plates[vehicle_id]
+        plate_text = self._session_plates[vehicle_id]
         ocr_confidence = round(
-            0.75 + (int(hashlib.md5(plate_text.encode()).hexdigest(), 16) % 2300) / 10000,
-            2
+            0.75
+            + (int(hashlib.md5(plate_text.encode()).hexdigest(), 16) % 2300) / 10000,
+            2,
         )  # Deterministic 0.75–0.98
         return {"plate_text": plate_text, "ocr_confidence": ocr_confidence}
 
@@ -110,9 +115,9 @@ class ANPREngine:
         Simulate cropping the license plate region from a bounding box.
         Returns synthetic crop metadata.
         """
-        box      = detection.get("box", [0, 0, 100, 60])
+        box = detection.get("box", [0, 0, 100, 60])
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
-        h        = y2 - y1
+        h = y2 - y1
         return {
             "x1": x1 + 5,
             "y1": y2 - int(h * 0.25),
@@ -150,16 +155,16 @@ class ANPREngine:
         if country_code and country_code != self.country_code:
             # Hot-swap country config for this call
             self.country_code = country_code
-            self.country_cfg  = get_country_config(country_code)
+            self.country_cfg = get_country_config(country_code)
             random.seed(hash(country_code) % (2**31))
-            self._plate_pool  = get_plate_pool(country_code)
+            self._plate_pool = get_plate_pool(country_code)
 
         if scenario == "tamper":
-            return []   # No plate data recoverable when camera is obstructed
+            return []  # No plate data recoverable when camera is obstructed
 
-        cc   = self.country_code
-        cfg  = self.country_cfg
-        results    = []
+        cc = self.country_code
+        cfg = self.country_cfg
+        results = []
         vehicle_idx = 0
 
         for i, det in enumerate(detections):
@@ -168,30 +173,30 @@ class ANPREngine:
                 continue
 
             vehicle_idx += 1
-            vehicle_id  = f"VH-{scenario.upper()[:3]}-{vehicle_idx:03d}"
+            vehicle_id = f"VH-{scenario.upper()[:3]}-{vehicle_idx:03d}"
 
-            crop_info  = self._plate_crop_simulated(det, i)
+            crop_info = self._plate_crop_simulated(det, i)
             ocr_result = self._run_ocr(vehicle_id)
 
             record = {
-                "vehicle_id":      vehicle_id,
-                "vehicle_type":    _vehicle_type_from_label(label),
+                "vehicle_id": vehicle_id,
+                "vehicle_type": _vehicle_type_from_label(label),
                 "detection_label": label,
-                "detection_conf":  det.get("confidence", 0.0),
-                "plate_region":    crop_info,
-                "plate_text":      ocr_result["plate_text"],
-                "plate":           ocr_result["plate_text"],   # normalized alias
-                "ocr_confidence":  ocr_result["ocr_confidence"],
-                "plate_format":    cfg.get("plate_format", ""),
+                "detection_conf": det.get("confidence", 0.0),
+                "plate_region": crop_info,
+                "plate_text": ocr_result["plate_text"],
+                "plate": ocr_result["plate_text"],  # normalized alias
+                "ocr_confidence": ocr_result["ocr_confidence"],
+                "plate_format": cfg.get("plate_format", ""),
                 # ── Country context ─────────────────────────────────────
-                "country_code":    cc,
-                "country_name":    cfg["name"],
-                "country_flag":    cfg["flag"],
-                "jurisdiction":    f"{cfg['flag']} {cfg['name']}",
+                "country_code": cc,
+                "country_name": cfg["name"],
+                "country_flag": cfg["flag"],
+                "jurisdiction": f"{cfg['flag']} {cfg['name']}",
                 # ── Metadata ────────────────────────────────────────────
-                "timestamp":       datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
-                "scenario":        scenario.upper(),
-                "status":          "RECOGNISED",
+                "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+                "scenario": scenario.upper(),
+                "status": "RECOGNISED",
             }
             results.append(record)
 
@@ -201,32 +206,32 @@ class ANPREngine:
         """Returns aggregate statistics for a set of ANPR records."""
         if not records:
             return {
-                "total_plates":              0,
-                "registered":                0,
-                "flagged":                   0,
-                "avg_ocr_confidence":        0.0,
-                "vehicle_type_breakdown":    {},
-                "country_code":              self.country_code,
-                "country_name":              self.country_cfg["name"],
-                "country_flag":              self.country_cfg["flag"],
+                "total_plates": 0,
+                "registered": 0,
+                "flagged": 0,
+                "avg_ocr_confidence": 0.0,
+                "vehicle_type_breakdown": {},
+                "country_code": self.country_code,
+                "country_name": self.country_cfg["name"],
+                "country_flag": self.country_cfg["flag"],
             }
 
         type_counts: dict[str, int] = {}
-        conf_total  = 0.0
+        conf_total = 0.0
         for r in records:
             vt = r["vehicle_type"]
             type_counts[vt] = type_counts.get(vt, 0) + 1
             conf_total += r["ocr_confidence"]
 
         return {
-            "total_plates":              len(records),
-            "total_vehicles_recognised": len(records),   # backward compat
-            "registered":                len(records),   # all recognised = registered
-            "flagged":                   0,              # updated by ANPR endpoint
-            "avg_ocr_confidence":        round(conf_total / len(records), 3),
-            "vehicle_type_breakdown":    type_counts,
-            "country_code":              self.country_code,
-            "country_name":              self.country_cfg["name"],
-            "country_flag":              self.country_cfg["flag"],
-            "plate_format":              self.country_cfg.get("plate_format", ""),
+            "total_plates": len(records),
+            "total_vehicles_recognised": len(records),  # backward compat
+            "registered": len(records),  # all recognised = registered
+            "flagged": 0,  # updated by ANPR endpoint
+            "avg_ocr_confidence": round(conf_total / len(records), 3),
+            "vehicle_type_breakdown": type_counts,
+            "country_code": self.country_code,
+            "country_name": self.country_cfg["name"],
+            "country_flag": self.country_cfg["flag"],
+            "plate_format": self.country_cfg.get("plate_format", ""),
         }

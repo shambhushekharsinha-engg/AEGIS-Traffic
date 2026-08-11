@@ -17,22 +17,20 @@ from app.pipeline.fusion_core import MultimodalFusionCore
 client = TestClient(app)
 
 # Shared auth headers
-HEADERS = {
-    "x-session-auth": "test-admin",
-    "x-role-profile": "Admin"
-}
+HEADERS = {"x-session-auth": "test-admin", "x-role-profile": "Admin"}
 
 
 # ---------------------------------------------------------------------------
 # §16 ANPR Module unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestANPREngine:
     def test_normal_scenario_returns_records(self):
         """ANPR should recognise vehicles in normal traffic."""
         engine = ANPREngine()
         detections = [
-            {"label": "car",   "confidence": 0.92, "box": [100, 100, 200, 180]},
+            {"label": "car", "confidence": 0.92, "box": [100, 100, 200, 180]},
             {"label": "truck", "confidence": 0.87, "box": [300, 100, 450, 200]},
         ]
         records = engine.process_detections(detections, "normal")
@@ -47,7 +45,13 @@ class TestANPREngine:
     def test_tamper_scenario_returns_empty(self):
         """ANPR cannot read plates when camera is blocked."""
         engine = ANPREngine()
-        detections = [{"label": "CAMERA_BLOCKED_TAMPER", "confidence": 0.99, "box": [0, 0, 640, 480]}]
+        detections = [
+            {
+                "label": "CAMERA_BLOCKED_TAMPER",
+                "confidence": 0.99,
+                "box": [0, 0, 640, 480],
+            }
+        ]
         records = engine.process_detections(detections, "tamper")
         assert records == []
 
@@ -56,7 +60,7 @@ class TestANPREngine:
         engine = ANPREngine()
         detections = [
             {"label": "person", "confidence": 0.85, "box": [50, 50, 100, 180]},
-            {"label": "car",    "confidence": 0.90, "box": [200, 100, 300, 180]},
+            {"label": "car", "confidence": 0.90, "box": [200, 100, 300, 180]},
         ]
         records = engine.process_detections(detections, "normal")
         assert len(records) == 1
@@ -76,12 +80,12 @@ class TestANPREngine:
         """Summary should count types correctly."""
         engine = ANPREngine()
         detections = [
-            {"label": "car",  "confidence": 0.91, "box": [100, 100, 200, 180]},
-            {"label": "car",  "confidence": 0.88, "box": [250, 100, 350, 180]},
-            {"label": "truck","confidence": 0.94, "box": [400, 100, 520, 200]},
+            {"label": "car", "confidence": 0.91, "box": [100, 100, 200, 180]},
+            {"label": "car", "confidence": 0.88, "box": [250, 100, 350, 180]},
+            {"label": "truck", "confidence": 0.94, "box": [400, 100, 520, 200]},
         ]
         records = engine.process_detections(detections, "congested")
-        summary  = engine.get_summary(records)
+        summary = engine.get_summary(records)
         assert summary["total_vehicles_recognised"] == 3
         assert summary["vehicle_type_breakdown"]["Car"] == 2
         assert summary["vehicle_type_breakdown"]["Truck"] == 1
@@ -100,6 +104,7 @@ class TestANPREngine:
 # §15 Violation Detector unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestViolationDetector:
     def test_no_violations_in_normal(self):
         """Normal scenario should produce zero violations."""
@@ -107,7 +112,9 @@ class TestViolationDetector:
         detections = [
             {"label": "car", "confidence": 0.92, "box": [100, 100, 200, 180]},
         ]
-        result = detector.detect_violations(detections, "normal", "North-South Green", 30.0)
+        result = detector.detect_violations(
+            detections, "normal", "North-South Green", 30.0
+        )
         assert result.get("total_count", len(result.get("violations", []))) == 0
         assert result["violations"] == []
 
@@ -117,7 +124,9 @@ class TestViolationDetector:
         detections = [
             {"label": "truck", "confidence": 0.96, "box": [250, 350, 290, 420]},
         ]
-        result = detector.detect_violations(detections, "emergency", "EMERGENCY VEHICLE PRIORITY (GREEN)", 40.0)
+        result = detector.detect_violations(
+            detections, "emergency", "EMERGENCY VEHICLE PRIORITY (GREEN)", 40.0
+        )
         assert result.get("total_count", len(result.get("violations", []))) == 0
 
     def test_accident_produces_violations(self):
@@ -153,10 +162,16 @@ class TestViolationDetector:
         """Congested scenario checks wrong-lane and no-helmet violations."""
         detector = ViolationDetector()
         detections = [
-            {"label": "car",        "confidence": 0.90, "box": [50, 100, 150, 180]},   # Lane 1
-            {"label": "motorcycle", "confidence": 0.85, "box": [300, 100, 380, 180]},  # Lane 2
+            {"label": "car", "confidence": 0.90, "box": [50, 100, 150, 180]},  # Lane 1
+            {
+                "label": "motorcycle",
+                "confidence": 0.85,
+                "box": [300, 100, 380, 180],
+            },  # Lane 2
         ]
-        result = detector.detect_violations(detections, "congested", "North-South Green", 30.0)
+        result = detector.detect_violations(
+            detections, "congested", "North-South Green", 30.0
+        )
         # Result is a dict with required keys regardless of violation count
         assert "violations" in result
         assert "summary" in result
@@ -164,14 +179,23 @@ class TestViolationDetector:
     def test_tamper_returns_empty(self):
         """Tamper scenario: feed lost, no violations verifiable."""
         detector = ViolationDetector()
-        detections = [{"label": "CAMERA_BLOCKED_TAMPER", "confidence": 0.99, "box": [0, 0, 640, 480]}]
-        result = detector.detect_violations(detections, "tamper", "ALL FLASHING YELLOW (CAUTION)", 0.0)
+        detections = [
+            {
+                "label": "CAMERA_BLOCKED_TAMPER",
+                "confidence": 0.99,
+                "box": [0, 0, 640, 480],
+            }
+        ]
+        result = detector.detect_violations(
+            detections, "tamper", "ALL FLASHING YELLOW (CAUTION)", 0.0
+        )
         assert result.get("total_count", len(result.get("violations", []))) == 0
 
 
 # ---------------------------------------------------------------------------
 # New API Endpoints
 # ---------------------------------------------------------------------------
+
 
 class TestANPREndpoint:
     def test_anpr_normal_structure(self):
@@ -254,9 +278,9 @@ class TestAnalyzeResponseTrafficAnalytics:
             json={
                 "scenario": "congested",
                 "vision_threshold": 0.4,
-                "model_tier": "YOLOv8-Nano (Speed Edge)"
+                "model_tier": "YOLOv8-Nano (Speed Edge)",
             },
-            headers=HEADERS
+            headers=HEADERS,
         )
         assert response.status_code == 202
         data = response.json()
@@ -276,13 +300,14 @@ class TestAnalyzeResponseTrafficAnalytics:
 # Fusion Core new fields unit test
 # ---------------------------------------------------------------------------
 
+
 class TestFusionCoreNewFields:
     def test_density_fields_present(self):
         core = MultimodalFusionCore()
         result = core.fuse_and_classify(
             [{"label": "car"}, {"label": "car"}, {"label": "truck"}],
             {"type": "Ambient", "db_level": 40.0},
-            "normal"
+            "normal",
         )
         assert "traffic_density_percent" in result
         assert "density_level" in result
@@ -296,7 +321,7 @@ class TestFusionCoreNewFields:
         result = core.fuse_and_classify(
             [{"label": "car"}, {"label": "car"}, {"label": "truck"}],
             {"type": "Ambient", "db_level": 40.0},
-            "normal"
+            "normal",
         )
         assert result["traffic_density_percent"] == 6.0
         assert result["density_level"] == "Low"
@@ -313,13 +338,11 @@ class TestFusionCoreNewFields:
     def test_speed_decreases_with_density(self):
         """Higher vehicle count should yield lower avg speed."""
         core = MultimodalFusionCore()
-        res_low  = core.fuse_and_classify(
-            [{"label": "car"}],
-            {"type": "Ambient", "db_level": 40.0}, "normal"
+        res_low = core.fuse_and_classify(
+            [{"label": "car"}], {"type": "Ambient", "db_level": 40.0}, "normal"
         )
         res_high = core.fuse_and_classify(
-            [{"label": "car"}] * 20,
-            {"type": "Ambient", "db_level": 50.0}, "congested"
+            [{"label": "car"}] * 20, {"type": "Ambient", "db_level": 50.0}, "congested"
         )
         assert res_low["avg_speed_kmh"] > res_high["avg_speed_kmh"]
 
@@ -327,9 +350,9 @@ class TestFusionCoreNewFields:
         """Sum of lane counts must equal total vehicle_count."""
         core = MultimodalFusionCore()
         detections = [
-            {"label": "car",   "box": [50,  100, 150, 180]},   # Lane 1
-            {"label": "truck", "box": [300, 100, 420, 200]},   # Lane 2
-            {"label": "car",   "box": [480, 100, 580, 180]},   # Lane 3
+            {"label": "car", "box": [50, 100, 150, 180]},  # Lane 1
+            {"label": "truck", "box": [300, 100, 420, 200]},  # Lane 2
+            {"label": "car", "box": [480, 100, 580, 180]},  # Lane 3
         ]
         result = core.fuse_and_classify(
             detections, {"type": "Ambient", "db_level": 42.0}, "normal"

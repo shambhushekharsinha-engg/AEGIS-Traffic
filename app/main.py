@@ -8,7 +8,16 @@ import os
 from typing import Optional, List
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Header, Depends, Request, status, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    Header,
+    Depends,
+    Request,
+    status,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -25,6 +34,7 @@ from app.pipeline.dataset_explorer import dataset_explorer
 
 try:
     from transformers import pipeline
+
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     pipeline = None
@@ -32,6 +42,7 @@ except ImportError:
 
 # ── Production Config ──────────────────────────────────────────────────────────────
 from app.config import get_settings
+
 settings = get_settings()
 
 # ── Database layer ─────────────────────────────────────────────────────────────────
@@ -42,16 +53,27 @@ from sqlalchemy.orm import Session
 
 # ── Auth layer ────────────────────────────────────────────────────────────────────
 from app.auth.auth import (
-    hash_password, verify_password,
-    create_access_token, create_refresh_token_string,
-    store_refresh_token, rotate_refresh_token,
-    hash_refresh_token, blacklist_jti, write_audit,
-    record_failed_login, record_successful_login,
+    hash_password,
+    verify_password,
+    create_access_token,
+    create_refresh_token_string,
+    store_refresh_token,
+    rotate_refresh_token,
+    hash_refresh_token,
+    blacklist_jti,
+    write_audit,
+    record_failed_login,
+    record_successful_login,
 )
 from app.auth.dependencies import get_current_user, require_role
 
 # ── Rate limiter ──────────────────────────────────────────────────────────────────
-from app.middleware.rate_limiter import limiter, rate_limit_exceeded_handler, AUTH_LIMIT, DEFAULT_LIMIT
+from app.middleware.rate_limiter import (
+    limiter,
+    rate_limit_exceeded_handler,
+    AUTH_LIMIT,
+    DEFAULT_LIMIT,
+)
 
 # ── Core sensory modules ───────────────────────────────────────────────────────────
 from app.core.vision_module import FolderStreamAnalyzer as VisionEngine
@@ -60,15 +82,18 @@ from app.core.audio_module import AudioAnalyzer as AudioEngine
 from app.core.anpr_module import ANPREngine
 from app.core.violation_module import ViolationDetector
 from app.core.geo_currency import (
-    detect_country, get_country_config, get_fine,
-    format_fine_with_usd, get_plate_pool,
+    detect_country,
+    get_country_config,
+    get_fine,
+    format_fine_with_usd,
+    get_plate_pool,
 )
 
 # ── UCF Crime Dataset ───────────────────────────────────────────────────────────────
 # In Phase 2.5/3, UCF models are lazy-loaded or offloaded to workers.
-_ucf_loader     = None
+_ucf_loader = None
 _ucf_classifier = None
-UCF_AVAILABLE   = False
+UCF_AVAILABLE = False
 print("[INFO] UCF Classifier eager loading disabled for API node.")
 
 # ── Pipeline ────────────────────────────────────────────────────────────────────────
@@ -83,29 +108,36 @@ from app.pipeline.history_logger import (
 # FastAPI App
 # ────────────────────────────────────────────────────────────────────────────
 app = FastAPI(
-    title       = settings.app_name,
-    version     = settings.app_version,
-    description = "Production-grade multimodal traffic intelligence and crime detection system.",
-    docs_url    = "/docs",
-    redoc_url   = "/redoc",
-    openapi_url = "/openapi.json",
+    title=settings.app_name,
+    version=settings.app_version,
+    description="Production-grade multimodal traffic intelligence and crime detection system.",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
+
 
 @app.get("/api/docs", include_in_schema=False)
 @app.get("/api/v1/docs", include_in_schema=False)
 def redirect_api_docs():
     from fastapi.responses import RedirectResponse
+
     return RedirectResponse(url="/docs")
+
 
 @app.get("/api/redoc", include_in_schema=False)
 def redirect_api_redoc():
     from fastapi.responses import RedirectResponse
+
     return RedirectResponse(url="/redoc")
+
 
 @app.get("/api/openapi.json", include_in_schema=False)
 def redirect_api_openapi():
     from fastapi.responses import JSONResponse
+
     return JSONResponse(content=app.openapi())
+
 
 # ── Health & Readiness ────────────────────────────────────────────────────────
 @app.get("/health", tags=["System"])
@@ -113,13 +145,14 @@ def health_check():
     """Liveness probe to check if the API process is alive."""
     return {"status": "ok"}
 
+
 @app.get("/ready", tags=["System"])
 def readiness_check():
     """Readiness probe to check if dependencies (e.g. DB) are reachable."""
     from sqlalchemy import text
     from fastapi import HTTPException
     from app.db.database import engine
-    
+
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
@@ -130,6 +163,7 @@ def readiness_check():
 
 # ── NextGen Features (v9.0.0) ──
 from app.routers.nextgen import router as nextgen_router
+
 app.include_router(nextgen_router)
 
 # ── Middleware ────────────────────────────────────────────────────────────────────
@@ -141,11 +175,12 @@ from app.middleware.security import SecurityHeadersMiddleware
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins     = settings.allowed_origins,
-    allow_credentials = True,
-    allow_methods     = ["*"],
-    allow_headers     = ["*"],
+    allow_origins=settings.allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
 
 @app.middleware("http")
 async def request_id_middleware(request: Request, call_next):
@@ -156,8 +191,10 @@ async def request_id_middleware(request: Request, call_next):
     response.headers["X-Request-ID"] = request_id
     return response
 
+
 # ── Startup ───────────────────────────────────────────────────────────────────────
 IS_VERCEL = os.environ.get("VERCEL") == "1" or os.environ.get("VERCEL_ENV") is not None
+
 
 @app.on_event("startup")
 def on_startup():
@@ -169,13 +206,16 @@ def on_startup():
             crud.seed_default_users(db)
         finally:
             db.close()
-        print(f"[AEGIS] v{settings.app_version} — Database ready. All production layers initialized.")
+        print(
+            f"[AEGIS] v{settings.app_version} — Database ready. All production layers initialized."
+        )
     except Exception as e:
         print(f"[AEGIS WARN] Startup initialization notice: {e}")
 
+
 SYSTEM_METRICS = {
-    "total_requests":        0,
-    "critical_incidents":    0,
+    "total_requests": 0,
+    "critical_incidents": 0,
     "unauthorized_breaches": 0,
 }
 DISPATCH_REGISTRY = {"status": "STABLE", "last_broadcast": "None"}
@@ -189,7 +229,7 @@ def health_check():
         "app_name": settings.app_name,
         "app_version": settings.app_version,
         "environment": settings.environment,
-        "timestamp": datetime.utcnow().isoformat() + "Z"
+        "timestamp": datetime.utcnow().isoformat() + "Z",
     }
 
 
@@ -225,30 +265,36 @@ print("[AEGIS] All production layers initialized.")
 # Request / Response Models
 # ────────────────────────────────────────────────────────────────────────────
 
+
 class LoginRequest(BaseModel):
     username: str
     password: str
 
+
 class RegisterRequest(BaseModel):
     username: str
     password: str = Field(..., min_length=8)
-    role:     str = "Operator"
-    email:    Optional[str] = None
+    role: str = "Operator"
+    email: Optional[str] = None
     full_name: Optional[str] = None
+
 
 class RefreshRequest(BaseModel):
     refresh_token: str
 
+
 class UpdateUserRequest(BaseModel):
-    full_name:  Optional[str] = None
-    email:      Optional[str] = None
-    password:   Optional[str] = None
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+
 
 class AdminUpdateUserRequest(BaseModel):
-    role:       Optional[str] = None
-    is_active:  Optional[bool] = None
-    full_name:  Optional[str] = None
-    email:      Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+
 
 class SimulationRequest(BaseModel):
     scenario: str
@@ -261,31 +307,42 @@ class SimulationRequest(BaseModel):
     manual_active_phase: Optional[str] = None
     manual_signal_timing: Optional[int] = None
 
+
 class ChatbotRequest(BaseModel):
     user_message: str
     incident_context: str
     session_token: str
 
+
 @app.get("/", response_class=HTMLResponse)
 def read_root():
-    frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")
+    frontend_path = os.path.join(
+        os.path.dirname(__file__), "..", "frontend", "index.html"
+    )
     if os.path.exists(frontend_path):
         with open(frontend_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read(), status_code=200)
-    return HTMLResponse(content="<h1>AEGIS-TRAFFIC Enterprise Server Online</h1>", status_code=200)
+    return HTMLResponse(
+        content="<h1>AEGIS-TRAFFIC Enterprise Server Online</h1>", status_code=200
+    )
 
 
 # --- FEATURE 1: WEBHOOK ALERT DISPATCH PIPELINE ---
 def dispatch_enterprise_webhook(scenario: str, priority: str, payload: str):
     """Simulates broadcasting critical payloads to real-world corporate operational endpoints."""
-    print(f"🌐 [WEBHOOK DISPATCH] Outgoing HTTP POST transmission to remote Municipal Traffic Operations Hub...")
+    print(
+        f"🌐 [WEBHOOK DISPATCH] Outgoing HTTP POST transmission to remote Municipal Traffic Operations Hub..."
+    )
     time.sleep(1.0)
-    print(f"🚀 [MUNICIPAL FIRST RESPONDERS NOTIFIED] High-priority pager alert delivered live for vector: {scenario.upper()}")
+    print(
+        f"🚀 [MUNICIPAL FIRST RESPONDERS NOTIFIED] High-priority pager alert delivered live for vector: {scenario.upper()}"
+    )
 
 
 # ────────────────────────────────────────────────────────────────────────────
 # Auth Endpoints
 # ────────────────────────────────────────────────────────────────────────────
+
 
 @app.post("/api/v1/auth/login", tags=["Auth"])
 @limiter.limit(AUTH_LIMIT)
@@ -298,57 +355,95 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)
 
     # Account lockout check
     if user and user.is_locked:
-        write_audit(db, "LOGIN", user.username, user.id, "/api/v1/auth/login", "POST",
-                    "FAILURE", "Account locked",
-                    ip_address=request.client.host if request.client else None)
+        write_audit(
+            db,
+            "LOGIN",
+            user.username,
+            user.id,
+            "/api/v1/auth/login",
+            "POST",
+            "FAILURE",
+            "Account locked",
+            ip_address=request.client.host if request.client else None,
+        )
         raise HTTPException(
             status_code=423,
-            detail={"error": "AccountLocked", "code": "ACCOUNT_LOCKED",
-                    "detail": f"Account locked until {user.locked_until.strftime('%Y-%m-%d %H:%M UTC')}. Too many failed attempts."},
+            detail={
+                "error": "AccountLocked",
+                "code": "ACCOUNT_LOCKED",
+                "detail": f"Account locked until {user.locked_until.strftime('%Y-%m-%d %H:%M UTC')}. Too many failed attempts.",
+            },
         )
 
     if not user or not verify_password(payload.password, user.password_hash):
         SYSTEM_METRICS["unauthorized_breaches"] += 1
         if user:
             record_failed_login(db, user)
-            write_audit(db, "LOGIN", user.username, user.id, "/api/v1/auth/login", "POST",
-                        "FAILURE", f"Bad password (attempt {user.failed_attempts})",
-                        ip_address=request.client.host if request.client else None)
+            write_audit(
+                db,
+                "LOGIN",
+                user.username,
+                user.id,
+                "/api/v1/auth/login",
+                "POST",
+                "FAILURE",
+                f"Bad password (attempt {user.failed_attempts})",
+                ip_address=request.client.host if request.client else None,
+            )
         raise HTTPException(
             status_code=401,
-            detail={"error": "Unauthorized", "code": "INVALID_CREDENTIALS",
-                    "detail": "Invalid username or password."},
+            detail={
+                "error": "Unauthorized",
+                "code": "INVALID_CREDENTIALS",
+                "detail": "Invalid username or password.",
+            },
         )
 
     if not user.is_active:
         raise HTTPException(
             status_code=401,
-            detail={"error": "Unauthorized", "code": "ACCOUNT_DISABLED",
-                    "detail": "Account is disabled. Contact an administrator."},
+            detail={
+                "error": "Unauthorized",
+                "code": "ACCOUNT_DISABLED",
+                "detail": "Account is disabled. Contact an administrator.",
+            },
         )
 
     # Issue tokens
     access_token, jti = create_access_token(user)
-    refresh_token     = create_refresh_token_string()
+    refresh_token = create_refresh_token_string()
     device_info = request.headers.get("user-agent", "")[:200]
-    store_refresh_token(db, user, refresh_token,
-                        ip_address=request.client.host if request.client else None,
-                        device_info=device_info)
+    store_refresh_token(
+        db,
+        user,
+        refresh_token,
+        ip_address=request.client.host if request.client else None,
+        device_info=device_info,
+    )
     record_successful_login(db, user)
 
-    write_audit(db, "LOGIN", user.username, user.id, "/api/v1/auth/login", "POST",
-                "SUCCESS", None, ip_address=request.client.host if request.client else None,
-                request_id=getattr(request.state, 'request_id', None))
+    write_audit(
+        db,
+        "LOGIN",
+        user.username,
+        user.id,
+        "/api/v1/auth/login",
+        "POST",
+        "SUCCESS",
+        None,
+        ip_address=request.client.host if request.client else None,
+        request_id=getattr(request.state, "request_id", None),
+    )
 
     return {
-        "access_token":  access_token,
+        "access_token": access_token,
         "refresh_token": refresh_token,
-        "token_type":    "bearer",
-        "expires_in":    settings.access_token_expire_minutes * 60,
-        "role":          user.role,
-        "username":      user.username,
-        "user_id":       user.id,
-        "full_name":     user.full_name,
+        "token_type": "bearer",
+        "expires_in": settings.access_token_expire_minutes * 60,
+        "role": user.role,
+        "username": user.username,
+        "user_id": user.id,
+        "full_name": user.full_name,
     }
 
 
@@ -364,33 +459,43 @@ def refresh_token_endpoint(
     Refresh tokens are single-use (rotation on every call).
     """
     result = rotate_refresh_token(
-        db, payload.refresh_token,
+        db,
+        payload.refresh_token,
         ip_address=request.client.host if request.client else None,
     )
     if not result:
         raise HTTPException(
             status_code=401,
-            detail={"error": "Unauthorized", "code": "INVALID_REFRESH_TOKEN",
-                    "detail": "Refresh token is invalid, expired, or already used."},
+            detail={
+                "error": "Unauthorized",
+                "code": "INVALID_REFRESH_TOKEN",
+                "detail": "Refresh token is invalid, expired, or already used.",
+            },
         )
     new_token_str, _ = result
 
     # Get user from old token hash to create new access token
     token_hash = hash_refresh_token(new_token_str)
     from app.db.models import RefreshToken
+
     rt = db.query(RefreshToken).filter(RefreshToken.token_hash == token_hash).first()
     if not rt:
-        raise HTTPException(status_code=401, detail={"error": "Unauthorized", "code": "RT_NOT_FOUND"})
+        raise HTTPException(
+            status_code=401, detail={"error": "Unauthorized", "code": "RT_NOT_FOUND"}
+        )
     user = crud.get_user_by_id(db, rt.user_id)
     if not user or not user.is_active:
-        raise HTTPException(status_code=401, detail={"error": "Unauthorized", "code": "ACCOUNT_DISABLED"})
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "Unauthorized", "code": "ACCOUNT_DISABLED"},
+        )
 
     access_token, _ = create_access_token(user)
     return {
-        "access_token":  access_token,
+        "access_token": access_token,
         "refresh_token": new_token_str,
-        "token_type":    "bearer",
-        "expires_in":    settings.access_token_expire_minutes * 60,
+        "token_type": "bearer",
+        "expires_in": settings.access_token_expire_minutes * 60,
     }
 
 
@@ -406,6 +511,7 @@ def logout(
     After logout, the access token is immediately invalid even within its 15-minute window.
     """
     from datetime import datetime as _dt, timedelta
+
     jti = current_user.get("jti")
     exp = current_user.get("exp", int(time.time()) + 900)
     if jti:
@@ -415,36 +521,52 @@ def logout(
     # Revoke refresh token if provided
     if payload and payload.refresh_token:
         from app.db.models import RefreshToken
+
         token_hash = hash_refresh_token(payload.refresh_token)
-        rt = db.query(RefreshToken).filter(RefreshToken.token_hash == token_hash).first()
+        rt = (
+            db.query(RefreshToken).filter(RefreshToken.token_hash == token_hash).first()
+        )
         if rt:
-            rt.revoked    = True
+            rt.revoked = True
             rt.revoked_at = _dt.utcnow()
             db.commit()
 
-    write_audit(db, "LOGOUT", current_user.get("username", "unknown"),
-                int(current_user.get("sub", 0)), "/api/v1/auth/logout", "POST",
-                "SUCCESS", None, ip_address=request.client.host if request.client else None)
+    write_audit(
+        db,
+        "LOGOUT",
+        current_user.get("username", "unknown"),
+        int(current_user.get("sub", 0)),
+        "/api/v1/auth/logout",
+        "POST",
+        "SUCCESS",
+        None,
+        ip_address=request.client.host if request.client else None,
+    )
 
-    return {"status": "success", "message": "Logged out successfully. Token has been revoked."}
+    return {
+        "status": "success",
+        "message": "Logged out successfully. Token has been revoked.",
+    }
 
 
 @app.get("/api/v1/auth/me", tags=["Auth"])
-def get_me(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_me(
+    current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """Get current authenticated user’s full profile."""
     user = crud.get_user_by_id(db, int(current_user.get("sub", 0)))
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     return {
-        "id":             user.id,
-        "username":       user.username,
-        "email":          user.email,
-        "full_name":      user.full_name,
-        "role":           user.role,
-        "is_active":      user.is_active,
-        "created_at":     user.created_at.isoformat() if user.created_at else None,
-        "last_login":     user.last_login.isoformat() if user.last_login else None,
-        "login_count":    user.login_count,
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+        "is_active": user.is_active,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "last_login": user.last_login.isoformat() if user.last_login else None,
+        "login_count": user.login_count,
     }
 
 
@@ -460,13 +582,30 @@ def update_me(
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     if body.password and len(body.password) < settings.password_min_length:
-        raise HTTPException(status_code=400,
-            detail=f"Password must be at least {settings.password_min_length} characters.")
-    updated = crud.update_user(db, user, full_name=body.full_name,
-                               email=body.email, password=body.password)
-    write_audit(db, "UPDATE_PROFILE", user.username, user.id, "/api/v1/auth/me", "PATCH",
-                "SUCCESS", None, ip_address=request.client.host if request.client else None)
-    return {"status": "updated", "username": updated.username, "full_name": updated.full_name, "email": updated.email}
+        raise HTTPException(
+            status_code=400,
+            detail=f"Password must be at least {settings.password_min_length} characters.",
+        )
+    updated = crud.update_user(
+        db, user, full_name=body.full_name, email=body.email, password=body.password
+    )
+    write_audit(
+        db,
+        "UPDATE_PROFILE",
+        user.username,
+        user.id,
+        "/api/v1/auth/me",
+        "PATCH",
+        "SUCCESS",
+        None,
+        ip_address=request.client.host if request.client else None,
+    )
+    return {
+        "status": "updated",
+        "username": updated.username,
+        "full_name": updated.full_name,
+        "email": updated.email,
+    }
 
 
 @app.post("/api/v1/auth/register", tags=["Auth"])
@@ -482,37 +621,68 @@ def register(
     Requires: role=Admin JWT token.
     """
     if payload.role not in ["Admin", "Operator", "Auditor"]:
-        raise HTTPException(status_code=400,
-            detail={"error": "BadRequest", "code": "INVALID_ROLE",
-                    "detail": "Role must be one of: Admin, Operator, Auditor."})
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "BadRequest",
+                "code": "INVALID_ROLE",
+                "detail": "Role must be one of: Admin, Operator, Auditor.",
+            },
+        )
     if len(payload.password) < settings.password_min_length:
-        raise HTTPException(status_code=400,
-            detail={"error": "BadRequest", "code": "WEAK_PASSWORD",
-                    "detail": f"Password must be at least {settings.password_min_length} characters."})
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "BadRequest",
+                "code": "WEAK_PASSWORD",
+                "detail": f"Password must be at least {settings.password_min_length} characters.",
+            },
+        )
     if crud.get_user_by_username(db, payload.username):
-        raise HTTPException(status_code=409,
-            detail={"error": "Conflict", "code": "USERNAME_EXISTS",
-                    "detail": f"Username '{payload.username}' is already taken."})
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "Conflict",
+                "code": "USERNAME_EXISTS",
+                "detail": f"Username '{payload.username}' is already taken.",
+            },
+        )
     if payload.email and crud.get_user_by_email(db, payload.email):
-        raise HTTPException(status_code=409,
-            detail={"error": "Conflict", "code": "EMAIL_EXISTS",
-                    "detail": f"Email '{payload.email}' is already registered."})
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "Conflict",
+                "code": "EMAIL_EXISTS",
+                "detail": f"Email '{payload.email}' is already registered.",
+            },
+        )
 
     new_user = crud.create_user(
-        db, payload.username, payload.password, payload.role,
-        email=payload.email, full_name=payload.full_name,
+        db,
+        payload.username,
+        payload.password,
+        payload.role,
+        email=payload.email,
+        full_name=payload.full_name,
         created_by=current_user.get("username"),
     )
-    write_audit(db, "CREATE_USER", current_user.get("username", "admin"),
-                int(current_user.get("sub", 0)), "/api/v1/auth/register", "POST",
-                "SUCCESS", f"Created user: {payload.username} ({payload.role})",
-                ip_address=request.client.host if request.client else None)
+    write_audit(
+        db,
+        "CREATE_USER",
+        current_user.get("username", "admin"),
+        int(current_user.get("sub", 0)),
+        "/api/v1/auth/register",
+        "POST",
+        "SUCCESS",
+        f"Created user: {payload.username} ({payload.role})",
+        ip_address=request.client.host if request.client else None,
+    )
     return {
-        "status":   "created",
-        "user_id":  new_user.id,
+        "status": "created",
+        "user_id": new_user.id,
         "username": new_user.username,
-        "role":     new_user.role,
-        "message":  f"User '{payload.username}' created successfully.",
+        "role": new_user.role,
+        "message": f"User '{payload.username}' created successfully.",
     }
 
 
@@ -526,24 +696,26 @@ def list_users(
     is_active: Optional[bool] = None,
 ):
     """Admin only: list all users with pagination and optional filters."""
-    users, total = crud.get_all_users(db, skip=skip, limit=limit, role=role, is_active=is_active)
+    users, total = crud.get_all_users(
+        db, skip=skip, limit=limit, role=role, is_active=is_active
+    )
     return {
         "total": total,
-        "skip":  skip,
+        "skip": skip,
         "limit": limit,
         "users": [
             {
-                "id":           u.id,
-                "username":     u.username,
-                "email":        u.email,
-                "full_name":    u.full_name,
-                "role":         u.role,
-                "is_active":    u.is_active,
-                "created_at":   u.created_at.isoformat() if u.created_at else None,
-                "last_login":   u.last_login.isoformat() if u.last_login else None,
-                "login_count":  u.login_count,
-                "is_locked":    u.is_locked,
-                "created_by":   u.created_by,
+                "id": u.id,
+                "username": u.username,
+                "email": u.email,
+                "full_name": u.full_name,
+                "role": u.role,
+                "is_active": u.is_active,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+                "last_login": u.last_login.isoformat() if u.last_login else None,
+                "login_count": u.login_count,
+                "is_locked": u.is_locked,
+                "created_by": u.created_by,
             }
             for u in users
         ],
@@ -564,21 +736,39 @@ def admin_update_user(
         raise HTTPException(status_code=404, detail="User not found.")
     if body.role and body.role not in ["Admin", "Operator", "Auditor"]:
         raise HTTPException(status_code=400, detail="Invalid role.")
-    updated = crud.update_user(db, target, role=body.role, is_active=body.is_active,
-                               full_name=body.full_name, email=body.email)
-    write_audit(db, "ADMIN_UPDATE_USER", current_user.get("username", "admin"),
-                int(current_user.get("sub", 0)), f"/api/v1/auth/users/{user_id}", "PATCH",
-                "SUCCESS", f"Updated user {target.username}: role={body.role}, active={body.is_active}",
-                ip_address=request.client.host if request.client else None)
-    return {"status": "updated", "user_id": updated.id, "username": updated.username,
-            "role": updated.role, "is_active": updated.is_active}
+    updated = crud.update_user(
+        db,
+        target,
+        role=body.role,
+        is_active=body.is_active,
+        full_name=body.full_name,
+        email=body.email,
+    )
+    write_audit(
+        db,
+        "ADMIN_UPDATE_USER",
+        current_user.get("username", "admin"),
+        int(current_user.get("sub", 0)),
+        f"/api/v1/auth/users/{user_id}",
+        "PATCH",
+        "SUCCESS",
+        f"Updated user {target.username}: role={body.role}, active={body.is_active}",
+        ip_address=request.client.host if request.client else None,
+    )
+    return {
+        "status": "updated",
+        "user_id": updated.id,
+        "username": updated.username,
+        "role": updated.role,
+        "is_active": updated.is_active,
+    }
 
 
 @app.post("/api/v1/analyze")
 def analyze_environment(
     payload: SimulationRequest,
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """Queues telemetry streams for async YOLO inference."""
     global SYSTEM_METRICS
@@ -588,73 +778,90 @@ def analyze_environment(
 
     user_context = {
         "username": current_user.get("username", "system"),
-        "user_id": int(current_user.get("sub", 0)) if current_user.get("sub") else None
+        "user_id": int(current_user.get("sub", 0)) if current_user.get("sub") else None,
     }
-    
+
     from fastapi.responses import JSONResponse
+
     try:
         task = analyze_traffic_task.delay(payload.model_dump(), user_context)
     except Exception as e:
-        return JSONResponse(status_code=503, content={
-            "error": "Task Queue Unavailable",
-            "detail": "The background processing queue is currently unreachable. Please try again later."
-        })
-    
-    return JSONResponse(status_code=202, content={
-        "task_id": task.id,
-        "status": "queued"
-    })
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": "Task Queue Unavailable",
+                "detail": "The background processing queue is currently unreachable. Please try again later.",
+            },
+        )
+
+    return JSONResponse(
+        status_code=202, content={"task_id": task.id, "status": "queued"}
+    )
+
 
 @app.get("/tasks/{task_id}", tags=["System"])
 def get_task_status(task_id: str):
     from celery.result import AsyncResult
     from app.worker import celery_app
-    
+
     try:
         result = AsyncResult(task_id, app=celery_app)
         state = result.state
     except Exception as e:
-        return JSONResponse(status_code=503, content={
-            "error": "Task State Unavailable",
-            "detail": "The background result backend is unreachable."
-        })
-        
-    response = {
-        "task_id": task_id,
-        "status": state.lower()
-    }
-    
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": "Task State Unavailable",
+                "detail": "The background result backend is unreachable.",
+            },
+        )
+
+    response = {"task_id": task_id, "status": state.lower()}
+
     if state == "SUCCESS":
         response["result"] = result.result
     elif state == "FAILURE":
         response["error"] = str(result.info)
-        
+
     return response
+
 
 # ────────────────────────────────────────────────────────────────────────────
 # Data Query Endpoints — Incidents, Violations, Audit Log (v8.0.0)
 # ────────────────────────────────────────────────────────────────────────────
 
+
 @app.get("/api/v1/incidents", tags=["Data"])
 def get_incidents(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
-    skip: int = 0, limit: int = 20,
+    skip: int = 0,
+    limit: int = 20,
     scenario: Optional[str] = None,
     priority: Optional[str] = None,
 ):
     """Paginated incident history. All authenticated roles can access."""
-    items, total = crud.get_incidents(db, skip=skip, limit=limit,
-                                      scenario=scenario, priority=priority)
+    items, total = crud.get_incidents(
+        db, skip=skip, limit=limit, scenario=scenario, priority=priority
+    )
     return {
-        "total": total, "skip": skip, "limit": limit,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
         "incidents": [
-            {"id": i.id, "scenario": i.scenario, "priority": i.priority,
-             "risk_score": i.risk_score, "operator": i.operator_name,
-             "vehicle_count": i.vehicle_count, "location": i.location_name,
-             "crime_score": i.crime_score, "crime_type": i.crime_type,
-             "created_at": i.created_at.isoformat() if i.created_at else None,
-             "violation_count": len(i.violations)}
+            {
+                "id": i.id,
+                "scenario": i.scenario,
+                "priority": i.priority,
+                "risk_score": i.risk_score,
+                "operator": i.operator_name,
+                "vehicle_count": i.vehicle_count,
+                "location": i.location_name,
+                "crime_score": i.crime_score,
+                "crime_type": i.crime_type,
+                "created_at": i.created_at.isoformat() if i.created_at else None,
+                "violation_count": len(i.violations),
+            }
             for i in items
         ],
     }
@@ -680,20 +887,35 @@ def get_incident_detail(
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found.")
     return {
-        "id": incident.id, "scenario": incident.scenario,
-        "priority": incident.priority, "risk_score": incident.risk_score,
-        "latency_ms": incident.latency_ms, "operator": incident.operator_name,
-        "vehicle_count": incident.vehicle_count, "avg_speed_kmh": incident.avg_speed_kmh,
-        "traffic_density": incident.traffic_density, "active_phase": incident.active_phase,
-        "crime_score": incident.crime_score, "crime_type": incident.crime_type,
-        "crime_severity": incident.crime_severity, "crime_is_anomaly": incident.crime_is_anomaly,
+        "id": incident.id,
+        "scenario": incident.scenario,
+        "priority": incident.priority,
+        "risk_score": incident.risk_score,
+        "latency_ms": incident.latency_ms,
+        "operator": incident.operator_name,
+        "vehicle_count": incident.vehicle_count,
+        "avg_speed_kmh": incident.avg_speed_kmh,
+        "traffic_density": incident.traffic_density,
+        "active_phase": incident.active_phase,
+        "crime_score": incident.crime_score,
+        "crime_type": incident.crime_type,
+        "crime_severity": incident.crime_severity,
+        "crime_is_anomaly": incident.crime_is_anomaly,
         "location_name": incident.location_name,
-        "latitude": incident.latitude, "longitude": incident.longitude,
+        "latitude": incident.latitude,
+        "longitude": incident.longitude,
         "created_at": incident.created_at.isoformat() if incident.created_at else None,
         "violations": [
-            {"id": v.id, "type_code": v.type_code, "type_label": v.type_label,
-             "severity": v.severity, "plate": v.plate, "fine_amount": v.fine_amount,
-             "source": v.source, "evidence_note": v.evidence_note}
+            {
+                "id": v.id,
+                "type_code": v.type_code,
+                "type_label": v.type_label,
+                "severity": v.severity,
+                "plate": v.plate,
+                "fine_amount": v.fine_amount,
+                "source": v.source,
+                "evidence_note": v.evidence_note,
+            }
             for v in incident.violations
         ],
     }
@@ -703,21 +925,33 @@ def get_incident_detail(
 def get_violations_endpoint(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
-    skip: int = 0, limit: int = 20,
+    skip: int = 0,
+    limit: int = 20,
     plate: Optional[str] = None,
     type_code: Optional[str] = None,
     severity: Optional[str] = None,
 ):
     """Searchable, paginated violation records. Filter by plate, type, or severity."""
-    items, total = crud.get_violations(db, skip=skip, limit=limit,
-                                       plate=plate, type_code=type_code, severity=severity)
+    items, total = crud.get_violations(
+        db, skip=skip, limit=limit, plate=plate, type_code=type_code, severity=severity
+    )
     return {
-        "total": total, "skip": skip, "limit": limit,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
         "violations": [
-            {"id": v.id, "incident_id": v.incident_id, "type_code": v.type_code,
-             "type_label": v.type_label, "severity": v.severity, "plate": v.plate,
-             "fine_amount": v.fine_amount, "location": v.location_name, "source": v.source,
-             "created_at": v.created_at.isoformat() if v.created_at else None}
+            {
+                "id": v.id,
+                "incident_id": v.incident_id,
+                "type_code": v.type_code,
+                "type_label": v.type_label,
+                "severity": v.severity,
+                "plate": v.plate,
+                "fine_amount": v.fine_amount,
+                "location": v.location_name,
+                "source": v.source,
+                "created_at": v.created_at.isoformat() if v.created_at else None,
+            }
             for v in items
         ],
     }
@@ -736,22 +970,33 @@ def violation_stats_endpoint(
 def get_audit_log(
     current_user: dict = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
-    skip: int = 0, limit: int = 50,
+    skip: int = 0,
+    limit: int = 50,
     username: Optional[str] = None,
     action: Optional[str] = None,
     log_status: Optional[str] = None,
 ):
     """Admin only: immutable audit trail of all sensitive actions."""
-    items, total = crud.get_audit_logs(db, skip=skip, limit=limit,
-                                       username=username, action=action, status=log_status)
+    items, total = crud.get_audit_logs(
+        db, skip=skip, limit=limit, username=username, action=action, status=log_status
+    )
     return {
-        "total": total, "skip": skip, "limit": limit,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
         "entries": [
-            {"id": e.id, "username": e.username, "action": e.action,
-             "resource": e.resource, "method": e.method, "status": e.status,
-             "detail": e.detail, "ip_address": e.ip_address,
-             "timestamp": e.timestamp.isoformat() if e.timestamp else None,
-             "request_id": e.request_id}
+            {
+                "id": e.id,
+                "username": e.username,
+                "action": e.action,
+                "resource": e.resource,
+                "method": e.method,
+                "status": e.status,
+                "detail": e.detail,
+                "ip_address": e.ip_address,
+                "timestamp": e.timestamp.isoformat() if e.timestamp else None,
+                "request_id": e.request_id,
+            }
             for e in items
         ],
     }
@@ -768,11 +1013,22 @@ def get_historical_metrics(current_user: dict = Depends(get_current_user)):
 
 
 @app.post("/api/v1/chat")
-def system_assistant_chat(payload: ChatbotRequest, current_user: dict = Depends(get_current_user)):
+def system_assistant_chat(
+    payload: ChatbotRequest, current_user: dict = Depends(get_current_user)
+):
     """Confidential Tactical AI Assistant with dynamic system prompt injection firewall protection."""
-    malicious_keywords = ["system prompt", "reveal key", "bypass restrictions", "other users", "all logs", "secret key"]
+    malicious_keywords = [
+        "system prompt",
+        "reveal key",
+        "bypass restrictions",
+        "other users",
+        "all logs",
+        "secret key",
+    ]
     if any(keyword in payload.user_message.lower() for keyword in malicious_keywords):
-        return {"reply": "🛡️ [SECURITY ACCESS ERROR]: Request blocked by system boundaries. Data channels are isolated."}
+        return {
+            "reply": "🛡️ [SECURITY ACCESS ERROR]: Request blocked by system boundaries. Data channels are isolated."
+        }
 
     msg = payload.user_message.lower()
     ctx = payload.incident_context or "Active Smart City Intersection Node"
@@ -790,7 +1046,11 @@ def system_assistant_chat(payload: ChatbotRequest, current_user: dict = Depends(
                 f"<|im_start|>assistant\n"
             )
             response = assistant(prompt, clean_up_tokenization_spaces=True)
-            raw_llm_reply = response[0]['generated_text'].split("<|im_start|>assistant\n")[-1].strip()
+            raw_llm_reply = (
+                response[0]["generated_text"]
+                .split("<|im_start|>assistant\n")[-1]
+                .strip()
+            )
         except Exception:
             raw_llm_reply = ""
 
@@ -833,7 +1093,13 @@ def system_assistant_chat(payload: ChatbotRequest, current_user: dict = Depends(
             f"### 💡 Strategic & Technical Guidance\n"
             f"Emergency green wave overrides are recorded in the system audit ledger with high priority for compliance verification."
         )
-    elif "congest" in msg or "jam" in msg or "queue" in msg or "delay" in msg or "density" in msg:
+    elif (
+        "congest" in msg
+        or "jam" in msg
+        or "queue" in msg
+        or "delay" in msg
+        or "density" in msg
+    ):
         clean_reply = (
             f"### 📋 Executive Summary\n"
             f"The intersection is experiencing heavy traffic queue accumulation. To resolve bottlenecks and restore fluid flow, the adaptive signal controller must extend green timers and balance lane allocations.\n\n"
@@ -926,13 +1192,14 @@ def system_assistant_chat(payload: ChatbotRequest, current_user: dict = Depends(
 # §16  ANPR — Automatic Number Plate Recognition
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @app.get("/api/v1/anpr/{scenario}")
 def get_anpr_records(
     scenario: str,
-    latitude:  float = 28.6315,
+    latitude: float = 28.6315,
     longitude: float = 77.2167,
     location_name: str = "",
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Runs the ANPR pipeline for a given scenario with location-aware country plates.
@@ -941,71 +1208,76 @@ def get_anpr_records(
     if scenario not in ["normal", "accident", "congested", "emergency", "tamper"]:
         raise HTTPException(
             status_code=400,
-            detail="Invalid scenario. Choose: normal, accident, congested, emergency, tamper"
+            detail="Invalid scenario. Choose: normal, accident, congested, emergency, tamper",
         )
 
     # Detect country from location parameters
     country_code = detect_country(
-        location_name = location_name,
-        lat = latitude, lon = longitude,
-        try_nominatim = True,
+        location_name=location_name,
+        lat=latitude,
+        lon=longitude,
+        try_nominatim=True,
     )
     country_cfg = get_country_config(country_code)
 
     try:
         vision_result = VisionEngine().process_traffic_scene(scenario)
-        detections    = vision_result["detections"]
+        detections = vision_result["detections"]
     except Exception:
         detections = [{"label": "car", "confidence": 0.85, "box": [100, 100, 200, 180]}]
 
-    engine  = ANPREngine(country_code=country_code)
-    raw_records = engine.process_detections(detections, scenario, country_code=country_code)
+    engine = ANPREngine(country_code=country_code)
+    raw_records = engine.process_detections(
+        detections, scenario, country_code=country_code
+    )
 
     import hashlib as _hl
+
     _flagged_scenarios = {"accident", "emergency"}
     normalized_records = []
     flagged_count = 0
     for rec in raw_records:
         _plate_hash = int(_hl.md5(rec.get("plate_text", "").encode()).hexdigest(), 16)
-        is_flagged = (
-            scenario in _flagged_scenarios
-            and _plate_hash % 5 == 0
-        )
+        is_flagged = scenario in _flagged_scenarios and _plate_hash % 5 == 0
         if is_flagged:
             flagged_count += 1
-        normalized_records.append({
-            "vehicle_id":    rec["vehicle_id"],
-            "plate":         rec["plate_text"],
-            "vehicle_type":  rec["vehicle_type"],
-            "ocr_confidence": rec["ocr_confidence"],
-            "flagged":       is_flagged,
-            "watchlist_hit": is_flagged,
-            "timestamp":     rec["timestamp"],
-            "scenario":      rec["scenario"],
-            "status":        "FLAGGED" if is_flagged else "CLEAR",
-            "country_code":  country_code,
-            "country_name":  country_cfg["name"],
-            "country_flag":  country_cfg["flag"],
-        })
+        normalized_records.append(
+            {
+                "vehicle_id": rec["vehicle_id"],
+                "plate": rec["plate_text"],
+                "vehicle_type": rec["vehicle_type"],
+                "ocr_confidence": rec["ocr_confidence"],
+                "flagged": is_flagged,
+                "watchlist_hit": is_flagged,
+                "timestamp": rec["timestamp"],
+                "scenario": rec["scenario"],
+                "status": "FLAGGED" if is_flagged else "CLEAR",
+                "country_code": country_code,
+                "country_name": country_cfg["name"],
+                "country_flag": country_cfg["flag"],
+            }
+        )
 
     summary = {
-        "total_plates":  len(normalized_records),
-        "registered":    len(normalized_records) - flagged_count,
-        "flagged":       flagged_count,
+        "total_plates": len(normalized_records),
+        "registered": len(normalized_records) - flagged_count,
+        "flagged": flagged_count,
         "avg_ocr_confidence": round(
-            sum(r["ocr_confidence"] for r in normalized_records) / max(len(normalized_records), 1), 3
+            sum(r["ocr_confidence"] for r in normalized_records)
+            / max(len(normalized_records), 1),
+            3,
         ),
-        "country_code":  country_code,
-        "country_name":  country_cfg["name"],
-        "country_flag":  country_cfg["flag"],
-        "plate_format":  country_cfg.get("plate_format", ""),
+        "country_code": country_code,
+        "country_name": country_cfg["name"],
+        "country_flag": country_cfg["flag"],
+        "plate_format": country_cfg.get("plate_format", ""),
         "plate_example": country_cfg.get("plate_example", ""),
     }
 
     return {
-        "scenario":         scenario.upper(),
-        "anpr_records":     normalized_records,
-        "summary":          summary,
+        "scenario": scenario.upper(),
+        "anpr_records": normalized_records,
+        "summary": summary,
         "pipeline_version": "AEGIS-ANPR-v8.0",
     }
 
@@ -1014,13 +1286,14 @@ def get_anpr_records(
 # §15  Traffic Violation Detection
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @app.get("/api/v1/violations/{scenario}")
 def get_violations(
     scenario: str,
-    latitude:  float = 28.6315,
+    latitude: float = 28.6315,
     longitude: float = 77.2167,
     location_name: str = "",
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Detects traffic violations for a given scenario.
@@ -1039,27 +1312,28 @@ def get_violations(
     if scenario not in ["normal", "accident", "congested", "emergency", "tamper"]:
         raise HTTPException(
             status_code=400,
-            detail="Invalid scenario. Choose: normal, accident, congested, emergency, tamper"
+            detail="Invalid scenario. Choose: normal, accident, congested, emergency, tamper",
         )
 
     # Detect country from caller-supplied location
     country_code = detect_country(
-        location_name = location_name,
-        lat = latitude, lon = longitude,
-        try_nominatim = True,
+        location_name=location_name,
+        lat=latitude,
+        lon=longitude,
+        try_nominatim=True,
     )
-    country_cfg  = get_country_config(country_code)
-    plate_pool   = get_plate_pool(country_code)
+    country_cfg = get_country_config(country_code)
+    plate_pool = get_plate_pool(country_code)
 
     # Get vision detections
     try:
         vision_result = VisionEngine().process_traffic_scene(scenario)
-        detections    = vision_result["detections"]
+        detections = vision_result["detections"]
     except Exception:
         detections = [{"label": "car", "confidence": 0.85, "box": [100, 100, 200, 180]}]
 
     # Get fusion results for signal phase and speed
-    fusion_core  = MultimodalFusionCore()
+    fusion_core = MultimodalFusionCore()
     audio_engine = AudioEngine()
     try:
         audio_data = audio_engine.check_anomaly(
@@ -1067,22 +1341,29 @@ def get_violations(
         )
     except Exception:
         audio_data = {
-            "status": "Normal", "db_level": 42.0, "type": "Ambient",
-            "waveform": [], "fft_frequencies": [], "fft_amplitudes": [],
+            "status": "Normal",
+            "db_level": 42.0,
+            "type": "Ambient",
+            "waveform": [],
+            "fft_frequencies": [],
+            "fft_amplitudes": [],
             "peak_frequency": 0.0,
         }
 
-    fused         = fusion_core.fuse_and_classify(detections, audio_data, scenario)
-    signal_phase  = fused["active_phase"]
+    fused = fusion_core.fuse_and_classify(detections, audio_data, scenario)
+    signal_phase = fused["active_phase"]
     avg_speed_kmh = fused["avg_speed_kmh"]
 
     detector = ViolationDetector(
-        speed_limit_kmh = float(country_cfg.get("speed_limit_urban", 50)),
-        country_code    = country_code,
+        speed_limit_kmh=float(country_cfg.get("speed_limit_urban", 50)),
+        country_code=country_code,
     )
-    result   = detector.detect_violations(
-        detections, scenario, signal_phase, avg_speed_kmh,
-        plate_pool = plate_pool,
+    result = detector.detect_violations(
+        detections,
+        scenario,
+        signal_phase,
+        avg_speed_kmh,
+        plate_pool=plate_pool,
     )
 
     # ── Normalize violation records for dashboard ────────────────────────────
@@ -1091,55 +1372,63 @@ def get_violations(
     for v in result.get("violations", []):
         fine_val = v.get("fine_amount", 0)
         total_fine += fine_val
-        normalized_violations.append({
-            "violation_id":  v.get("violation_id", ""),
-            "type":          v.get("type", ""),
-            "type_code":     v.get("type_code", ""),
-            "vehicle_id":    v.get("vehicle_id", ""),
-            "plate":         v.get("plate", "—"),
-            # ── Global currency fields ──────────────────────────────────
-            "fine_amount":   fine_val,
-            "fine_local":    v.get("fine_local", f"{country_cfg['currency_symbol']}{fine_val:,}"),
-            "fine_usd":      v.get("fine_usd", ""),
-            "currency_code": v.get("currency_code", country_cfg["currency_code"]),
-            "currency_symbol": v.get("currency_symbol", country_cfg["currency_symbol"]),
-            "usd_equivalent": v.get("usd_equivalent", 0.0),
-            # ── Jurisdiction ────────────────────────────────────────
-            "country_code":  v.get("country_code", country_code),
-            "country_name":  v.get("country_name", country_cfg["name"]),
-            "country_flag":  v.get("country_flag", country_cfg["flag"]),
-            "jurisdiction":  v.get("jurisdiction", f"{country_cfg['flag']} {country_cfg['name']}"),
-            # ── Metadata ──────────────────────────────────────────
-            "severity":      v.get("severity", "MEDIUM"),
-            "timestamp":     v.get("timestamp", ""),
-            "evidence_note": v.get("evidence_note", ""),
-        })
+        normalized_violations.append(
+            {
+                "violation_id": v.get("violation_id", ""),
+                "type": v.get("type", ""),
+                "type_code": v.get("type_code", ""),
+                "vehicle_id": v.get("vehicle_id", ""),
+                "plate": v.get("plate", "—"),
+                # ── Global currency fields ──────────────────────────────────
+                "fine_amount": fine_val,
+                "fine_local": v.get(
+                    "fine_local", f"{country_cfg['currency_symbol']}{fine_val:,}"
+                ),
+                "fine_usd": v.get("fine_usd", ""),
+                "currency_code": v.get("currency_code", country_cfg["currency_code"]),
+                "currency_symbol": v.get(
+                    "currency_symbol", country_cfg["currency_symbol"]
+                ),
+                "usd_equivalent": v.get("usd_equivalent", 0.0),
+                # ── Jurisdiction ────────────────────────────────────────
+                "country_code": v.get("country_code", country_code),
+                "country_name": v.get("country_name", country_cfg["name"]),
+                "country_flag": v.get("country_flag", country_cfg["flag"]),
+                "jurisdiction": v.get(
+                    "jurisdiction", f"{country_cfg['flag']} {country_cfg['name']}"
+                ),
+                # ── Metadata ──────────────────────────────────────────
+                "severity": v.get("severity", "MEDIUM"),
+                "timestamp": v.get("timestamp", ""),
+                "evidence_note": v.get("evidence_note", ""),
+            }
+        )
 
     total_usd = round(sum(v.get("usd_equivalent", 0) for v in normalized_violations), 2)
 
     normalized_summary = {
-        "total_violations":  len(normalized_violations),
+        "total_violations": len(normalized_violations),
         "total_fine_amount": total_fine,
-        "total_fine_local":  f"{country_cfg['currency_symbol']}{total_fine:,}",
-        "total_fine_usd":    f"≈ ${total_usd:,.2f}",
-        "currency_code":     country_cfg["currency_code"],
-        "currency_symbol":   country_cfg["currency_symbol"],
-        "country_code":      country_code,
-        "country_name":      country_cfg["name"],
-        "country_flag":      country_cfg["flag"],
-        "jurisdiction":      f"{country_cfg['flag']} {country_cfg['name']}",
-        "speed_limit_kmh":   country_cfg["speed_limit_urban"],
-        "drive_side":        country_cfg.get("drive_side", "right"),
-        "by_type":           result.get("summary", {}),
-        "scenario":          scenario.upper(),
-        "signal_phase":      signal_phase,
+        "total_fine_local": f"{country_cfg['currency_symbol']}{total_fine:,}",
+        "total_fine_usd": f"≈ ${total_usd:,.2f}",
+        "currency_code": country_cfg["currency_code"],
+        "currency_symbol": country_cfg["currency_symbol"],
+        "country_code": country_code,
+        "country_name": country_cfg["name"],
+        "country_flag": country_cfg["flag"],
+        "jurisdiction": f"{country_cfg['flag']} {country_cfg['name']}",
+        "speed_limit_kmh": country_cfg["speed_limit_urban"],
+        "drive_side": country_cfg.get("drive_side", "right"),
+        "by_type": result.get("summary", {}),
+        "scenario": scenario.upper(),
+        "signal_phase": signal_phase,
     }
 
     return {
         "violations": normalized_violations,
-        "summary":    normalized_summary,
+        "summary": normalized_summary,
         "checked_at": result.get("checked_at", ""),
-        "scenario":   scenario.upper(),
+        "scenario": scenario.upper(),
     }
 
 
@@ -1151,19 +1440,20 @@ def get_violations(
 # Map Intelligence — Live Vehicle Tracking Endpoint
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class MapVehiclesRequest(BaseModel):
-    scenario:   str   = "normal"
-    latitude:   float = 40.7580
-    longitude:  float = -73.9855
+    scenario: str = "normal"
+    latitude: float = 40.7580
+    longitude: float = -73.9855
 
 
 @app.get("/api/v1/map/vehicles")
 def get_map_vehicles(
-    scenario:      str   = "normal",
-    latitude:      float = 28.6315,
-    longitude:     float = 77.2167,
-    location_name: str   = "",
-    current_user:  dict  = Depends(get_current_user),
+    scenario: str = "normal",
+    latitude: float = 28.6315,
+    longitude: float = 77.2167,
+    location_name: str = "",
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Returns geo-located vehicle markers for the Map Intelligence tab.
@@ -1187,96 +1477,109 @@ def get_map_vehicles(
 
     # Detect country
     country_code = detect_country(
-        location_name = location_name,
-        lat = latitude, lon = longitude,
-        try_nominatim = True,
+        location_name=location_name,
+        lat=latitude,
+        lon=longitude,
+        try_nominatim=True,
     )
-    country_cfg  = get_country_config(country_code)
-    speed_limit  = float(country_cfg.get("speed_limit_urban", 50))
+    country_cfg = get_country_config(country_code)
+    speed_limit = float(country_cfg.get("speed_limit_urban", 50))
 
     # Get ANPR records with country-specific plates
     try:
         vision_result = VisionEngine().process_traffic_scene(scenario)
-        detections    = vision_result["detections"]
+        detections = vision_result["detections"]
     except Exception:
-        detections = [{"label": "car", "confidence": 0.85, "box": [100, 100, 200, 180]}] * 6
+        detections = [
+            {"label": "car", "confidence": 0.85, "box": [100, 100, 200, 180]}
+        ] * 6
 
-    engine      = ANPREngine(country_code=country_code)
-    raw_records = engine.process_detections(detections, scenario, country_code=country_code)
+    engine = ANPREngine(country_code=country_code)
+    raw_records = engine.process_detections(
+        detections, scenario, country_code=country_code
+    )
 
     # Build geo-located markers
     _flagged_scenarios = {"accident", "emergency"}
     markers = []
 
     # Speed tiers as fraction of urban speed limit
-    _speed_mult = {"normal": 0.7, "congested": 0.25, "accident": 1.4, "emergency": 1.8, "tamper": 0.6}
+    _speed_mult = {
+        "normal": 0.7,
+        "congested": 0.25,
+        "accident": 1.4,
+        "emergency": 1.8,
+        "tamper": 0.6,
+    }
     _base_speed = speed_limit * _speed_mult.get(scenario, 0.7)
 
     for rec in raw_records:
-        _seed_str   = f"{rec.get('plate_text','')}{latitude:.3f}{longitude:.3f}"
-        _h          = int(_hl.md5(_seed_str.encode()).hexdigest(), 16)
+        _seed_str = f"{rec.get('plate_text','')}{latitude:.3f}{longitude:.3f}"
+        _h = int(_hl.md5(_seed_str.encode()).hexdigest(), 16)
 
-        _angle  = (_h % 360) * (_math.pi / 180)
+        _angle = (_h % 360) * (_math.pi / 180)
         _radius = 0.0005 + (_h % 100) / 100 * 0.003
-        _dlat   = _radius * _math.cos(_angle)
-        _dlon   = _radius * _math.sin(_angle)
+        _dlat = _radius * _math.cos(_angle)
+        _dlon = _radius * _math.sin(_angle)
 
         _plate_hash = int(_hl.md5(rec.get("plate_text", "").encode()).hexdigest(), 16)
-        is_flagged  = scenario in _flagged_scenarios and _plate_hash % 5 == 0
-        _speed      = max(0, int(_base_speed + (_h % 20) - 10))
+        is_flagged = scenario in _flagged_scenarios and _plate_hash % 5 == 0
+        _speed = max(0, int(_base_speed + (_h % 20) - 10))
 
-        markers.append({
-            "vehicle_id":    rec["vehicle_id"],
-            "plate":         rec["plate_text"],
-            "vehicle_type":  rec["vehicle_type"],
-            "latitude":      round(latitude  + _dlat, 6),
-            "longitude":     round(longitude + _dlon, 6),
-            "speed_kmh":     _speed,
-            "heading":       _h % 360,
-            "flagged":       is_flagged,
-            "status":        "FLAGGED" if is_flagged else "CLEAR",
-            "ocr_confidence": rec["ocr_confidence"],
-            "scenario":      scenario.upper(),
-            "timestamp":     rec["timestamp"],
-            # jurisdiction
-            "country_code":  country_code,
-            "country_flag":  country_cfg["flag"],
-            "country_name":  country_cfg["name"],
-        })
+        markers.append(
+            {
+                "vehicle_id": rec["vehicle_id"],
+                "plate": rec["plate_text"],
+                "vehicle_type": rec["vehicle_type"],
+                "latitude": round(latitude + _dlat, 6),
+                "longitude": round(longitude + _dlon, 6),
+                "speed_kmh": _speed,
+                "heading": _h % 360,
+                "flagged": is_flagged,
+                "status": "FLAGGED" if is_flagged else "CLEAR",
+                "ocr_confidence": rec["ocr_confidence"],
+                "scenario": scenario.upper(),
+                "timestamp": rec["timestamp"],
+                # jurisdiction
+                "country_code": country_code,
+                "country_flag": country_cfg["flag"],
+                "country_name": country_cfg["name"],
+            }
+        )
 
     node_info = {
-        "vehicle_id":   "AEGIS-NODE",
-        "plate":        "AEGIS-CTRL",
+        "vehicle_id": "AEGIS-NODE",
+        "plate": "AEGIS-CTRL",
         "vehicle_type": "Control Node",
-        "latitude":     latitude,
-        "longitude":    longitude,
-        "speed_kmh":    0,
-        "heading":      0,
-        "flagged":      False,
-        "status":       "ACTIVE NODE",
+        "latitude": latitude,
+        "longitude": longitude,
+        "speed_kmh": 0,
+        "heading": 0,
+        "flagged": False,
+        "status": "ACTIVE NODE",
         "ocr_confidence": 1.0,
-        "scenario":     scenario.upper(),
-        "timestamp":    "",
-        "is_node":      True,
+        "scenario": scenario.upper(),
+        "timestamp": "",
+        "is_node": True,
         "country_code": country_code,
         "country_flag": country_cfg["flag"],
     }
 
     return {
-        "scenario":          scenario.upper(),
-        "base_lat":          latitude,
-        "base_lon":          longitude,
-        "vehicle_count":     len(markers),
-        "markers":           markers,
-        "node":              node_info,
-        "country_code":      country_code,
-        "country_name":      country_cfg["name"],
-        "country_flag":      country_cfg["flag"],
-        "currency_code":     country_cfg["currency_code"],
-        "currency_symbol":   country_cfg["currency_symbol"],
+        "scenario": scenario.upper(),
+        "base_lat": latitude,
+        "base_lon": longitude,
+        "vehicle_count": len(markers),
+        "markers": markers,
+        "node": node_info,
+        "country_code": country_code,
+        "country_name": country_cfg["name"],
+        "country_flag": country_cfg["flag"],
+        "currency_code": country_cfg["currency_code"],
+        "currency_symbol": country_cfg["currency_symbol"],
         "speed_limit_urban": speed_limit,
-        "drive_side":        country_cfg.get("drive_side", "right"),
-        "plate_format":      country_cfg.get("plate_format", ""),
+        "drive_side": country_cfg.get("drive_side", "right"),
+        "plate_format": country_cfg.get("plate_format", ""),
     }
 
 
@@ -1287,28 +1590,40 @@ def pipeline_status():
     pipeline modules. Useful for dashboard health checks and monitoring.
     """
     modules = {
-        "vehicle_detection":        {"module": "YOLOv8n",          "status": "ACTIVE"},
-        "vehicle_tracking":         {"module": "ByteTrack (sim)",  "status": "ACTIVE"},
-        "vehicle_counting":         {"module": "fusion_core.py",   "status": "ACTIVE"},
-        "traffic_density":          {"module": "fusion_core.py",   "status": "ACTIVE"},
-        "queue_length_estimation":  {"module": "fusion_core.py",   "status": "ACTIVE"},
-        "speed_estimation":         {"module": "fusion_core.py",   "status": "ACTIVE"},
-        "lane_detection":           {"module": "fusion_core.py",   "status": "ACTIVE"},
-        "signal_optimization":      {"module": "fusion_core.py",   "status": "ACTIVE"},
-        "emergency_detection":      {"module": "fusion_core.py",   "status": "ACTIVE"},
-        "accident_detection":       {"module": "fusion_core.py",   "status": "ACTIVE"},
-        "violation_detection":      {"module": "violation_module", "status": "ACTIVE"},
-        "anpr_ocr":                 {"module": "anpr_module",      "status": "ACTIVE (sim)"},
-        "map_intelligence_api":     {"module": "/api/v1/map/vehicles", "status": "ACTIVE"},
-
-        "audio_anomaly":            {"module": "audio_module",     "status": "ACTIVE"},
-        "database_logging":         {"module": "history_logger",   "status": "ACTIVE"},
-        "nlp_classifier":           {"module": "DistilBERT MNLI",  "status": "ONLINE" if TRANSFORMERS_AVAILABLE else "OFFLINE (fallback)"},
-        "ai_assistant":             {"module": "Qwen2.5-0.5B",     "status": "ONLINE" if ASSISTANT_ONLINE else "OFFLINE (keyword fallback)"},
-        "ucf_crime_classifier":     {
+        "vehicle_detection": {"module": "YOLOv8n", "status": "ACTIVE"},
+        "vehicle_tracking": {"module": "ByteTrack (sim)", "status": "ACTIVE"},
+        "vehicle_counting": {"module": "fusion_core.py", "status": "ACTIVE"},
+        "traffic_density": {"module": "fusion_core.py", "status": "ACTIVE"},
+        "queue_length_estimation": {"module": "fusion_core.py", "status": "ACTIVE"},
+        "speed_estimation": {"module": "fusion_core.py", "status": "ACTIVE"},
+        "lane_detection": {"module": "fusion_core.py", "status": "ACTIVE"},
+        "signal_optimization": {"module": "fusion_core.py", "status": "ACTIVE"},
+        "emergency_detection": {"module": "fusion_core.py", "status": "ACTIVE"},
+        "accident_detection": {"module": "fusion_core.py", "status": "ACTIVE"},
+        "violation_detection": {"module": "violation_module", "status": "ACTIVE"},
+        "anpr_ocr": {"module": "anpr_module", "status": "ACTIVE (sim)"},
+        "map_intelligence_api": {"module": "/api/v1/map/vehicles", "status": "ACTIVE"},
+        "audio_anomaly": {"module": "audio_module", "status": "ACTIVE"},
+        "database_logging": {"module": "history_logger", "status": "ACTIVE"},
+        "nlp_classifier": {
+            "module": "DistilBERT MNLI",
+            "status": "ONLINE" if TRANSFORMERS_AVAILABLE else "OFFLINE (fallback)",
+        },
+        "ai_assistant": {
+            "module": "Qwen2.5-0.5B",
+            "status": "ONLINE" if ASSISTANT_ONLINE else "OFFLINE (keyword fallback)",
+        },
+        "ucf_crime_classifier": {
             "module": "HOG + SGDClassifier",
-            "status": ("ACTIVE (model loaded)" if (UCF_AVAILABLE and _ucf_classifier and _ucf_classifier.is_model_available())
-                       else "READY (model not trained — run train_ucf.py)"),
+            "status": (
+                "ACTIVE (model loaded)"
+                if (
+                    UCF_AVAILABLE
+                    and _ucf_classifier
+                    and _ucf_classifier.is_model_available()
+                )
+                else "READY (model not trained — run train_ucf.py)"
+            ),
             "dataset": "UCF Crime Dataset",
         },
     }
@@ -1332,12 +1647,12 @@ def pipeline_status():
     ]
 
     return {
-        "system":           "AEGIS-Traffic Secure Smart Intersection Engine",
-        "version":          "8.0.0",
-        "overall_status":   "OPERATIONAL",
-        "modules":          modules,
-        "pipeline_stages":  pipeline_stages,
-        "system_metrics":   SYSTEM_METRICS,
+        "system": "AEGIS-Traffic Secure Smart Intersection Engine",
+        "version": "8.0.0",
+        "overall_status": "OPERATIONAL",
+        "modules": modules,
+        "pipeline_stages": pipeline_stages,
+        "system_metrics": SYSTEM_METRICS,
         "dispatch_network": DISPATCH_REGISTRY,
     }
 
@@ -1362,25 +1677,29 @@ def ucf_dataset_status():
         }
 
     status = _ucf_loader.get_dataset_status()
-    model_info = _ucf_classifier.get_model_info() if _ucf_classifier else {"model_available": False}
+    model_info = (
+        _ucf_classifier.get_model_info()
+        if _ucf_classifier
+        else {"model_available": False}
+    )
 
     return {
-        "available":    True,
-        "dataset":      status,
-        "classifier":   model_info,
+        "available": True,
+        "dataset": status,
+        "classifier": model_info,
         "message": (
             "Extraction complete. Run `python train_ucf.py` to train the crime classifier."
             if status["extraction_complete"]
             else f"Extraction ongoing — {len(status['all_known_categories'])}/14 categories available. "
-                 f"Training can start with available data."
+            f"Training can start with available data."
         ),
     }
 
 
 class UCFAnalyzeRequest(BaseModel):
-    image_b64: str                        # Base64-encoded PNG/JPEG frame
+    image_b64: str  # Base64-encoded PNG/JPEG frame
     location_name: str = "CCTV Feed"
-    include_violations: bool = True       # Also return violation records
+    include_violations: bool = True  # Also return violation records
 
 
 @app.post("/api/v1/ucf/analyze-frame")
@@ -1422,16 +1741,16 @@ def ucf_analyze_frame(
         violations = detector.detect_crime_violations(prediction, req.location_name)
 
     return {
-        "prediction":   prediction,
-        "violations":   violations,
-        "location":     req.location_name,
-        "analyzed_by":  current_user.get("username", "unknown"),
+        "prediction": prediction,
+        "violations": violations,
+        "location": req.location_name,
+        "analyzed_by": current_user.get("username", "unknown"),
     }
 
 
 class UCFTrainRequest(BaseModel):
-    max_per_class:  int = 200
-    force_retrain:  bool = False
+    max_per_class: int = 200
+    force_retrain: bool = False
 
 
 @app.post("/api/v1/ucf/train")
@@ -1458,9 +1777,9 @@ def ucf_train(
     if _ucf_classifier.is_model_available() and not req.force_retrain:
         model_info = _ucf_classifier.get_model_info()
         return {
-            "status":   "already_trained",
-            "message":  "Model already exists. Set force_retrain=true to retrain.",
-            "model":    model_info,
+            "status": "already_trained",
+            "message": "Model already exists. Set force_retrain=true to retrain.",
+            "model": model_info,
         }
 
     # Check dataset has some data first
@@ -1478,11 +1797,13 @@ def ucf_train(
     )
 
     if not result["success"]:
-        raise HTTPException(status_code=500, detail=f"Training failed: {result.get('error')}")
+        raise HTTPException(
+            status_code=500, detail=f"Training failed: {result.get('error')}"
+        )
 
     return {
-        "status":  "trained",
-        "result":  result,
+        "status": "trained",
+        "result": result,
         "message": f"Model trained on {result['n_train_frames']} frames across {result['n_classes']} classes.",
     }
 
@@ -1506,20 +1827,20 @@ vru_core = PedestrianSafetyCore()
 
 @app.get("/api/v1/environmental/telemetry")
 def get_environmental_telemetry(
-    vehicle_count: int = 8,
-    signal_timing_seconds: int = 30,
-    atsc_enabled: bool = True
+    vehicle_count: int = 8, signal_timing_seconds: int = 30, atsc_enabled: bool = True
 ):
     """
     Returns real-time idle exhaust emissions (CO2, NOx, PM2.5), Low-Emission Zone (LEZ)
     status, and ATSC carbon offset calculations. Public/operator access.
     """
-    mock_detections = [{"label": "car"}] * max(1, vehicle_count - 1) + [{"label": "truck"}]
+    mock_detections = [{"label": "car"}] * max(1, vehicle_count - 1) + [
+        {"label": "truck"}
+    ]
     return env_core.calculate_emissions(
         vehicle_count=vehicle_count,
         visual_detections=mock_detections,
         signal_timing_seconds=signal_timing_seconds,
-        atsc_enabled=atsc_enabled
+        atsc_enabled=atsc_enabled,
     )
 
 
@@ -1531,7 +1852,7 @@ def get_v2x_bsm_feed(
     active_phase: str = "North-South Green",
     signal_timing_seconds: int = 30,
     alert_status: str = "NOMINAL",
-    vehicle_count: int = 6
+    vehicle_count: int = 6,
 ):
     """
     Generates a Cellular V2X (C-V2X) IEEE 802.11p Basic Safety Message (BSM) telemetry broadcast packet.
@@ -1544,23 +1865,22 @@ def get_v2x_bsm_feed(
         active_phase=active_phase,
         signal_timing_seconds=signal_timing_seconds,
         alert_status=alert_status,
-        vehicle_count=vehicle_count
+        vehicle_count=vehicle_count,
     )
 
 
 @app.get("/api/v1/vru/crosswalk")
 def get_vru_crosswalk_telemetry(
-    pedestrians: int = 2,
-    vru_special: int = 0,
-    base_walk_seconds: int = 15
+    pedestrians: int = 2, vru_special: int = 0, base_walk_seconds: int = 15
 ):
     """
     Evaluates Vulnerable Road User (VRU) crosswalk safety and dynamic WALK phase extensions.
     """
-    mock_dets = [{"label": "person"}] * pedestrians + [{"label": "wheelchair"}] * vru_special
+    mock_dets = [{"label": "person"}] * pedestrians + [
+        {"label": "wheelchair"}
+    ] * vru_special
     return vru_core.evaluate_crosswalk_safety(
-        visual_detections=mock_dets,
-        base_walk_seconds=base_walk_seconds
+        visual_detections=mock_dets, base_walk_seconds=base_walk_seconds
     )
 
 
@@ -1572,7 +1892,7 @@ def generate_citation_pdf(
     fine_amount: int = 2000,
     location_name: str = "Connaught Place, Delhi",
     latitude: float = 28.6315,
-    longitude: float = 77.2165
+    longitude: float = 77.2165,
 ):
     """
     Generates an official court-admissible HTML citation document suitable for printing/exporting to PDF.
@@ -1591,7 +1911,7 @@ def generate_citation_pdf(
         "longitude": longitude,
         "speed_kmh": 72,
         "speed_limit_kmh": 50,
-        "severity": "HIGH"
+        "severity": "HIGH",
     }
     return pdf_core.generate_html_citation(v_record)
 
@@ -1600,8 +1920,13 @@ def generate_citation_pdf(
 # Public Citizen Portal Endpoints (Unauthenticated / Public Access)
 # ─────────────────────────────────────────────────────────────────────────────────
 
+
 @app.get("/api/v1/public/congestion-map")
-def get_public_congestion_map(location_name: str = "Connaught Place", latitude: float = 28.6315, longitude: float = 77.2165):
+def get_public_congestion_map(
+    location_name: str = "Connaught Place",
+    latitude: float = 28.6315,
+    longitude: float = 77.2165,
+):
     """
     Public Endpoint — returns live city congestion heatmaps, active detours, and eco-speeds.
     """
@@ -1627,49 +1952,57 @@ def search_public_citations(plate: str, db: Session = Depends(get_db)):
     """
     clean_plate = plate.strip().upper()
     if not clean_plate:
-        raise HTTPException(status_code=400, detail="Registration plate parameter required.")
+        raise HTTPException(
+            status_code=400, detail="Registration plate parameter required."
+        )
 
     # Search in database
     records, total = get_violations(db, plate=clean_plate, limit=20)
-    
+
     results = []
     if records:
         for r in records:
-            results.append({
-                "ticket_id": r.violation_id or f"TKT-{r.id:06d}",
-                "type": r.type_label or r.type_code,
-                "plate": r.plate,
-                "fine_amount_inr": r.fine_amount,
-                "location": r.location_name or "Municipal Junction",
-                "severity": r.severity,
-                "date": r.created_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                "status": "PENDING_PAYMENT"
-            })
+            results.append(
+                {
+                    "ticket_id": r.violation_id or f"TKT-{r.id:06d}",
+                    "type": r.type_label or r.type_code,
+                    "plate": r.plate,
+                    "fine_amount_inr": r.fine_amount,
+                    "location": r.location_name or "Municipal Junction",
+                    "severity": r.severity,
+                    "date": r.created_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                    "status": "PENDING_PAYMENT",
+                }
+            )
     else:
         # Provide sample simulated record for demo plate lookup
-        results.append({
-            "ticket_id": f"TKT-{clean_plate[:4]}-8891",
-            "type": "Red Light Signal Violation",
-            "plate": clean_plate,
-            "fine_amount_inr": 1500,
-            "location": "Central Outer Ring Junction",
-            "severity": "HIGH",
-            "date": "2026-07-29 14:22:10 UTC",
-            "status": "PENDING_PAYMENT"
-        })
+        results.append(
+            {
+                "ticket_id": f"TKT-{clean_plate[:4]}-8891",
+                "type": "Red Light Signal Violation",
+                "plate": clean_plate,
+                "fine_amount_inr": 1500,
+                "location": "Central Outer Ring Junction",
+                "severity": "HIGH",
+                "date": "2026-07-29 14:22:10 UTC",
+                "status": "PENDING_PAYMENT",
+            }
+        )
 
     return {
         "plate": clean_plate,
         "total_tickets": len(results),
         "total_outstanding_fine": sum(r["fine_amount_inr"] for r in results),
-        "tickets": results
+        "tickets": results,
     }
 
 
 class HazardReportRequest(BaseModel):
     citizen_name: str = "Anonymous Citizen"
     contact_info: str = ""
-    hazard_type: str = "Pothole"     # Pothole | Accident | Signal Outage | Flooding | Debris
+    hazard_type: str = (
+        "Pothole"  # Pothole | Accident | Signal Outage | Flooding | Debris
+    )
     location_name: str = "Main St"
     latitude: float = 28.631
     longitude: float = 77.216
@@ -1689,7 +2022,7 @@ def report_hazard(req: HazardReportRequest, db: Session = Depends(get_db)):
         longitude=req.longitude,
         description=req.description,
         citizen_name=req.citizen_name,
-        contact_info=req.contact_info
+        contact_info=req.contact_info,
     )
     return {
         "success": True,
@@ -1707,17 +2040,19 @@ def list_hazards(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
     reports, total = get_citizen_hazard_reports(db, skip=skip, limit=limit)
     res = []
     for r in reports:
-        res.append({
-            "report_id": r.report_id,
-            "citizen_name": r.citizen_name,
-            "hazard_type": r.hazard_type,
-            "location_name": r.location_name,
-            "latitude": r.latitude,
-            "longitude": r.longitude,
-            "description": r.description,
-            "status": r.status,
-            "date": r.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        })
+        res.append(
+            {
+                "report_id": r.report_id,
+                "citizen_name": r.citizen_name,
+                "hazard_type": r.hazard_type,
+                "location_name": r.location_name,
+                "latitude": r.latitude,
+                "longitude": r.longitude,
+                "description": r.description,
+                "status": r.status,
+                "date": r.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+        )
     return {"total": total, "hazards": res}
 
 
@@ -1725,8 +2060,10 @@ def list_hazards(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
 # PHASE A, B, C: ENTERPRISE WEBSOCKETS & ADVANCED ANALYTICS ENDPOINTS
 # ────────────────────────────────────────────────────────────────────────────
 
+
 class ConnectionManager:
     """Manages active WebSocket connections for live telemetry broadcast."""
+
     def __init__(self):
         self.active_connections: List[WebSocket] = []
 
@@ -1745,6 +2082,7 @@ class ConnectionManager:
             except Exception:
                 self.disconnect(connection)
 
+
 ws_manager = ConnectionManager()
 
 
@@ -1757,6 +2095,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
     await ws_manager.connect(websocket)
     try:
         import asyncio
+
         while True:
             frame_data = cctv_engine.process_cctv_frame("CAM-01")
             telemetry_payload = {
@@ -1770,7 +2109,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                 "class_counts": frame_data["analytics"]["class_counts"],
                 "fps": frame_data["analytics"]["fps"],
                 "inference_time_ms": frame_data["analytics"]["inference_time_ms"],
-                "active_tracks": frame_data["tracks"][:8]
+                "active_tracks": frame_data["tracks"][:8],
             }
             await websocket.send_json(telemetry_payload)
             await asyncio.sleep(1.0)
@@ -1801,15 +2140,21 @@ def get_prediction_timeline(density: float = 62.5, location: str = "Connaught Pl
     """
     Time-Series Forecast Engine — multi-horizon traffic prediction (Now, 15m, 30m, 1h, Tomorrow).
     """
-    return forecasting_engine.generate_timeline_forecast(current_density=density, location_name=location)
+    return forecasting_engine.generate_timeline_forecast(
+        current_density=density, location_name=location
+    )
 
 
 @app.get("/api/v1/predict/explain")
-def get_ai_explainability(level: str = "High", count: int = 42, location: str = "Connaught Place"):
+def get_ai_explainability(
+    level: str = "High", count: int = 42, location: str = "Connaught Place"
+):
     """
     AI Explainability & Confidence — returns feature attribution factors and AI confidence % score.
     """
-    return explainability_engine.explain_prediction(congestion_level=level, vehicle_count=count, location_name=location)
+    return explainability_engine.explain_prediction(
+        congestion_level=level, vehicle_count=count, location_name=location
+    )
 
 
 @app.get("/api/v1/system/health")
@@ -1846,26 +2191,58 @@ def global_search_everything(q: str = "", db: Session = Depends(get_db)):
         return {"query": "", "results": []}
 
     results = []
-    
+
     # 1. Search Cameras
     for cam in cctv_engine.list_cameras():
-        if q_lower in cam["id"].lower() or q_lower in cam["name"].lower() or q_lower in cam["location"].lower():
-            results.append({"type": "CAMERA", "title": cam["name"], "subtitle": f"Location: {cam['location']} | Status: {cam['status']}", "id": cam["id"]})
+        if (
+            q_lower in cam["id"].lower()
+            or q_lower in cam["name"].lower()
+            or q_lower in cam["location"].lower()
+        ):
+            results.append(
+                {
+                    "type": "CAMERA",
+                    "title": cam["name"],
+                    "subtitle": f"Location: {cam['location']} | Status: {cam['status']}",
+                    "id": cam["id"],
+                }
+            )
 
     # 2. Search Violations
     violations = crud.get_violations(db, limit=50)
     for v in violations:
-        if q_lower in v.plate_number.lower() or q_lower in v.violation_type.lower() or q_lower in v.location.lower():
-            results.append({"type": "VIOLATION", "title": f"Plate: {v.plate_number}", "subtitle": f"{v.violation_type} at {v.location} (Fine: ${v.fine_amount})", "id": v.violation_id})
+        if (
+            q_lower in v.plate_number.lower()
+            or q_lower in v.violation_type.lower()
+            or q_lower in v.location.lower()
+        ):
+            results.append(
+                {
+                    "type": "VIOLATION",
+                    "title": f"Plate: {v.plate_number}",
+                    "subtitle": f"{v.violation_type} at {v.location} (Fine: ${v.fine_amount})",
+                    "id": v.violation_id,
+                }
+            )
 
     # 3. Search Incidents
     incidents = crud.get_incidents(db, limit=50)
     for inc in incidents:
-        if q_lower in inc.location.lower() or q_lower in inc.incident_type.lower() or q_lower in inc.severity.lower():
-            results.append({"type": "INCIDENT", "title": f"Incident: {inc.incident_type}", "subtitle": f"{inc.location} - Severity: {inc.severity}", "id": inc.incident_id})
+        if (
+            q_lower in inc.location.lower()
+            or q_lower in inc.incident_type.lower()
+            or q_lower in inc.severity.lower()
+        ):
+            results.append(
+                {
+                    "type": "INCIDENT",
+                    "title": f"Incident: {inc.incident_type}",
+                    "subtitle": f"{inc.location} - Severity: {inc.severity}",
+                    "id": inc.incident_id,
+                }
+            )
 
     return {"query": q, "total_matches": len(results), "results": results}
-
 
 
 from app.routers.simulation import router as simulation_router

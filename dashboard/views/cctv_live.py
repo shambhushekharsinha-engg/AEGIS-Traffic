@@ -1,15 +1,19 @@
 """
 AEGIS-Traffic Streamlit Dashboard — Real-Time CCTV Analytics Page
 """
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import time
 
+
 def render_cctv_live_page(client):
     st.markdown("### 📹 Real-Time CCTV & Object Tracking Analytics")
-    st.caption("Live frame analysis powered by OpenCV, YOLOv8 vehicle detection, and ByteTrack object tracking.")
+    st.caption(
+        "Live frame analysis powered by OpenCV, YOLOv8 vehicle detection, and ByteTrack object tracking."
+    )
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -27,20 +31,31 @@ def render_cctv_live_page(client):
     try:
         res = client.get("/cctv/analytics?camera_id=CAM-01")
         data = res.get("analytics", {})
-        counts = data.get("class_counts", {"cars": 22, "trucks": 4, "buses": 2, "motorcycles": 8, "pedestrians": 3})
+        counts = data.get(
+            "class_counts",
+            {"cars": 22, "trucks": 4, "buses": 2, "motorcycles": 8, "pedestrians": 3},
+        )
     except Exception:
-        counts = {"cars": 22, "trucks": 4, "buses": 2, "motorcycles": 8, "pedestrians": 3}
+        counts = {
+            "cars": 22,
+            "trucks": 4,
+            "buses": 2,
+            "motorcycles": 8,
+            "pedestrians": 3,
+        }
 
     col_chart, col_details = st.columns([1.5, 1])
     with col_chart:
-        df_classes = pd.DataFrame([
-            {"Vehicle Class": k.capitalize(), "Count": v} for k, v in counts.items()
-        ])
+        df_classes = pd.DataFrame(
+            [{"Vehicle Class": k.capitalize(), "Count": v} for k, v in counts.items()]
+        )
         fig = px.bar(
-            df_classes, x="Vehicle Class", y="Count",
+            df_classes,
+            x="Vehicle Class",
+            y="Count",
             color="Vehicle Class",
             title="Live Vehicle Class Distribution",
-            color_discrete_sequence=px.colors.qualitative.Pastel
+            color_discrete_sequence=px.colors.qualitative.Pastel,
         )
         fig.update_layout(template="plotly_dark", height=320)
         st.plotly_chart(fig, use_container_width=True)
@@ -51,5 +66,6 @@ def render_cctv_live_page(client):
         st.error("🔴 East-West Corridor: RED (STOP)")
         st.markdown("#### 🚶 VRU Pedestrian Guardian")
         st.info("Pedestrians Detected: 3 | Walk Extension: Active (+6s)")
+
 
 render_cctv_live_page = render_cctv_live_page

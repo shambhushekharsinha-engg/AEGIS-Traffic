@@ -2,6 +2,7 @@
 AEGIS-Traffic — Security & Configuration Tests
 Tests security middleware response headers, JWT auth verification, and multi-environment settings.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
@@ -33,5 +34,8 @@ def test_config_environment_loading():
 
 def test_invalid_login_denied(client):
     """Verifies authentication failure for non-existent user credentials."""
-    response = client.post("/api/v1/auth/login", json={"username": "nonexistent_user", "password": "WrongPassword123!"})
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"username": "nonexistent_user", "password": "WrongPassword123!"},
+    )
     assert response.status_code == 401

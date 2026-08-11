@@ -34,6 +34,7 @@ logger = logging.getLogger("crime_classifier")
 # ── Optional heavy imports ────────────────────────────────────────────────────
 try:
     import numpy as np
+
     NUMPY_AVAILABLE = True
 except ImportError:
     np = None
@@ -41,6 +42,7 @@ except ImportError:
 
 try:
     import cv2
+
     CV2_AVAILABLE = True
 except ImportError:
     cv2 = None
@@ -48,6 +50,7 @@ except ImportError:
 
 try:
     from skimage.feature import hog
+
     SKIMAGE_AVAILABLE = True
 except ImportError:
     hog = None
@@ -59,6 +62,7 @@ try:
     from sklearn.pipeline import Pipeline
     from sklearn.metrics import accuracy_score, classification_report
     import joblib
+
     SKLEARN_AVAILABLE = True
 except ImportError:
     SGDClassifier = StandardScaler = LabelEncoder = Pipeline = None
@@ -68,29 +72,40 @@ except ImportError:
 # Check if PIL is available as a fallback image loader
 try:
     from PIL import Image
+
     PIL_AVAILABLE = True
 except ImportError:
     Image = None
     PIL_AVAILABLE = False
 
-from app.core.ucf_dataset_loader import UCFDatasetLoader, CRIME_SEVERITY, CRIME_TO_SCENARIO
+from app.core.ucf_dataset_loader import (
+    UCFDatasetLoader,
+    CRIME_SEVERITY,
+    CRIME_TO_SCENARIO,
+)
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-_PROJECT_ROOT  = Path(__file__).parent.parent.parent
-_MODEL_PATH    = _PROJECT_ROOT / "data" / "ucf_crime_model.pkl"
-_META_PATH     = _PROJECT_ROOT / "data" / "ucf_crime_meta.json"
+_PROJECT_ROOT = Path(__file__).parent.parent.parent
+_MODEL_PATH = _PROJECT_ROOT / "data" / "ucf_crime_model.pkl"
+_META_PATH = _PROJECT_ROOT / "data" / "ucf_crime_meta.json"
 
 # ── HOG config ────────────────────────────────────────────────────────────────
-_FRAME_SIZE    = (128, 128)       # resize target
-_HOG_PIXELS    = (16, 16)        # pixels_per_cell
-_HOG_CELLS     = (2, 2)          # cells_per_block
-_HOG_ORIENT    = 9               # orientations
+_FRAME_SIZE = (128, 128)  # resize target
+_HOG_PIXELS = (16, 16)  # pixels_per_cell
+_HOG_CELLS = (2, 2)  # cells_per_block
+_HOG_ORIENT = 9  # orientations
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _ml_available() -> bool:
-    return NUMPY_AVAILABLE and SKLEARN_AVAILABLE and (CV2_AVAILABLE or PIL_AVAILABLE) and SKIMAGE_AVAILABLE
+    return (
+        NUMPY_AVAILABLE
+        and SKLEARN_AVAILABLE
+        and (CV2_AVAILABLE or PIL_AVAILABLE)
+        and SKIMAGE_AVAILABLE
+    )
 
 
 def _load_image_gray(path: str) -> Optional["np.ndarray"]:
@@ -125,7 +140,9 @@ def _load_image_color(path: str) -> Optional["np.ndarray"]:
     return None
 
 
-def _extract_color_histogram(img_bgr: "np.ndarray", bins: int = 32) -> Optional["np.ndarray"]:
+def _extract_color_histogram(
+    img_bgr: "np.ndarray", bins: int = 32
+) -> Optional["np.ndarray"]:
     """
     Extract a concatenated HSV colour histogram (3 channels x bins) from a BGR image.
     Provides luminance + colour distribution cues to complement HOG edge features.
@@ -145,7 +162,6 @@ def _extract_color_histogram(img_bgr: "np.ndarray", bins: int = 32) -> Optional[
         return np.concatenate(hists).astype(np.float32)  # 3*bins = 96-dim
     except Exception:
         return None
-
 
 
 def _extract_hog(img: "np.ndarray") -> Optional["np.ndarray"]:
@@ -214,12 +230,14 @@ def _extract_features_batch(
 
     if verbose:
         dim = len(X[0]) if X else 0
-        print(f"  [Feature] Done. {len(X)} vectors ({dim}-dim), skipped {skipped} bad frames.")
+        print(
+            f"  [Feature] Done. {len(X)} vectors ({dim}-dim), skipped {skipped} bad frames."
+        )
     return X, y
 
 
-
 # ── Main class ────────────────────────────────────────────────────────────────
+
 
 class CrimeClassifier:
     """
@@ -280,7 +298,11 @@ class CrimeClassifier:
                 "dependencies_missing": True,
             }
 
-        mode_label = "BINARY (Normal vs Anomalous)" if binary_mode else "MULTICLASS (14 categories)"
+        mode_label = (
+            "BINARY (Normal vs Anomalous)"
+            if binary_mode
+            else "MULTICLASS (14 categories)"
+        )
         print(f"[UCF Classifier] Starting training pipeline... Mode: {mode_label}")
         t0 = time.time()
 
@@ -288,13 +310,19 @@ class CrimeClassifier:
         data = self.loader.load_all_data(
             max_train_per_class=max_per_class,
             max_test_per_class=max(50, max_per_class // 4),
-            balanced_binary=False,     # class_weight='balanced' in SGD handles imbalance
+            balanced_binary=False,  # class_weight='balanced' in SGD handles imbalance
         )
         if data["n_train"] == 0:
-            return {"success": False, "error": "No training data found. Check dataset path.", "n_train": 0}
+            return {
+                "success": False,
+                "error": "No training data found. Check dataset path.",
+                "n_train": 0,
+            }
 
         if verbose:
-            print(f"[Data] Loaded {data['n_train']} train frames, {data['n_test']} test frames")
+            print(
+                f"[Data] Loaded {data['n_train']} train frames, {data['n_test']} test frames"
+            )
             print(f"       Classes: {data['classes']}")
 
         # ── 2. Remap labels for binary mode ───────────────────────────────────
@@ -308,12 +336,14 @@ class CrimeClassifier:
                 for l in data["test_labels"]
             ]
             if verbose:
-                normal_n  = train_labels.count("Normal")
+                normal_n = train_labels.count("Normal")
                 anomaly_n = train_labels.count("Anomalous")
-                print(f"[Binary] Normal: {normal_n} frames, Anomalous: {anomaly_n} frames")
+                print(
+                    f"[Binary] Normal: {normal_n} frames, Anomalous: {anomaly_n} frames"
+                )
         else:
             train_labels = data["train_labels"]
-            test_labels  = data["test_labels"]
+            test_labels = data["test_labels"]
 
         # ── 3. Feature extraction ─────────────────────────────────────────────
         print("[HOG+Colour] Extracting features from training frames...")
@@ -322,7 +352,10 @@ class CrimeClassifier:
         )
 
         if not X_train_raw:
-            return {"success": False, "error": "Feature extraction failed for all training frames."}
+            return {
+                "success": False,
+                "error": "Feature extraction failed for all training frames.",
+            }
 
         X_train = np.array(X_train_raw, dtype=np.float32)
 
@@ -333,42 +366,49 @@ class CrimeClassifier:
 
         # ── 5. Build & train pipeline ─────────────────────────────────────────
         print("[Train] Fitting SGDClassifier (LinearSVM) ...")
-        self.pipeline = Pipeline([
-            ("scaler",     StandardScaler()),
-            ("classifier", SGDClassifier(
-                loss="hinge",           # LinearSVM
-                alpha=0.0001,
-                max_iter=1000,
-                tol=1e-3,
-                random_state=42,
-                class_weight="balanced",
-                n_jobs=-1,
-            )),
-        ])
+        self.pipeline = Pipeline(
+            [
+                ("scaler", StandardScaler()),
+                (
+                    "classifier",
+                    SGDClassifier(
+                        loss="hinge",  # LinearSVM
+                        alpha=0.0001,
+                        max_iter=1000,
+                        tol=1e-3,
+                        random_state=42,
+                        class_weight="balanced",
+                        n_jobs=-1,
+                    ),
+                ),
+            ]
+        )
         self.pipeline.fit(X_train, y_encoded)
         t_train = time.time() - t0
 
         # ── 6. Evaluate on test set ───────────────────────────────────────────
         train_acc = None
-        test_acc  = None
-        report    = {}
+        test_acc = None
+        report = {}
 
         try:
             train_pred = self.pipeline.predict(X_train)
-            train_acc  = round(float(accuracy_score(y_encoded, train_pred)), 4)
+            train_acc = round(float(accuracy_score(y_encoded, train_pred)), 4)
         except Exception:
             pass
 
         if data["n_test"] > 0:
             print("[Eval] Evaluating on test set...")
             X_test_raw, y_test = _extract_features_batch(
-                data["test_paths"], test_labels, verbose=verbose  # use remapped test labels
+                data["test_paths"],
+                test_labels,
+                verbose=verbose,  # use remapped test labels
             )
             if X_test_raw:
                 X_test = np.array(X_test_raw, dtype=np.float32)
-                y_test_enc = self.label_encoder.transform([
-                    l for l in y_test if l in self.classes_
-                ])
+                y_test_enc = self.label_encoder.transform(
+                    [l for l in y_test if l in self.classes_]
+                )
                 # Filter test set to only known classes
                 valid_idx = [i for i, l in enumerate(y_test) if l in self.classes_]
                 X_test_valid = X_test[valid_idx]
@@ -376,33 +416,35 @@ class CrimeClassifier:
 
                 if len(X_test_valid) > 0:
                     test_pred = self.pipeline.predict(X_test_valid)
-                    test_acc  = round(float(accuracy_score(y_test_valid, test_pred)), 4)
+                    test_acc = round(float(accuracy_score(y_test_valid, test_pred)), 4)
                     try:
                         report = classification_report(
-                            y_test_valid, test_pred,
-                            target_names=[self.classes_[i] for i in sorted(set(y_test_valid))],
+                            y_test_valid,
+                            test_pred,
+                            target_names=[
+                                self.classes_[i] for i in sorted(set(y_test_valid))
+                            ],
                             output_dict=True,
                         )
                     except Exception:
                         report = {}
-
 
         # ── 6. Save model ─────────────────────────────────────────────────────
         _MODEL_PATH.parent.mkdir(exist_ok=True)
         joblib.dump(self.pipeline, _MODEL_PATH)
 
         self._meta = {
-            "classes":        self.classes_,
-            "n_classes":      len(self.classes_),
+            "classes": self.classes_,
+            "n_classes": len(self.classes_),
             "n_train_frames": len(X_train),
-            "max_per_class":  max_per_class,
-            "train_acc":      train_acc,
-            "test_acc":       test_acc,
+            "max_per_class": max_per_class,
+            "train_acc": train_acc,
+            "test_acc": test_acc,
             "hog_config": {
-                "frame_size":     _FRAME_SIZE,
+                "frame_size": _FRAME_SIZE,
                 "pixels_per_cell": _HOG_PIXELS,
                 "cells_per_block": _HOG_CELLS,
-                "orientations":   _HOG_ORIENT,
+                "orientations": _HOG_ORIENT,
             },
             "trained_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
             "train_time_seconds": round(t_train, 1),
@@ -414,26 +456,26 @@ class CrimeClassifier:
         _enc_path = _MODEL_PATH.parent / "ucf_crime_encoder.pkl"
         joblib.dump(self.label_encoder, _enc_path)
 
-        print(f"✅ Training complete in {t_train:.1f}s  |  train_acc={train_acc}  test_acc={test_acc}")
+        print(
+            f"✅ Training complete in {t_train:.1f}s  |  train_acc={train_acc}  test_acc={test_acc}"
+        )
         print(f"   Model saved → {_MODEL_PATH}")
 
         return {
-            "success":          True,
-            "classes":          self.classes_,
-            "n_classes":        len(self.classes_),
-            "n_train_frames":   len(X_train),
-            "train_accuracy":   train_acc,
-            "test_accuracy":    test_acc,
+            "success": True,
+            "classes": self.classes_,
+            "n_classes": len(self.classes_),
+            "n_train_frames": len(X_train),
+            "train_accuracy": train_acc,
+            "test_accuracy": test_acc,
             "classification_report": report,
             "train_time_seconds": round(t_train, 1),
-            "model_path":       str(_MODEL_PATH),
+            "model_path": str(_MODEL_PATH),
         }
 
     # ── Inference ──────────────────────────────────────────────────────────────
 
-    def predict_frame(
-        self, image_input: Union[str, "np.ndarray"]
-    ) -> dict:
+    def predict_frame(self, image_input: Union[str, "np.ndarray"]) -> dict:
         """
         Predict the crime category for a single frame.
 
@@ -461,7 +503,9 @@ class CrimeClassifier:
         if isinstance(image_input, str):
             feat = _extract_features(image_input)
             if feat is None:
-                return self._fallback_prediction(f"Cannot load or extract features from: {image_input}")
+                return self._fallback_prediction(
+                    f"Cannot load or extract features from: {image_input}"
+                )
         else:
             # numpy array input — use HOG only (no path for colour loading)
             img = image_input
@@ -472,7 +516,6 @@ class CrimeClassifier:
                 return self._fallback_prediction("HOG extraction failed.")
 
         X = np.array([feat], dtype=np.float32)
-
 
         try:
             pred_enc = self.pipeline.predict(X)[0]
@@ -513,35 +556,34 @@ class CrimeClassifier:
                 conf = 0.75
                 all_scores = {label: 0.75}
 
-
         except Exception as e:
             return self._fallback_prediction(f"Inference error: {e}")
 
         # Handle binary mode labels ("Anomalous"/"Normal") gracefully
         if label == "Anomalous":
             is_anomaly = True
-            severity   = "HIGH"
-            scenario   = "accident"
+            severity = "HIGH"
+            scenario = "accident"
         elif label == "Normal":
             is_anomaly = False
-            severity   = "NONE"
-            scenario   = "normal"
+            severity = "NONE"
+            scenario = "normal"
         else:
             # Fine-grained label from multiclass mode
             is_anomaly = self.loader.is_anomaly(label)
-            severity   = self.loader.get_crime_severity(label)
-            scenario   = self.loader.get_scenario_for_label(label)
+            severity = self.loader.get_crime_severity(label)
+            scenario = self.loader.get_scenario_for_label(label)
 
         crime_score = round(conf * 100, 1) if is_anomaly else round((1 - conf) * 10, 1)
 
         return {
-            "label":          label,
-            "confidence":     round(conf, 4),
-            "is_anomaly":     is_anomaly,
-            "crime_score":    crime_score,
-            "severity":       severity,
+            "label": label,
+            "confidence": round(conf, 4),
+            "is_anomaly": is_anomaly,
+            "crime_score": crime_score,
+            "severity": severity,
             "aegis_scenario": scenario,
-            "all_scores":     all_scores,
+            "all_scores": all_scores,
             "model_available": True,
         }
 
@@ -550,6 +592,7 @@ class CrimeClassifier:
         Predict from a base64-encoded PNG/JPEG image string.
         """
         import base64
+
         if not NUMPY_AVAILABLE or not CV2_AVAILABLE:
             return self._fallback_prediction("numpy/cv2 not available for b64 decode.")
         try:
@@ -579,8 +622,12 @@ class CrimeClassifier:
             }
         return {
             "model_available": True,
-            "model_path":      str(_MODEL_PATH),
-            "model_file_size_mb": round(_MODEL_PATH.stat().st_size / 1e6, 2) if _MODEL_PATH.exists() else 0,
+            "model_path": str(_MODEL_PATH),
+            "model_file_size_mb": (
+                round(_MODEL_PATH.stat().st_size / 1e6, 2)
+                if _MODEL_PATH.exists()
+                else 0
+            ),
             **self._meta,
         }
 
@@ -597,7 +644,9 @@ class CrimeClassifier:
                     self.classes_ = list(self.label_encoder.classes_)
                 if _META_PATH.exists():
                     self._meta = json.loads(_META_PATH.read_text())
-                print(f"✅ [UCF Classifier] Loaded pre-trained model from {_MODEL_PATH}")
+                print(
+                    f"✅ [UCF Classifier] Loaded pre-trained model from {_MODEL_PATH}"
+                )
         except Exception as e:
             logger.warning(f"Could not load pre-trained model: {e}")
             self.pipeline = None
@@ -606,13 +655,13 @@ class CrimeClassifier:
     def _fallback_prediction(self, reason: str) -> dict:
         """Returns a safe fallback when prediction is not possible."""
         return {
-            "label":           "NormalVideos",
-            "confidence":      0.0,
-            "is_anomaly":      False,
-            "crime_score":     0.0,
-            "severity":        "NONE",
-            "aegis_scenario":  "normal",
-            "all_scores":      {},
+            "label": "NormalVideos",
+            "confidence": 0.0,
+            "is_anomaly": False,
+            "crime_score": 0.0,
+            "severity": "NONE",
+            "aegis_scenario": "normal",
+            "all_scores": {},
             "model_available": False,
             "fallback_reason": reason,
         }
