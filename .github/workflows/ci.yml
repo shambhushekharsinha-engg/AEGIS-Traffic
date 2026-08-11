@@ -1,4 +1,4 @@
-name: AEGIS-Traffic CI/CD Pipeline
+﻿name: AEGIS-Traffic CI/CD Pipeline
 
 on:
   push:
@@ -29,15 +29,15 @@ jobs:
 
       - name: Check Formatting with Black
         run: |
-          python -m black --check app dashboard --extend-exclude="(\.git|\.venv|data|dataset)" || true
+          python -m black --check app dashboard --extend-exclude="(\.git|\.venv|data|dataset)"
 
       - name: Check Import Sorting with isort
         run: |
-          python -m isort --check-only app dashboard || true
+          python -m isort --check-only app dashboard
 
       - name: Lint Code with Flake8
         run: |
-          python -m flake8 app dashboard --max-line-length=160 --extend-ignore=E203,W503,F401,E501,E402,E722,F841 || true
+          python -m flake8 app dashboard --max-line-length=160 --extend-ignore=E203,W503,F401,E501,E402,E722,F841
 
       - name: Run Pytest & Generate Coverage Report
         run: |
@@ -59,3 +59,4 @@ jobs:
       - name: Build Frontend Docker Image
         run: |
           docker build -t aegis-frontend:latest -f Dockerfile.frontend .
+

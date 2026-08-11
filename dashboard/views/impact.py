@@ -59,6 +59,14 @@ def render_impact_dashboard(client):
             
         st.success("Projected queue reduction: 20.2% (🟡 Simulated)")
         
+        # Simulated Plotly chart
+        import plotly.graph_objects as go
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(y=[420, 420, 420, 420, 420, 420], mode='lines+markers', name='Baseline Queue (m)', line=dict(color='red')))
+        fig.add_trace(go.Scatter(y=[420, 400, 380, 360, 345, 335], mode='lines+markers', name='Proposed Queue (m)', line=dict(color='green')))
+        fig.update_layout(title="Projected Queue Evolution (5 Cycles)", xaxis_title="Cycle Number", yaxis_title="Queue Length (m)", margin=dict(l=0, r=0, t=30, b=0), height=300)
+        st.plotly_chart(fig, use_container_width=True)
+        
         acol1, acol2 = st.columns(2)
         with acol1:
             if st.button("✅ APPROVE", use_container_width=True):

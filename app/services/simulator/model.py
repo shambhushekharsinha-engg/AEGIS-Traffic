@@ -15,33 +15,46 @@ class WhatIfSimulator:
     ) -> Dict[str, Any]:
         """
         Deterministic simulation of queue and delay based on signal timing changes.
-        Uses simplistic queuing logic for demonstration.
+        Projects queue length over 5 consecutive signal cycles.
         """
-        # Current capacity per cycle
+        num_cycles = 5
+        
+        # Calculate capacities (vehicles per cycle)
         current_green_ratio = current_green_sec / cycle_length_sec
-        current_capacity = self.service_rate_veh_per_min_green * current_green_ratio
+        current_capacity = self.service_rate_veh_per_min_green * (cycle_length_sec / 60.0) * current_green_ratio
         
-        # Proposed capacity per cycle
         proposed_green_ratio = proposed_green_sec / cycle_length_sec
-        proposed_capacity = self.service_rate_veh_per_min_green * proposed_green_ratio
+        proposed_capacity = self.service_rate_veh_per_min_green * (cycle_length_sec / 60.0) * proposed_green_ratio
         
-        # Simple heuristic: ratio of capacity improvement inversely affects queue
-        capacity_ratio = current_capacity / proposed_capacity if proposed_capacity > 0 else 1.0
+        # Arrivals per cycle
+        arrivals_per_cycle = self.arrival_rate_veh_per_min * (cycle_length_sec / 60.0)
         
-        projected_queue_m = max(0.0, current_queue_m * capacity_ratio)
-        queue_reduction_percent = 0.0
-        if current_queue_m > 0:
-            queue_reduction_percent = ((current_queue_m - projected_queue_m) / current_queue_m) * 100.0
+        # We assume 1 vehicle roughly equates to 5 meters of queue
+        M_PER_VEHICLE = 5.0
+        
+        initial_vehicles_queued = current_queue_m / M_PER_VEHICLE
+        
+        current_trajectory = [initial_vehicles_queued]
+        proposed_trajectory = [initial_vehicles_queued]
+        
+        curr_q = initial_vehicles_queued
+        prop_q = initial_vehicles_queued
+        
+        for _ in range(num_cycles):
+            curr_q = max(0.0, curr_q + arrivals_per_cycle - current_capacity)
+            current_trajectory.append(curr_q)
             
-        # Delay roughly proportional to queue
-        delay_reduction_percent = queue_reduction_percent
+            prop_q = max(0.0, prop_q + arrivals_per_cycle - proposed_capacity)
+            proposed_trajectory.append(prop_q)
+            
+        final_current_queue_m = current_trajectory[-1] * M_PER_VEHICLE
+        final_proposed_queue_m = proposed_trajectory[-1] * M_PER_VEHICLE
         
-        # Throughput increases directly with capacity, capped by arrival rate
-        current_throughput = min(self.arrival_rate_veh_per_min, current_capacity)
-        proposed_throughput = min(self.arrival_rate_veh_per_min, proposed_capacity)
-        throughput_increase_percent = 0.0
-        if current_throughput > 0:
-            throughput_increase_percent = ((proposed_throughput - current_throughput) / current_throughput) * 100.0
+        queue_reduction_percent = 0.0
+        if final_current_queue_m > 0:
+            queue_reduction_percent = ((final_current_queue_m - final_proposed_queue_m) / final_current_queue_m) * 100.0
+        elif current_queue_m > 0 and final_current_queue_m == final_proposed_queue_m == 0:
+            queue_reduction_percent = 100.0
             
         return {
             "scenario": {
@@ -49,16 +62,17 @@ class WhatIfSimulator:
                 "proposed_green_sec": proposed_green_sec
             },
             "projected": {
-                "queue_length_m": round(projected_queue_m, 1),
+                "queue_length_m": round(final_proposed_queue_m, 1),
                 "queue_reduction_percent": round(queue_reduction_percent, 1),
-                "delay_reduction_percent": round(delay_reduction_percent, 1),
-                "throughput_increase_percent": round(throughput_increase_percent, 1)
+                "delay_reduction_percent": round(queue_reduction_percent, 1), # Roughly proportional
+                "throughput_increase_percent": round(((proposed_capacity - current_capacity)/current_capacity)*100 if current_capacity>0 else 0, 1),
+                "trajectory_m": [round(q * M_PER_VEHICLE, 1) for q in proposed_trajectory]
             },
             "confidence": "Medium",
             "assumptions": {
                 "arrival_rate_veh_per_min": self.arrival_rate_veh_per_min,
                 "service_rate_veh_per_min_green": self.service_rate_veh_per_min_green,
-                "deterministic_model": "Simplified deterministic capacity ratio queuing model."
+                "deterministic_model": "Multi-cycle (n=5) deterministic evolution."
             }
         }
         

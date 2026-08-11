@@ -16,9 +16,9 @@ services:
     image: postgres:15
     container_name: aegis-db
     environment:
-      - POSTGRES_USER=aegis_user
-      - POSTGRES_PASSWORD=strong_password
-      - POSTGRES_DB=aegis_db
+      - POSTGRES_USER=${POSTGRES_USER:-aegis_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-strong_password}
+      - POSTGRES_DB=${POSTGRES_DB:-aegis_db}
     ports:
       - "5432:5432"
     volumes:
@@ -51,8 +51,8 @@ services:
     environment:
       - PORT=8000
       - AEGIS_ENV=production
-      - DATABASE_URL=postgresql://aegis_user:strong_password@db:5432/aegis_db
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=${DATABASE_URL:-postgresql://aegis_user:strong_password@db:5432/aegis_db}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
     # Removed Traefik labels as we use Nginx now
     depends_on:
       db:
@@ -78,10 +78,10 @@ services:
       - .env
     environment:
       - AEGIS_ENV=production
-      - DATABASE_URL=postgresql://aegis_user:strong_password@db:5432/aegis_db
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=${DATABASE_URL:-postgresql://aegis_user:strong_password@db:5432/aegis_db}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
     depends_on:
       db:
         condition: service_healthy
