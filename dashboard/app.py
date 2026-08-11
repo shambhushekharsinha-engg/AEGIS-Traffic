@@ -5,6 +5,9 @@ Modular controller handling routing, session state, theme injection, and authent
 
 import os
 import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# isort: split
 import uuid
 
 import streamlit as st
@@ -30,7 +33,6 @@ from dashboard.views.settings import render_settings_page
 from dashboard.views.violations import render_violations_page
 
 # Ensure root directory is on Python path for app/ imports if needed
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
 # ── Page Config ──
