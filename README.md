@@ -43,7 +43,7 @@
 | **Backend APIs** | **25+** |
 | **WebSocket Channels** | **2** |
 | **AI Models** | **3+** (YOLOv8, ByteTrack, DistilBERT, FFT, Random Forest) |
-| **Dashboard Pages** | **10+** |
+| **Dashboard Pages** | **15** (incl. Scenario Replay, Civic Impact Ledger, GIS Multi-View Map) |
 | **Test Cases** | **45** (100% Passing) |
 | **Docker Services** | **3** (FastAPI, Streamlit, PostgreSQL) |
 | **Documentation Pages** | **5+** |
@@ -103,6 +103,53 @@ The centerpiece of AEGIS is the **City Impact Dashboard**. Instead of presenting
 3. **Recommendation**: "Extend green phase +15 sec"
 4. **Simulation**: Projects the exact queue reduction (-20.2%) deterministically.
 5. **Approval**: Operator clicks "Approve", committing the decision to the immutable audit log.
+
+---
+
+## 📽️ Scenario Replay (VCR Mode)
+
+A dedicated interactive tab designed for 2-minute PBEL showcase demonstrations.
+
+| Timeline Step | State | Evidence Tier |
+|:---|:---|:---|
+| **T+0** | Baseline normal traffic | 🟢 **Observed** |
+| **T+1** | Incident detected | 🟢 **Observed** |
+| **T+2** | CO₂ / delay quantified | 🔵 **Estimated** |
+| **T+3** | Signal intervention simulated | 🟡 **Simulated** |
+| **T+4** | Human approval & audit record | 🟢 **Approved** |
+
+*Driven entirely by deterministic JSON scenario files — no live backend required for demos.*
+
+---
+
+## 🌍 Civic Impact Ledger
+
+The **Civic Impact Ledger** separates raw telemetry from projections to protect the project's engineering credibility:
+
+| Evidence Class | What It Contains |
+|:---|:---|
+| 🟢 **OBSERVED** | Real incidents detected from telemetry |
+| 🔵 **ESTIMATED** | Delay / CO₂ calculated from observed baseline |
+| 🟡 **SIMULATED** | Queue reduction projected by the what-if model |
+| 🟢 **APPROVED** | Human-approved interventions committed to audit log |
+
+> An **Illustrative Economic Value** is also computed from approved interventions — explicitly labeled as estimate-based to preserve analytical credibility.
+
+---
+
+## 🗺️ GIS Map Intelligence (Enhanced)
+
+The GIS Map page features five fully interactive PyDeck 3D layers:
+
+| Layer | Description |
+|:---|:---|
+| 🚗 **Live Vehicle Markers** | Speed-colour coded: green (free), yellow (moderate), red (congested), red-pulse (emergency) |
+| 🔥 **Congestion Heatmap** | Inverse-speed weighted heat — hot zones = slow traffic |
+| 🏙️ **3D Density Columns** | Extrusion height = node density per area |
+| 🌐 **Route Arc Intelligence** | Origin → Destination arcs, arc width = relative traffic volume |
+| 🚨 **Hazard & Incident Zones** | Incident type + severity overlay |
+
+**New controls added:** 3D Pitch slider · Incident overlay toggle · Colour legend · Live incident feed expander · Emergency vehicle detection layer
 
 ---
 

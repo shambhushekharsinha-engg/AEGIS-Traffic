@@ -1,6 +1,9 @@
 """
 AEGIS-Traffic — GIS Map Intelligence Page Module (Multi-View & 3D Location Controls)
+Enhanced v2: Arc Layer routing, live stats overlay, incident markers, route intelligence.
 """
+
+import random
 
 import numpy as np
 import pandas as pd
@@ -51,23 +54,106 @@ CITY_PRESETS = {
 }
 
 
+def _make_vehicle_df(lat, lon, seed=42):
+    np.random.seed(seed)
+    num_points = 80
+    lats = lat + np.random.normal(0, 0.007, num_points)
+    lons = lon + np.random.normal(0, 0.007, num_points)
+    speeds = np.random.randint(5, 85, num_points)
+    elevations = np.random.randint(20, 280, num_points)
+    v_types = np.random.choice(
+        ["Cars", "Buses", "Trucks", "Motorcycles", "Emergency"], num_points
+    )
+
+    def _color(t, s):
+        if t == "Emergency":
+            return [255, 50, 50]
+        if s < 20:
+            return [239, 68, 68]  # red = slow
+        if s < 45:
+            return [234, 179, 8]  # yellow = moderate
+        return [34, 197, 94]  # green = free flow
+
+    colors = [_color(t, s) for t, s in zip(v_types, speeds)]
+    return pd.DataFrame(
+        {
+            "lat": lats,
+            "lon": lons,
+            "speed": speeds,
+            "elevation": elevations,
+            "vehicle_type": v_types,
+            "color_r": [c[0] for c in colors],
+            "color_g": [c[1] for c in colors],
+            "color_b": [c[2] for c in colors],
+        }
+    )
+
+
+def _make_arc_df(lat, lon, seed=7):
+    """Generate synthetic route arcs for demonstration."""
+    random.seed(seed)
+    arcs = []
+    origins = [
+        (lat + random.uniform(-0.012, 0.012), lon + random.uniform(-0.012, 0.012))
+        for _ in range(12)
+    ]
+    destinations = [
+        (lat + random.uniform(-0.012, 0.012), lon + random.uniform(-0.012, 0.012))
+        for _ in range(12)
+    ]
+    for (slat, slon), (tlat, tlon) in zip(origins, destinations):
+        arcs.append(
+            {
+                "start_lat": slat,
+                "start_lon": slon,
+                "end_lat": tlat,
+                "end_lon": tlon,
+                "volume": random.randint(50, 500),
+            }
+        )
+    return pd.DataFrame(arcs)
+
+
+def _make_incident_df(lat, lon, seed=13):
+    np.random.seed(seed)
+    n = 8
+    labels = [
+        "Congestion",
+        "Accident",
+        "Roadwork",
+        "Flooding",
+        "Event",
+        "Breakdown",
+        "Fire Truck",
+        "Signal Fault",
+    ]
+    return pd.DataFrame(
+        {
+            "lat": lat + np.random.normal(0, 0.008, n),
+            "lon": lon + np.random.normal(0, 0.008, n),
+            "label": labels,
+            "severity": np.random.choice(["HIGH", "MEDIUM", "LOW"], n),
+        }
+    )
+
+
 def render_maps_page(client):
-    """Renders multi-view GIS map with 3D vehicle markers, heatmaps, and smart city location selector."""
-    sec_div("🗺️ GIS MAP INTELLIGENCE & SATELLITE TELEMETRY")
+    """Renders multi-view GIS map with enhanced layers, incident overlay, and route intelligence."""
+    sec_div("🗺️ GIS MAP INTELLIGENCE & REAL-TIME TELEMETRY")
 
     lat = st.session_state.get("latitude", 28.6315)
     lon = st.session_state.get("longitude", 77.2167)
     loc_name = st.session_state.get("location_name", "Connaught Place, New Delhi")
 
-    # ── 3D LOCATION SELECTOR & GEOLOCATION CONTROL ──
+    # ── LOCATION COMMAND BAR ──────────────────────────────────────────────────────
     st.markdown(
         """
     <div class="card" style="margin-bottom:16px;">
         <div style="font-family:'Orbitron',sans-serif;color:#00f0ff;font-size:1.1rem;margin-bottom:8px;">
-            🌍 3D SMART CITY LOCATION COMMAND
+            🌍 SMART CITY LOCATION COMMAND
         </div>
-        <div style="font-family:'JetBrains Mono',monospace;color:#64748b;font-size:.78rem;line-height:1.6;margin-bottom:12px;">
-            Select a global smart city node preset or search any custom location worldwide to re-target the GIS satellite grid and update local currency, speed limits, and traffic laws.
+        <div style="font-family:'JetBrains Mono',monospace;color:#64748b;font-size:.78rem;line-height:1.6;margin-bottom:4px;">
+            Select a global smart city node or search any custom location to re-target the GIS satellite grid.
         </div>
     </div>
     """,
@@ -78,31 +164,26 @@ def render_maps_page(client):
 
     with c_preset:
         st.markdown(
-            '<div class="t-section" style="font-size:.75rem;margin-bottom:6px;">Smart City Presets</div>',
+            '<div class="t-section" style="font-size:.75rem;margin-bottom:6px;">Global Smart City Nodes</div>',
             unsafe_allow_html=True,
         )
-        selected_preset = st.selectbox(
-            "Select Smart City Preset",
+        selected_city = st.selectbox(
+            "Select City Node",
             list(CITY_PRESETS.keys()),
-            key="map_preset_selectbox",
+            key="map_city_preset_select",
             label_visibility="collapsed",
         )
         if st.button(
-            "📍 TARGET CITY PRESET", use_container_width=True, key="btn_target_preset"
+            "🚀 DEPLOY TO NODE", use_container_width=True, key="btn_deploy_city"
         ):
-            preset_data = CITY_PRESETS[selected_preset]
-            st.session_state.latitude = preset_data["lat"]
-            st.session_state.longitude = preset_data["lon"]
-            st.session_state.location_name = preset_data["name"]
-
-            geo_info = cached_geo_sync(
-                st.session_state.location_name,
-                st.session_state.latitude,
-                st.session_state.longitude,
-            )
+            preset = CITY_PRESETS[selected_city]
+            st.session_state.latitude = preset["lat"]
+            st.session_state.longitude = preset["lon"]
+            st.session_state.location_name = preset["name"]
+            geo_info = cached_geo_sync(preset["name"], preset["lat"], preset["lon"])
             for k, v in geo_info.items():
                 st.session_state[k] = v
-            st.toast(f"📍 Target set to {st.session_state.location_name}", icon="🌍")
+            st.toast(f"📡 GIS grid deployed to {preset['name']}", icon="🗺️")
             st.rerun()
 
     with c_search:
@@ -118,7 +199,7 @@ def render_maps_page(client):
             key="map_custom_search_input",
         )
         if st.button(
-            "📡 SEARCH GLOBAL NODE",
+            "🔍 SEARCH GLOBAL NODE",
             use_container_width=True,
             key="btn_search_custom_loc",
         ):
@@ -127,7 +208,7 @@ def render_maps_page(client):
                     try:
                         osm = requests.get(
                             f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(custom_loc)}&format=json&limit=1",
-                            headers={"User-Agent": "AegisGIS/8.0"},
+                            headers={"User-Agent": "AegisGIS/9.0"},
                             timeout=5,
                         )
                         if osm.ok and osm.json():
@@ -138,7 +219,6 @@ def render_maps_page(client):
                             st.session_state.location_name = ", ".join(
                                 parts[:2]
                             ).strip()
-
                             geo_info = cached_geo_sync(
                                 st.session_state.location_name,
                                 st.session_state.latitude,
@@ -148,7 +228,7 @@ def render_maps_page(client):
                                 st.session_state[k] = v
                             st.toast(
                                 f"📍 Located {st.session_state.location_name}",
-                                icon="🗺️",
+                                icon="✅",
                             )
                             st.rerun()
                         else:
@@ -158,152 +238,232 @@ def render_maps_page(client):
 
     mini_separator()
 
-    # ── MAP VIEW OPTIONS & CONTROL PANEL ──
+    # ── MAP CONTROLS ──────────────────────────────────────────────────────────────
     st.markdown(
-        '<div class="t-section" style="margin-bottom:10px;">🗺️ MAP VIEW OPTIONS & SATELLITE LAYERS</div>',
+        '<div class="t-section" style="margin-bottom:10px;">📡 MAP VIEW OPTIONS & SATELLITE LAYERS</div>',
         unsafe_allow_html=True,
     )
 
-    mc1, mc2, mc3 = st.columns([1.2, 1, 1])
+    mc1, mc2, mc3, mc4 = st.columns([1.4, 0.8, 0.8, 0.8])
 
     with mc1:
         map_view_mode = st.selectbox(
             "MAP VIEW MODE",
             [
-                "🛸 3D PyDeck Animated Vehicle Markers",
+                "🚗 Live Vehicle Markers (Speed-Colour Coded)",
                 "🔥 Real-Time Congestion Heatmap",
-                "🏙️ 3D Building & Density Extrusion Columns",
-                "🚨 Hazard & Emergency Incident Zones",
+                "🏙️ 3D Density Extrusion Columns",
+                "🌐 Route Arc Intelligence Layer",
+                "🚨 Hazard & Incident Zones",
                 "🗺️ Standard OpenStreetMap Grid",
             ],
             key="map_view_mode_select",
         )
 
     with mc2:
-        zoom_level = st.slider("Map Zoom Level", 10, 18, 14, key="map_zoom_slider")
+        zoom_level = st.slider("Zoom Level", 10, 18, 14, key="map_zoom_slider")
 
     with mc3:
+        pitch_level = st.slider("3D Pitch", 0, 70, 40, step=10, key="map_pitch_slider")
+
+    with mc4:
         vehicle_filter = st.multiselect(
-            "Filter Vehicle Types",
-            ["Cars", "Buses", "Trucks", "Motorcycles", "Emergency Vehicles"],
-            default=["Cars", "Buses", "Trucks", "Motorcycles"],
+            "Filter Vehicles",
+            ["Cars", "Buses", "Trucks", "Motorcycles", "Emergency"],
+            default=["Cars", "Buses", "Trucks", "Motorcycles", "Emergency"],
             key="map_vehicle_filter_multiselect",
         )
 
-    # ── SYNTHETIC TELEMETRY GENERATION ──
-    np.random.seed(42)
-    num_points = 60
-    lats = lat + np.random.normal(0, 0.006, num_points)
-    lons = lon + np.random.normal(0, 0.006, num_points)
-    speeds = np.random.randint(10, 75, num_points)
-    elevations = np.random.randint(20, 250, num_points)
-    v_types = np.random.choice(["Cars", "Buses", "Trucks", "Motorcycles"], num_points)
-
-    df_vehicles = pd.DataFrame(
-        {
-            "lat": lats,
-            "lon": lons,
-            "speed": speeds,
-            "elevation": elevations,
-            "vehicle_type": v_types,
-            "color_r": [
-                0 if t == "Cars" else (255 if t == "Trucks" else 168) for t in v_types
-            ],
-            "color_g": [
-                240 if t == "Cars" else (68 if t == "Trucks" else 85) for t in v_types
-            ],
-            "color_b": [
-                255 if t == "Cars" else (68 if t == "Trucks" else 247) for t in v_types
-            ],
-        }
+    # Show incident toggle
+    show_incidents = st.toggle(
+        "🚨 Overlay Incident Markers", value=True, key="map_show_incidents"
     )
 
+    # ── DATA GENERATION ───────────────────────────────────────────────────────────
+    df_vehicles = _make_vehicle_df(lat, lon)
     if vehicle_filter:
         df_vehicles = df_vehicles[df_vehicles["vehicle_type"].isin(vehicle_filter)]
 
-    # Render Active Map Layer based on View Mode
-    if "3D PyDeck" in map_view_mode:
-        layer = pdk.Layer(
+    df_incidents = _make_incident_df(lat, lon)
+    df_arcs = _make_arc_df(lat, lon)
+
+    # ── MAP RENDERING ─────────────────────────────────────────────────────────────
+    MAP_STYLE = "mapbox://styles/mapbox/dark-v10"
+
+    view_state = pdk.ViewState(
+        latitude=lat, longitude=lon, zoom=zoom_level, pitch=pitch_level, bearing=0
+    )
+
+    incident_layer = pdk.Layer(
+        "ScatterplotLayer",
+        df_incidents,
+        get_position=["lon", "lat"],
+        get_color=[255, 50, 50, 220],
+        get_radius=70,
+        pickable=True,
+    )
+
+    if "Live Vehicle" in map_view_mode:
+        main_layer = pdk.Layer(
             "ScatterplotLayer",
             df_vehicles,
             get_position=["lon", "lat"],
-            get_color=["color_r", "color_g", "color_b", 200],
-            get_radius=35,
+            get_color=["color_r", "color_g", "color_b", 210],
+            get_radius=30,
             pickable=True,
+            auto_highlight=True,
         )
-        view_state = pdk.ViewState(
-            latitude=lat, longitude=lon, zoom=zoom_level, pitch=45, bearing=30
-        )
-        r = pdk.Deck(
-            layers=[layer],
-            initial_view_state=view_state,
-            tooltip={"text": "Type: {vehicle_type}\nSpeed: {speed} km/h"},
-        )
-        st.pydeck_chart(r)
+        tooltip = {
+            "html": "<b>Type:</b> {vehicle_type}<br/><b>Speed:</b> {speed} km/h",
+            "style": {
+                "backgroundColor": "#0f172a",
+                "color": "#00f0ff",
+                "fontSize": "12px",
+                "padding": "8px",
+            },
+        }
 
     elif "Congestion Heatmap" in map_view_mode:
-        layer = pdk.Layer(
+        # Invert speed to weight: slow = high weight = hot
+        df_vehicles["heat_weight"] = 90 - df_vehicles["speed"]
+        main_layer = pdk.Layer(
             "HeatmapLayer",
             df_vehicles,
             get_position=["lon", "lat"],
-            get_weight="speed",
-            radiusPixels=60,
+            get_weight="heat_weight",
+            radiusPixels=70,
+            intensity=1.0,
+            threshold=0.05,
         )
-        view_state = pdk.ViewState(
-            latitude=lat, longitude=lon, zoom=zoom_level, pitch=0, bearing=0
-        )
-        r = pdk.Deck(layers=[layer], initial_view_state=view_state)
-        st.pydeck_chart(r)
+        tooltip = None
 
-    elif "3D Building" in map_view_mode:
-        layer = pdk.Layer(
+    elif "3D Density" in map_view_mode:
+        main_layer = pdk.Layer(
             "ColumnLayer",
             df_vehicles,
             get_position=["lon", "lat"],
             get_elevation="elevation",
-            elevation_scale=3,
-            radius=25,
+            elevation_scale=4,
+            radius=28,
             get_fill_color=["color_r", "color_g", "color_b", 220],
             pickable=True,
+            auto_highlight=True,
         )
-        view_state = pdk.ViewState(
-            latitude=lat, longitude=lon, zoom=zoom_level, pitch=60, bearing=-20
+        tooltip = {
+            "html": "<b>Node Density:</b> {elevation}m<br/><b>Type:</b> {vehicle_type}",
+            "style": {
+                "backgroundColor": "#0f172a",
+                "color": "#a855f7",
+                "fontSize": "12px",
+            },
+        }
+
+    elif "Route Arc" in map_view_mode:
+        main_layer = pdk.Layer(
+            "ArcLayer",
+            df_arcs,
+            get_source_position=["start_lon", "start_lat"],
+            get_target_position=["end_lon", "end_lat"],
+            get_source_color=[0, 240, 255, 200],
+            get_target_color=[168, 85, 247, 200],
+            get_width="volume / 80",
+            pickable=True,
+            auto_highlight=True,
         )
-        r = pdk.Deck(
-            layers=[layer],
-            initial_view_state=view_state,
-            tooltip={"text": "Node Density Elevation: {elevation}m"},
-        )
-        st.pydeck_chart(r)
+        tooltip = {
+            "html": "<b>Route Volume:</b> {volume} vehicles/hr",
+            "style": {
+                "backgroundColor": "#0f172a",
+                "color": "#00f0ff",
+                "fontSize": "12px",
+            },
+        }
 
     elif "Hazard" in map_view_mode:
-        df_incidents = df_vehicles.head(10).copy()
-        df_incidents["color_r"] = 239
-        df_incidents["color_g"] = 68
-        df_incidents["color_b"] = 68
-        layer = pdk.Layer(
+        df_high = df_incidents.copy()
+        main_layer = pdk.Layer(
             "ScatterplotLayer",
-            df_incidents,
+            df_high,
             get_position=["lon", "lat"],
             get_color=[239, 68, 68, 240],
-            get_radius=80,
+            get_radius=90,
             pickable=True,
+            auto_highlight=True,
         )
-        view_state = pdk.ViewState(
-            latitude=lat, longitude=lon, zoom=zoom_level, pitch=30, bearing=0
-        )
-        r = pdk.Deck(
-            layers=[layer],
-            initial_view_state=view_state,
-            tooltip={"text": "🚨 Hazard Alert: High Congestion / Incident"},
-        )
-        st.pydeck_chart(r)
+        tooltip = {
+            "html": "<b>🚨 {label}</b><br/>Severity: {severity}",
+            "style": {
+                "backgroundColor": "#1a0000",
+                "color": "#ff4444",
+                "fontSize": "12px",
+            },
+        }
 
     else:
         st.map(df_vehicles[["lat", "lon"]], zoom=zoom_level)
+        mini_separator()
 
-    # ── LIVE GIS TELEMETRY SUMMARY CARDS ──
+    if "Standard" not in map_view_mode:
+        layers = [main_layer]
+        if show_incidents and "Hazard" not in map_view_mode:
+            layers.append(incident_layer)
+
+        deck = pdk.Deck(
+            layers=layers,
+            initial_view_state=view_state,
+            map_style=MAP_STYLE,
+            tooltip=tooltip,
+        )
+        st.pydeck_chart(deck, use_container_width=True)
+
+    # ── COLOUR LEGEND ─────────────────────────────────────────────────────────────
+    if "Live Vehicle" in map_view_mode:
+        st.markdown(
+            """
+        <div style="display:flex;gap:18px;padding:8px 0;font-family:'JetBrains Mono',monospace;font-size:.72rem;">
+            <span style="color:#22c55e;">■ Free Flow (&gt;45 km/h)</span>
+            <span style="color:#eab308;">■ Moderate (20–45 km/h)</span>
+            <span style="color:#ef4444;">■ Congested (&lt;20 km/h)</span>
+            <span style="color:#ff3232;">■ Emergency Vehicle</span>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
+    if "Route Arc" in map_view_mode:
+        st.markdown(
+            """
+        <div style="display:flex;gap:18px;padding:8px 0;font-family:'JetBrains Mono',monospace;font-size:.72rem;">
+            <span style="color:#00f0ff;">■ Origin Node</span>
+            <span style="color:#a855f7;">■ Destination Node</span>
+            <span>Arc width = relative traffic volume</span>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
     mini_separator()
+
+    # ── INCIDENT SUMMARY TABLE ─────────────────────────────────────────────────────
+    with st.expander("🚨 Active Incident Feed", expanded=False):
+        severity_color = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}
+        df_incidents["Status"] = (
+            df_incidents["severity"].map(severity_color)
+            + " "
+            + df_incidents["severity"]
+        )
+        st.dataframe(
+            df_incidents[["label", "Status", "lat", "lon"]].rename(
+                columns={
+                    "label": "Incident Type",
+                    "lat": "Latitude",
+                    "lon": "Longitude",
+                }
+            ),
+            use_container_width=True,
+        )
+
+    # ── LIVE GIS TELEMETRY SUMMARY CARDS ──────────────────────────────────────────
     c1, c2, c3, c4 = st.columns(4)
     c1.markdown(
         metric_tile("Active GIS Node", loc_name[:18] + "...", "", "#00f0ff", "📍"),
@@ -318,6 +478,6 @@ def render_maps_page(client):
         unsafe_allow_html=True,
     )
     c4.markdown(
-        metric_tile("GPS Lat/Lon", f"{lat:.4f}, {lon:.4f}", "", "#eab308", "🌐"),
+        metric_tile("GPS Lat/Lon", f"{lat:.4f}, {lon:.4f}", "", "#eab308", "🌍"),
         unsafe_allow_html=True,
     )
