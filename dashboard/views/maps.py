@@ -137,6 +137,36 @@ def _make_incident_df(lat, lon, seed=13):
     )
 
 
+def _make_route_df(lat, lon, seed=99):
+    """Generate synthetic path routes for the original 3D animated route view."""
+    np.random.seed(seed)
+    n = 20
+    paths = []
+    for _ in range(n):
+        slat = lat + np.random.normal(0, 0.015)
+        slon = lon + np.random.normal(0, 0.015)
+        path = []
+        for i in range(10):
+            path.append(
+                [
+                    slon + (i * np.random.normal(0.001, 0.0005)),
+                    slat + (i * np.random.normal(0.001, 0.0005)),
+                ]
+            )
+        paths.append(
+            {
+                "path": path,
+                "color": [
+                    np.random.randint(50, 255),
+                    np.random.randint(50, 255),
+                    255,
+                    200,
+                ],
+            }
+        )
+    return pd.DataFrame(paths)
+
+
 def render_maps_page(client):
     """Renders multi-view GIS map with enhanced layers, incident overlay, and route intelligence."""
     sec_div("🗺️ GIS MAP INTELLIGENCE & REAL-TIME TELEMETRY")
@@ -251,6 +281,7 @@ def render_maps_page(client):
             "MAP VIEW MODE",
             [
                 "🚗 Live Vehicle Markers (Speed-Colour Coded)",
+                "🛣️ 3D Animated Vehicle Routes (Original)",
                 "🔥 Real-Time Congestion Heatmap",
                 "🏙️ 3D Density Extrusion Columns",
                 "🌐 Route Arc Intelligence Layer",
@@ -267,15 +298,12 @@ def render_maps_page(client):
         pitch_level = st.slider("3D Pitch", 0, 70, 40, step=10, key="map_pitch_slider")
 
     with mc4:
-        vehicle_filter = st.multiselect(
-            "Filter Vehicles",
-            ["Cars", "Buses", "Trucks", "Motorcycles", "Emergency"],
-            default=["Cars", "Buses", "Trucks", "Motorcycles", "Emergency"],
-            key="map_vehicle_filter_multiselect",
+        map_theme = st.selectbox(
+            "Map Theme", ["Dark Mode", "Light Mode"], key="map_theme_select"
         )
 
     # ── ADVANCED CONTROLS ROW ─────────────────────────────────────────────────────
-    adv1, adv2, adv3 = st.columns([1, 1, 2])
+    adv1, adv2, adv3, adv4 = st.columns([1, 1, 1, 1])
 
     with adv1:
         show_incidents = st.toggle(
@@ -288,6 +316,14 @@ def render_maps_page(client):
         )
 
     with adv3:
+        vehicle_filter = st.multiselect(
+            "Filter Vehicles",
+            ["Cars", "Buses", "Trucks", "Motorcycles", "Emergency"],
+            default=["Cars", "Buses", "Trucks", "Motorcycles", "Emergency"],
+            key="map_vehicle_filter_multiselect",
+        )
+
+    with adv4:
         # Heatmap time-lapse: only visible when heatmap is selected
         if "Heatmap" in map_view_mode:
             timelapse_hour = st.slider(
@@ -343,9 +379,13 @@ def render_maps_page(client):
 
     df_incidents = _make_incident_df(lat, lon)
     df_arcs = _make_arc_df(lat, lon)
+    df_routes = _make_route_df(lat, lon)
 
     # ── MAP RENDERING ─────────────────────────────────────────────────────────────
-    MAP_STYLE = "mapbox://styles/mapbox/dark-v10"
+    if map_theme == "Light Mode":
+        MAP_STYLE = "mapbox://styles/mapbox/light-v10"
+    else:
+        MAP_STYLE = "mapbox://styles/mapbox/dark-v10"
 
     view_state = pdk.ViewState(
         latitude=lat, longitude=lon, zoom=zoom_level, pitch=pitch_level, bearing=0
@@ -372,6 +412,28 @@ def render_maps_page(client):
         )
         tooltip = {
             "html": "<b>Type:</b> {vehicle_type}<br/><b>Speed:</b> {speed} km/h",
+            "style": {
+                "backgroundColor": "#0f172a",
+                "color": "#00f0ff",
+                "fontSize": "12px",
+                "padding": "8px",
+            },
+        }
+
+    elif "Animated Vehicle Routes" in map_view_mode:
+        main_layer = pdk.Layer(
+            "PathLayer",
+            df_routes,
+            get_path="path",
+            get_color="color",
+            width_scale=20,
+            width_min_pixels=2,
+            get_width=5,
+            pickable=True,
+            auto_highlight=True,
+        )
+        tooltip = {
+            "html": "<b>Live Route Track</b>",
             "style": {
                 "backgroundColor": "#0f172a",
                 "color": "#00f0ff",
