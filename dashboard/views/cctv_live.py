@@ -107,6 +107,9 @@ def render_cctv_live_page(client):
     if "selected_camera" not in st.session_state:
         st.session_state.selected_camera = list(CAMERA_NODES.keys())[0]
 
+    def set_camera(cam_name):
+        st.session_state.selected_camera = cam_name
+
     for col, cam_name in zip(cam_cols, CAMERA_NODES.keys()):
         cam = CAMERA_NODES[cam_name]
         is_active = st.session_state.selected_camera == cam_name
@@ -129,9 +132,13 @@ def render_cctv_live_page(client):
         """,
             unsafe_allow_html=True,
         )
-        if col.button(f"Select", key=f"cam_btn_{cam['id']}"):
-            st.session_state.selected_camera = cam_name
-            st.rerun()
+        col.button(
+            f"Select",
+            key=f"cam_btn_{cam['id']}",
+            on_click=set_camera,
+            args=(cam_name,),
+            use_container_width=True,
+        )
 
     st.markdown("---")
 
