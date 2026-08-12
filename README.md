@@ -153,6 +153,28 @@ The GIS Map page features five fully interactive PyDeck 3D layers:
 
 ---
 
+## 🆕 v10 Feature Upgrades
+
+### 📹 Multi-Camera Switcher (CCTV Page)
+Switch between 4 live camera nodes (Connaught Place, Rajpath, India Gate, Lajpat Nagar) in one click. Each node shows its own vehicle class distribution, signal phase, and VRU status independently.
+
+### 🚦 Signal Phase Countdown Widget
+A real-time countdown timer with a colour-coded progress bar shows the exact seconds remaining in the current signal phase (North-South Green / East-West Red / Pedestrian Walk Active). The bar pulses with the phase colour for instant situational awareness.
+
+### 🚶 Enhanced VRU Pedestrian Guardian
+Automatically scales the walk extension (+Ns) based on pedestrian density. Risk level (LOW / MEDIUM / HIGH) is computed live with colour-coded status badges. Connected to the multi-camera switcher — each camera has its own guardian reading.
+
+### 📥 Civic Impact Ledger — CSV Export
+One-click export of the full 4-tier evidence ledger to a timestamped `.csv` file. Each row includes the evidence tier, metric name, value, and export timestamp. A disclaimer is shown reminding readers that ESTIMATED and SIMULATED figures are model projections.
+
+### 🕐 Heatmap Time-Lapse Slider (Maps Page)
+A 0–23 hour slider appears when the **Congestion Heatmap** layer is active. Slide through the day to see simulated peak (08:00–10:00, 17:00–20:00), midday, and off-peak traffic density patterns. The heatmap intensity and vehicle speeds update in real-time based on the selected hour.
+
+### ⚡ Live Position Refresh Toggle (Maps Page)
+Toggle on **Live Position Refresh** to have vehicle marker positions change every 5 seconds, simulating a WebSocket-driven live feed. The seed rotates on a 5-second clock so the position set updates predictably and reproducibly.
+
+---
+
 ## 🔬 Deterministic What-If Simulation
 
 AEGIS goes beyond "AI prediction" by incorporating a **Deterministic Mathematical Simulator**:

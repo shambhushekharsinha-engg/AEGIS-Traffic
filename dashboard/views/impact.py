@@ -1,7 +1,10 @@
+import io
 import json
 import os
+from datetime import datetime
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 from dashboard.services.logger import logger
@@ -15,6 +18,26 @@ def load_scenario(scenario_name: str):
     except Exception as e:
         logger.error(f"Failed to load scenario {scenario_name}: {e}")
         return None
+
+
+def _generate_ledger_pdf_csv(ledger: dict) -> bytes:
+    """Generate a simple CSV export of the Civic Impact Ledger."""
+    rows = []
+    for tier, info in ledger.items():
+        for metric, value in info.get("metrics", {}).items():
+            rows.append(
+                {
+                    "Evidence Tier": tier,
+                    "Description": info.get("description", ""),
+                    "Metric": metric.replace("_", " ").title(),
+                    "Value": value,
+                    "Exported At": datetime.utcnow().strftime(
+                        "%Y-%m-%d %Human:%M:%S UTC"
+                    ),
+                }
+            )
+    df = pd.DataFrame(rows)
+    return df.to_csv(index=False).encode("utf-8")
 
 
 def render_impact_ledger(client):
@@ -58,6 +81,23 @@ def render_impact_ledger(client):
                 )
 
             st.markdown("---")
+
+            # ── EXPORT TO CSV ─────────────────────────────────────────────────
+            exp_col1, exp_col2 = st.columns([3, 1])
+            with exp_col2:
+                csv_bytes = _generate_ledger_pdf_csv(ledger)
+                st.download_button(
+                    label="📥 Export Ledger CSV",
+                    data=csv_bytes,
+                    file_name=f"aegis_impact_ledger_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+            with exp_col1:
+                st.caption(
+                    "🔵 ESTIMATED and 🟡 SIMULATED figures are model projections. "
+                    "Only 🟢 APPROVED decisions reflect committed civic interventions."
+                )
     except Exception as e:
         logger.error(f"Failed to load Impact Ledger: {e}")
 
@@ -65,19 +105,19 @@ def render_impact_ledger(client):
 def render_impact_dashboard(client):
     render_impact_ledger(client)
 
-    st.markdown("## ðŸŒ  AEGIS CITY IMPACT")
+    st.markdown("## 🌍 AEGIS CITY IMPACT")
     st.markdown("---")
 
     col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("ðŸš¦ Active Events", "7")
-    col2.metric("ðŸš— Vehicles", "1,284")
-    col3.metric("â ± Estimated Delay", "426 min")
-    col4.metric("ðŸ ƒ Estimated COâ‚‚", "18.4 kg")
-    col5.metric("ðŸš¶ Safety Alerts", "12")
+    col1.metric("🚦 Active Events", "7")
+    col2.metric("🚗 Vehicles", "1,284")
+    col3.metric("⏱️ Estimated Delay", "426 min")
+    col4.metric("🍃 Estimated CO₂", "18.4 kg")
+    col5.metric("🚶 Safety Alerts", "12")
 
     st.markdown("---")
 
-    st.subheader("ðŸš¨ PRIORITY EVENT")
+    st.subheader("🚨 PRIORITY EVENT")
     st.markdown("### Intersection A-17")
     st.error("HIGH CONGESTION")
 
@@ -87,19 +127,19 @@ def render_impact_dashboard(client):
     scol3.metric("Confidence", "78%")
 
     with st.expander("Why was this detected?"):
-        st.write("â€¢ Queue length: 420 m")
-        st.write("â€¢ Average speed: 18 km/h")
-        st.write("â€¢ Sustained congestion: 4 min")
-        st.caption("Evidence: ðŸŸ¢ Observed, ðŸ”µ Estimated")
+        st.write("• Queue length: 420 m")
+        st.write("• Average speed: 18 km/h")
+        st.write("• Sustained congestion: 4 min")
+        st.caption("Evidence: 🟢 Observed, 🔵 Estimated")
 
     st.markdown("---")
 
-    st.subheader("ðŸ’¡ RECOMMENDED INTERVENTION")
+    st.subheader("💡 RECOMMENDED INTERVENTION")
     st.info("Extend green phase +15 sec")
 
-    if st.button("ðŸ”¬ SIMULATE"):
+    if st.button("🔬 SIMULATE"):
         st.markdown("---")
-        st.subheader("ðŸ”¬ SIMULATION")
+        st.subheader("🔬 SIMULATION")
 
         sim_col1, sim_col2 = st.columns(2)
         with sim_col1:
@@ -109,10 +149,7 @@ def render_impact_dashboard(client):
             st.metric("Proposed Queue", "335 m", "-20.2%")
             st.metric("Proposed Delay", "5.9 min", "-24.4%")
 
-        st.success("Projected queue reduction: 20.2% (ðŸŸ¡ Simulated)")
-
-        # Simulated Plotly chart
-        import plotly.graph_objects as go
+        st.success("Projected queue reduction: 20.2% (🟡 Simulated)")
 
         fig = go.Figure()
         fig.add_trace(
@@ -120,7 +157,7 @@ def render_impact_dashboard(client):
                 y=[420, 420, 420, 420, 420, 420],
                 mode="lines+markers",
                 name="Baseline Queue (m)",
-                line=dict(color="red"),
+                line=dict(color="#ef4444"),
             )
         )
         fig.add_trace(
@@ -128,13 +165,16 @@ def render_impact_dashboard(client):
                 y=[420, 400, 380, 360, 345, 335],
                 mode="lines+markers",
                 name="Proposed Queue (m)",
-                line=dict(color="green"),
+                line=dict(color="#10b981"),
             )
         )
         fig.update_layout(
             title="Projected Queue Evolution (5 Cycles)",
             xaxis_title="Cycle Number",
             yaxis_title="Queue Length (m)",
+            template="plotly_dark",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
             margin=dict(l=0, r=0, t=30, b=0),
             height=300,
         )
@@ -142,14 +182,14 @@ def render_impact_dashboard(client):
 
         acol1, acol2 = st.columns(2)
         with acol1:
-            if st.button("âœ… APPROVE", use_container_width=True):
+            if st.button("✅ APPROVE", use_container_width=True):
                 st.toast("Decision APPROVED and recorded to immutable audit log.")
         with acol2:
-            if st.button("âŒ REJECT", use_container_width=True):
+            if st.button("❌ REJECT", use_container_width=True):
                 st.toast("Decision REJECTED.")
 
     st.markdown("---")
-    st.subheader("ðŸ“‹ RECENT DECISIONS")
+    st.subheader("📋 RECENT DECISIONS")
     st.dataframe(
         [
             {

@@ -274,13 +274,70 @@ def render_maps_page(client):
             key="map_vehicle_filter_multiselect",
         )
 
-    # Show incident toggle
-    show_incidents = st.toggle(
-        "🚨 Overlay Incident Markers", value=True, key="map_show_incidents"
-    )
+    # ── ADVANCED CONTROLS ROW ─────────────────────────────────────────────────────
+    adv1, adv2, adv3 = st.columns([1, 1, 2])
+
+    with adv1:
+        show_incidents = st.toggle(
+            "🚨 Overlay Incident Markers", value=True, key="map_show_incidents"
+        )
+
+    with adv2:
+        live_refresh = st.toggle(
+            "⚡ Live Position Refresh", value=False, key="map_live_refresh"
+        )
+
+    with adv3:
+        # Heatmap time-lapse: only visible when heatmap is selected
+        if "Heatmap" in map_view_mode:
+            timelapse_hour = st.slider(
+                "🕐 Historical Hour (Time-Lapse)",
+                min_value=0,
+                max_value=23,
+                value=12,
+                format="%H:00",
+                key="map_timelapse_hour",
+            )
+            st.caption(
+                f"Showing simulated congestion snapshot for **{timelapse_hour:02d}:00** — "
+                "slide to replay historical traffic density."
+            )
+        else:
+            timelapse_hour = 12  # default seed
+
+    # ── LIVE POSITION REFRESH (WebSocket simulation via st.rerun) ─────────────────
+    if live_refresh:
+        import time
+
+        st.markdown(
+            "<div style=\"font-family:'JetBrains Mono',monospace;color:#10b981;"
+            'font-size:.7rem;margin-bottom:4px;">'
+            "⚡ LIVE MODE — Position data refreshing every 5s</div>",
+            unsafe_allow_html=True,
+        )
+        refresh_seed = int(time.time()) // 5  # Changes every 5 seconds
+    else:
+        refresh_seed = 42
 
     # ── DATA GENERATION ───────────────────────────────────────────────────────────
-    df_vehicles = _make_vehicle_df(lat, lon)
+    # Time-lapse seed: shift congestion pattern based on hour of day
+    # Peak hours (8-10, 17-20) = denser, slower. Off-peak = sparse, faster.
+    peak_factor = 1.0
+    if "Heatmap" in map_view_mode:
+        if timelapse_hour in range(8, 11) or timelapse_hour in range(17, 21):
+            peak_factor = 2.2  # Rush hour — very congested
+        elif timelapse_hour in range(11, 17):
+            peak_factor = 1.2  # Midday — moderate
+        elif timelapse_hour in range(0, 6):
+            peak_factor = 0.3  # Night — sparse
+        else:
+            peak_factor = 0.8  # Off-peak
+
+    df_vehicles = _make_vehicle_df(lat, lon, seed=refresh_seed)
+    # Scale speed inversely with peak factor (more congested = slower)
+    df_vehicles["speed"] = np.clip(df_vehicles["speed"] / peak_factor, 5, 85).astype(
+        int
+    )
     if vehicle_filter:
         df_vehicles = df_vehicles[df_vehicles["vehicle_type"].isin(vehicle_filter)]
 
